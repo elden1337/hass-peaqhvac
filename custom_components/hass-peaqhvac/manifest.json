@@ -1,0 +1,26 @@
+{
+    "domain": "peaqhvac",
+    "name": "peaqhvac",
+    "config_flow": true,
+    "documentation": "https://github.com/elden1337/hass-peaqhvac",
+    "issue_tracker": "https://github.com/elden1337/hass-peaqhvac/issues",
+    "requirements": [
+      "peaqevcore>=0.1.1"
+    ],
+    "codeowners": [
+      "@elden1337"
+    ],
+    "version": "0.1.0",
+    "iot_class": "calculated",
+    "dependencies": [
+      "recorder",
+      "utility_meter"
+    ],
+    "after_dependencies": [
+      "nibe",
+      "nordpool",
+      "filter",
+      "integration",
+      "sql"
+    ]
+  }
