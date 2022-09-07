@@ -20,7 +20,6 @@
       "nibe",
       "nordpool",
       "filter",
-      "integration",
-      "sql"
+      "integration"
     ]
   }

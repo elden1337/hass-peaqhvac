@@ -1,0 +1,8 @@
+
+enable:
+  name: Enable Peaqhvac
+  description: Enables Peaqhvac
+
+disable:
+  name: Disable Peaqhvac
+  description: Disables Peaqhvac
