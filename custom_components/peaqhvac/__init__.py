@@ -24,8 +24,25 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
 
     configinputs = {}
 
-    configinputs["tolerance"] = config.data["tolerance"]
-    configinputs["tempsensors"] = config.data["tempsensors"]
+    """
+    needed in config:
+
+    check for nordpool
+    check for peaqev, otherwise ignore peak-management
+
+    list of indoor tempsensors
+    list of outdoor tempsensors
+
+    nibe-system-id? or even better, pick type first (to allow for more brands later)
+    nibe-model? or can that be derived or not necessary?
+
+    weather? demand one integration or pick whichever?
+    """
+
+    configinputs["indoor_tempsensors"] = config.data["indoor_tempsensors"]
+    configinputs["outdoor_tempsensors"] = config.data["outdoor_tempsensors"]
+    configinputs["hvacbrand"] = config.data["hvacbrand"]
+    configinputs["systemid"] = config.data["systemid"]
 
     hub = Hub(hass, configinputs)
 

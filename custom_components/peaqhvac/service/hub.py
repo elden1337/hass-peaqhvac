@@ -6,9 +6,15 @@ class Sensors:
     temp_trend_outdoors: float
     temp_trend_indoors: float
     prognosis: str
-    set_temp_indoors: float
+    set_temp_indoors: float #input-numbersensor
     #temp_sensors_indoor: list[float]
     #temp_sensors_outdoor: list[float]
+
+    #these two are siblings. demandEnum as state
+    # waterheatersensor
+    # hvacsensor
+
+    # avgtempsensor (with max and min as attributes, based on the list of tempsensors from config)
 
     def set_sensors_from_list(self, inputstr: str) -> None:
         input_list = []
@@ -27,6 +33,8 @@ class Sensors:
 
 
 class Hub:
+    hub_id = 1338
+
     def __init__(self, hass: HomeAssistant):
         self._hass = hass
         self.sensors = Sensors()

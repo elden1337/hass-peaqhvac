@@ -7,18 +7,7 @@ from homeassistant.core import (
     HomeAssistant,
 )
 
-import custom_components.peaqev.peaqservice.util.extensionmethods as ex
-import custom_components.peaqev.sensors.create_sensor_helper as _helper
-from custom_components.peaqev.peaqservice.util.constants import (
-    CONSUMPTION_TOTAL_NAME,
-    CONSUMPTION_INTEGRAL_NAME
-)
-from custom_components.peaqev.sensors.utility_sensor import (
-    PeaqUtilitySensor,
-    METER_OFFSET
-)
-from .const import (
-    DOMAIN)
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -28,22 +17,42 @@ async def async_setup_entry(hass : HomeAssistant, config: ConfigEntry, async_add
     """Add sensors for passed config_entry in HA."""
 
     hub = hass.data[DOMAIN]["hub"]
-
-    peaqsensors = await _helper.gather_Sensors(hub, config)
+    peaqsensors = await _gather_sensors(hub, config)
     async_add_entities(peaqsensors, update_before_add = True)
 
-    peaqintegrationsensors = await _helper.gather_integration_sensors(hub, config.entry_id)
 
-    async_add_entities(peaqintegrationsensors, update_before_add=True)
 
-    integrationsensors = [ex.nametoid(CONSUMPTION_TOTAL_NAME), ex.nametoid(CONSUMPTION_INTEGRAL_NAME)]
-    peaqutilitysensors = []
+async def _gather_sensors(hub, config) -> list:
+    ret = []
 
-    for i in integrationsensors:
-        peaqutilitysensors.append(PeaqUtilitySensor(hub, i, hub.locale.data.peak_cycle, METER_OFFSET, config.entry_id))
+    #waterheatersensor
+    #hvacsensor
 
-    async_add_entities(peaqutilitysensors, update_before_add = True)
+    #temperature input_numbersensor
+    # tolerance (-5 - 5) input_numbersensor
 
-    peaqsqlsensors = await _helper.gather_sql_sensors(hass, hub, config.entry_id)
+    #avgtempsensor (with max and min as attributes, based on the list of tempsensors from config)
+    #tempfalling indoors sensor
+    #tempfalling outdoors sensor
 
-    async_add_entities(peaqsqlsensors, update_before_add = True)
+
+    ret.append(PeaqAmpSensor(hub, config.entry_id))
+    ret.append(PeaqSensor(hub, config.entry_id))
+    ret.append(PeaqThresholdSensor(hub, config.entry_id))
+    ret.append(PeaqSessionSensor(hub, config.entry_id))
+    ret.append(PeaqSessionCostSensor(hub, config.entry_id))
+
+    if hub.options.powersensor_includes_car is True:
+        ret.append(PeaqHousePowerSensor(hub, config.entry_id))
+    else:
+        ret.append(PeaqPowerSensor(hub, config.entry_id))
+
+    if hub.options.peaqev_lite is False:
+        average_delta = 2 if hub.sensors.locale.data.is_quarterly(hub.sensors.locale.data) else 5
+        ret.append(PeaqAverageSensor(hub, config.entry_id, AVERAGECONSUMPTION, timedelta(minutes=average_delta)))
+        ret.append(PeaqAverageSensor(hub, config.entry_id, AVERAGECONSUMPTION_24H, timedelta(hours=24)))
+        ret.append(PeaqPredictionSensor(hub, config.entry_id))
+
+    if hub.options.price.price_aware is True:
+        ret.append(PeaqMoneySensor(hub, config.entry_id))
+    return ret
