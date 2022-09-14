@@ -1,4 +1,4 @@
-"""The peaqev integration."""
+"""The peaqhvac integration."""
 from __future__ import annotations
 
 import logging
@@ -12,17 +12,14 @@ from .const import (
     DOMAIN,
     PLATFORMS, LISTENER_FN_CLOSE
 )
+from .service.models.config_model import ConfigModel
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
-    """Set up Peaq"""
-
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][config.entry_id] = config.data
-
-    configinputs = {}
 
     """
     needed in config:
@@ -38,11 +35,12 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
 
     weather? demand one integration or pick whichever?
     """
+    configinputs = ConfigModel()
 
-    configinputs["indoor_tempsensors"] = config.data["indoor_tempsensors"]
-    configinputs["outdoor_tempsensors"] = config.data["outdoor_tempsensors"]
-    configinputs["hvacbrand"] = config.data["hvacbrand"]
-    configinputs["systemid"] = config.data["systemid"]
+    configinputs.indoor_tempsensors = config.data["indoor_tempsensors"]
+    configinputs.outdoor_tempsensors = config.data["outdoor_tempsensors"]
+    #configinputs["hvacbrand"] = config.data["hvacbrand"]
+    #configinputs.systemid = config.data["systemid"]
 
     hub = Hub(hass, configinputs)
 

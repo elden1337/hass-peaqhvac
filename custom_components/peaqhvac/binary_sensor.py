@@ -7,11 +7,10 @@ from .const import (
 
 async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entities):
     hub = hass.data[DOMAIN]["hub"]
-
-    peaqsensors = []
-
-    peaqsensors.append(PeaqBinarySensorEnabled(hub))
-    async_add_entities(peaqsensors)
+    # peaqsensors = []
+    #
+    # peaqsensors.append()
+    async_add_entities(PeaqBinarySensorEnabled(hub))
 
 
 class PeaqBinarySensorEnabled(BinarySensorEntity):

@@ -5,7 +5,7 @@
     "documentation": "https://github.com/elden1337/hass-peaqhvac",
     "issue_tracker": "https://github.com/elden1337/hass-peaqhvac/issues",
     "requirements": [
-      "peaqevcore>=0.1.1"
+      "peaqevcore==5.18.3"
     ],
     "codeowners": [
       "@elden1337"
@@ -18,8 +18,6 @@
     ],
     "after_dependencies": [
       "nibe",
-      "nordpool",
-      "filter",
-      "integration"
+      "nordpool"
     ]
   }

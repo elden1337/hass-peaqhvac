@@ -3,7 +3,7 @@ from .models.demand import Demand
 
 class WaterDemandObj:
     days: dict[int, dict[int, Demand]]
-
+    #make this a pattern instead, dict will be clumpsy
 
 class WaterHeater:
     def __init__(self):
@@ -14,15 +14,24 @@ class WaterHeater:
         pass
 
     def _get_demand_temperature(self, input: Demand) -> int:
-        DEMANDLIMITS = {
+        _demandlimits = {
             Demand.HighDemand: 40,
             Demand.MediumDemand: 30,
             Demand.LowDemand: 25,
             Demand.NoDemand: 15
         }
-        return DEMANDLIMITS[input]
+        return _demandlimits[input]
 
     # def compare to heating demand
     # def get current water temp from nibe
     # def turn on waterboost or not
 
+
+d = {}
+
+for day in range(0,6):
+    d[day] = {}
+    for hour in range(0,23):
+        d[day][hour] = Demand.NoDemand
+
+print(d)

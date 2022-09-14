@@ -8,6 +8,8 @@ from homeassistant.core import (
 )
 
 from .const import DOMAIN
+from .sensors.min_maxsensor import MinMaxSensor
+from .sensors.trendsensor import TrendSensor
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,12 +19,10 @@ async def async_setup_entry(hass : HomeAssistant, config: ConfigEntry, async_add
     """Add sensors for passed config_entry in HA."""
 
     hub = hass.data[DOMAIN]["hub"]
-    peaqsensors = await _gather_sensors(hub, config)
+    peaqsensors = await _gather_sensors(hub, config, hass)
     async_add_entities(peaqsensors, update_before_add = True)
 
-
-
-async def _gather_sensors(hub, config) -> list:
+async def _gather_sensors(hub, config, hass) -> list:
     ret = []
 
     #waterheatersensor
@@ -31,28 +31,47 @@ async def _gather_sensors(hub, config) -> list:
     #temperature input_numbersensor
     # tolerance (-5 - 5) input_numbersensor
 
-    #avgtempsensor (with max and min as attributes, based on the list of tempsensors from config)
-    #tempfalling indoors sensor
-    #tempfalling outdoors sensor
+    """sensor.peaqhvac_average_temperature_indoors"""
+    ret.append(MinMaxSensor(
+        hub,
+        config.entry_id,
+        name="average temperature indoors",
+        listenerentities=hub.sensors.temp_sensors_indoor,
+        sensortype="mean",
+        rounding_precision=1
+    ))
 
+    """sensor.peaqhvac_average_temperature_outdoors"""
+    ret.append(MinMaxSensor(
+        hub,
+        config.entry_id,
+        name="average temperature outdoors",
+        listenerentities=hub.sensors.temp_sensors_outdoor,
+        sensortype="mean",
+        rounding_precision=1
+    ))
 
-    ret.append(PeaqAmpSensor(hub, config.entry_id))
-    ret.append(PeaqSensor(hub, config.entry_id))
-    ret.append(PeaqThresholdSensor(hub, config.entry_id))
-    ret.append(PeaqSessionSensor(hub, config.entry_id))
-    ret.append(PeaqSessionCostSensor(hub, config.entry_id))
+    ret.append(TrendSensor(
+        hub,
+        hass,
+        config.entry_id,
+        name="temperature trend indoors",
+        listenerentity="sensor.peaqhvac_average_temperature_indoors",
+        sample_duration=7200,
+        max_samples=120,
+        min_gradient=0.0008,
+        device_class="heat")
+    )
+    ret.append(TrendSensor(
+        hub,
+        hass,
+        config.entry_id,
+        name="temperature trend outdoors",
+        listenerentity="sensor.peaqhvac_average_temperature_outdoors",
+        sample_duration=7200,
+        max_samples=120,
+        min_gradient=0.0008,
+        device_class="heat")
+    )
 
-    if hub.options.powersensor_includes_car is True:
-        ret.append(PeaqHousePowerSensor(hub, config.entry_id))
-    else:
-        ret.append(PeaqPowerSensor(hub, config.entry_id))
-
-    if hub.options.peaqev_lite is False:
-        average_delta = 2 if hub.sensors.locale.data.is_quarterly(hub.sensors.locale.data) else 5
-        ret.append(PeaqAverageSensor(hub, config.entry_id, AVERAGECONSUMPTION, timedelta(minutes=average_delta)))
-        ret.append(PeaqAverageSensor(hub, config.entry_id, AVERAGECONSUMPTION_24H, timedelta(hours=24)))
-        ret.append(PeaqPredictionSensor(hub, config.entry_id))
-
-    if hub.options.price.price_aware is True:
-        ret.append(PeaqMoneySensor(hub, config.entry_id))
     return ret
