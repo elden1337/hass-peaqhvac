@@ -1,7 +1,5 @@
 from custom_components.peaqhvac.sensors.sensorbase import SensorBase
 
-
-
 class InputNumberSensor(SensorBase):
     def __init__(
             self,

@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "indoor_tempsensors": "temp sensors indoors. comma-separated",
+          "outdoor_tempsensors": "temp sensors outdoors. comma-separated",
+          "hvac_tolerance":  "tolerance in steps, 0-10"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot create Peaq-instance",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unknown error has occured",
+      "invalid_powersensor": "The powersensor provided is not reachable or wrong type  (state must be numeric)",
+      "invalid_chargerid": "You must provide a chargerId",
+      "invalid_nonhours": "You must provide at least one hour per day when charger is available. Nonhours is currently set as every hour."
+    },
+    "abort": {
+      "already_configured": "This integration has already been configured"
+    }
+  }
+}

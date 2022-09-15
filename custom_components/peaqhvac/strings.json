@@ -1,94 +1,15 @@
 {
-  "options": {
-    "step": {
-      "init": {
-        "data": {
-          "priceaware": "[%key:common::config_flow::data::priceaware%]",
-          "absolute_top_price": "[%key:common::config_flow::data::absolute_top_price%]",
-          "cautionhour_type": "[%key:common::config_flow::data::cautionhour_type%]"
-        },
-        "description": "Select price-aware if you wish to adhere to Nordpool-prices (requires integration)"
-      },
-      "hours": {
-        "data": {
-          "nonhours": "[%key:common::config_flow::data::nonhours%]",
-          "cautionhours": "[%key:common::config_flow::data::cautionhours%]"
-        },
-        "description": "Change the non-hours and caution-hours"
-      },
-      "months": {
-        "data": {
-          "jan": "January",
-          "feb": "February",
-          "mar": "March",
-          "apr": "April",
-          "may": "May",
-          "jun": "June",
-          "jul": "July",
-          "aug": "August",
-          "sep": "September",
-          "oct": "October",
-          "nov": "November",
-          "dec": "December"
-        },
-        "description": "Select your allowed monthly start-peak."
-      }
-    }
-  },
   "config": {
     "step": {
       "user": {
         "data": {
-          "peaqevtype": "[%key:common::config_flow::data::peaqevtype%]"
-        }
-      },
-      "sensor": {
-        "data": {
-          "name": "[%key:common::config_flow::data::powersensor%]",
-          "powersensorincludescar": "[%key:common::config_flow::data::powersensorincludescar%]"
-        }
-      },
-      "charger": {
-        "data": {
-          "chargerid": "[%key:common::config_flow::data::chargerid%]",
-          "chargertype": "[%key:common::config_flow::data::chargertype%]",
-          "locale": "[%key:common::config_flow::data::locale%]"
-        }
-      },
-      "priceaware": {
-        "data": {
-          "priceaware": "[%key:common::config_flow::data::priceaware%]",
-          "absolute_top_price": "[%key:common::config_flow::data::absolute_top_price%]",
-          "cautionhour_type": "[%key:common::config_flow::data::cautionhour_type%]"
-        }
-      },
-      "hours": {
-        "data": {
-          "nonhours": "[%key:common::config_flow::data::nonhours%]",
-          "cautionhours": "[%key:common::config_flow::data::cautionhours%]"
-        }
-      },
-      "months": {
-        "data": {
-          "jan": "January",
-          "feb": "February",
-          "mar": "March",
-          "apr": "April",
-          "may": "May",
-          "jun": "June",
-          "jul": "July",
-          "aug": "August",
-          "sep": "September",
-          "oct": "October",
-          "nov": "November",
-          "dec": "December"
+          "indoor_tempsensors": "[%key:common::config_flow::data::indoor_tempsensors%]",
+          "outdoor_tempsensors": "[%key:common::config_flow::data::outdoor_tempsensors%]",
+          "hvac_tolerance":  "[%key:common::config_flow::data::hvac_tolerance%]"
         }
       }
     },
     "error": {
-      "invalid_powersensor": "[%key:common::config_flow::error::invalid_powersensor%]",
-      "invalid_chargerid": "[%key:common::config_flow::error::invalid_chargerid%]",
-      "invalid_nonhours": "[%key:common::config_flow::error::invalid_nonhours%]",
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
       "unknown": "[%key:common::config_flow::error::unknown%]"

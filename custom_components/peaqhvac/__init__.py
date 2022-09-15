@@ -35,14 +35,16 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
 
     weather? demand one integration or pick whichever?
     """
-    configinputs = ConfigModel()
 
-    configinputs.indoor_tempsensors = config.data["indoor_tempsensors"]
-    configinputs.outdoor_tempsensors = config.data["outdoor_tempsensors"]
+    huboptions = ConfigModel()
+
+    huboptions.indoor_tempsensors = huboptions.set_sensors_from_string(config.data["indoor_tempsensors"])
+    huboptions.outdoor_tempsensors = huboptions.set_sensors_from_string(config.data["outdoor_tempsensors"])
+    huboptions.hvac_tolerance = config.data["hvac_tolerance"]
     #configinputs["hvacbrand"] = config.data["hvacbrand"]
     #configinputs.systemid = config.data["systemid"]
 
-    hub = Hub(hass, configinputs)
+    hub = Hub(hass, huboptions)
 
     hass.data[DOMAIN]["hub"] = hub
 

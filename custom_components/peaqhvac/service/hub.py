@@ -19,30 +19,15 @@ class Sensors:
 
     # avgtempsensor (with max and min as attributes, based on the list of tempsensors from config)
 
-    def set_sensors_from_list(self, inputstr: str) -> list:
-        input_list = []
-
-        try:
-            input_list = inputstr.split(',')
-        except:
-            pass
-
-        if len(input_list) > 0:
-            for i in input_list:
-                self._set_single_sensor(i)
-        return input_list
-
-    def _set_single_sensor(self, sensor: str):
-        pass
-
-
 class Hub:
     hub_id = 1338
 
     def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
         self.options = hub_options
         self._hass = hass
-        self.sensors = Sensors(self.options)
+        self.sensors = Sensors()
+        self.sensors.temp_sensors_outdoor = self.options.outdoor_tempsensors
+        self.sensors.temp_sensors_indoor = self.options.indoor_tempsensors
 
     async def call_enable_peaq(self):
         pass
