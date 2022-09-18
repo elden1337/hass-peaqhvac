@@ -5,9 +5,7 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-
-from custom_components.peaqhvac.service.hub import Hub
-
+from custom_components.peaqhvac.service.hub.hub import Hub
 from .const import (
     DOMAIN,
     PLATFORMS, LISTENER_FN_CLOSE
@@ -41,8 +39,8 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     huboptions.indoor_tempsensors = huboptions.set_sensors_from_string(config.data["indoor_tempsensors"])
     huboptions.outdoor_tempsensors = huboptions.set_sensors_from_string(config.data["outdoor_tempsensors"])
     huboptions.hvac_tolerance = config.data["hvac_tolerance"]
+    huboptions.systemid = config.data["systemid"]
     #configinputs["hvacbrand"] = config.data["hvacbrand"]
-    #configinputs.systemid = config.data["systemid"]
 
     hub = Hub(hass, huboptions)
 

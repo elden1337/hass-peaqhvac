@@ -1,61 +1,50 @@
-from homeassistant.components.trend.binary_sensor import (
-    SensorTrend, ATTR_MEAN
-)
-import custom_components.peaqhvac.extensionmethods as ex
-from custom_components.peaqhvac.const import DOMAIN
 
-class TrendSensor(SensorTrend):
-    def __init__(
-            self,
-            hub,
-            hass,
-            entry_id,
-            name: str,
-            listenerentity:str,
-            sample_duration: int,
-            max_samples: int,
-            min_gradient: float,
-            device_class: str
-    ):
-        self._entry_id = entry_id
+from custom_components.peaqhvac.sensors.sensorbase import SensorBase
+from custom_components.peaqhvac.const import DOMAIN, TRENDSENSOR_INDOORS, TRENDSENSOR_OUTDOORS
+from homeassistant.helpers.restore_state import RestoreEntity
+
+class TrendSensor(SensorBase, RestoreEntity):
+    def __init__(self, hub, entry_id, name):
+        self._sensorname = name
         self._attr_name = f"{hub.hubname} {name}"
-        self._attr_device_class = "none"
-
-        super().init(
-            hass=hass,
-            #device_id,
-            #friendly_name,
-            entity_id=listenerentity,
-            #attribute,
-            device_class=device_class,
-            invert=False,
-            max_samples=max_samples,
-            min_gradient=min_gradient,
-            sample_duration=sample_duration
-        )
-
-        self._hub = hub
+        self._attr_unit_of_measurement = '°C/h'
+        super().__init__(hub, self._attr_name, entry_id)
         self._state = 0
 
     @property
-    def unique_id(self):
-        """Return a unique ID to use for this sensor."""
-        return f"{DOMAIN}_{self._entry_id}_{ex.nametoid(self._attr_name)}"
+    def unit_of_measurement(self):
+        return self._attr_unit_of_measurement
 
     @property
-    def device_info(self):
-        """Return information to link this entity with the correct device."""
-        return {"identifiers": {(DOMAIN, self._hub.hub_id)}}
+    def state(self) -> float:
+        fstate = float(self._state)
+        return fstate if abs(fstate) < 10 else 0
+
+    @property
+    def icon(self) -> str:
+        if self._sensorname == TRENDSENSOR_INDOORS:
+            return "mdi:home-thermometer"
+        return "mdi:sun-thermometer"
+
+    def update(self) -> None:
+        if self._sensorname == TRENDSENSOR_INDOORS:
+            self._state = self._hub.sensors.temp_trend_indoors.value
+        elif  self._sensorname == TRENDSENSOR_OUTDOORS:
+            self._state = self._hub.sensors.temp_trend_outdoors.value
+
+    async def async_added_to_hass(self):
+        state = await super().async_get_last_state()
+        if state:
+            self._state = state.state
+        else:
+            self._state = 0
 
 """
- - platform: trend
-      sensors:
-       temp_trend_indoors:
-         entity_id: sensor.medeltemp_hemma
-         sample_duration: 7200
-         max_samples: 120
-         min_gradient: 0.0008
-         device_class: heat
+ entity_id: sensor.medeltemp_hemma
+ sample_duration: 7200
+ max_samples: 120
+ min_gradient: 0.0008
+ device_class: heat
 """
 
 

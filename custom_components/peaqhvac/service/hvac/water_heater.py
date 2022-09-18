@@ -1,5 +1,5 @@
 from datetime import datetime
-from .models.demand import Demand
+from custom_components.peaqhvac.service.models.demand import Demand
 
 class WaterDemandObj:
     days: dict[int, dict[int, Demand]]
@@ -26,12 +26,3 @@ class WaterHeater:
     # def get current water temp from nibe
     # def turn on waterboost or not
 
-
-d = {}
-
-for day in range(0,6):
-    d[day] = {}
-    for hour in range(0,23):
-        d[day][hour] = Demand.NoDemand
-
-print(d)

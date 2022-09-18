@@ -1,67 +1,41 @@
-from homeassistant.components.min_max.sensor import (
-    MinMaxSensor, ATTR_MEAN
-)
-import custom_components.peaqhvac.extensionmethods as ex
-from custom_components.peaqhvac.const import DOMAIN
+from custom_components.peaqhvac.const import AVERAGESENSOR_INDOORS, AVERAGESENSOR_OUTDOORS
+from custom_components.peaqhvac.sensors.sensorbase import SensorBase
+from homeassistant.helpers.restore_state import RestoreEntity
 
-
-class MinMaxSensor(MinMaxSensor):
+class AverageSensor(SensorBase, RestoreEntity):
     def __init__(
             self,
             hub,
             entry_id,
-            name: str,
-            listenerentities:list[str],
-            sensortype: str = ATTR_MEAN,
-            rounding_precision: int = 1
+            name
     ):
-        super().init(
-        unique_id = self.unique_id,
-        entity_ids=listenerentities,
-        sensor_type=sensortype,
-        round_digits=rounding_precision
-        )
+        self._sensorname = name
+        self._attr_name = f"{hub.hubname} {name}"
+        self._attr_unit_of_measurement = '°C'
+        super().__init__(hub, self._attr_name, entry_id)
+        self._state = 0
 
     @property
-    def unique_id(self):
-        """Return a unique ID to use for this sensor."""
-        return f"{DOMAIN}_{self._entry_id}_{ex.nametoid(self._attr_name)}"
+    def unit_of_measurement(self):
+        return self._attr_unit_of_measurement
 
     @property
-    def device_info(self):
-        """Return information to link this entity with the correct device."""
-        return {"identifiers": {(DOMAIN, self._hub.hub_id)}}
+    def state(self) -> float:
+        return round(float(self._state),1)
 
-"""
- - platform: min_max
-      entity_ids:
-      - sensor.lumi_lumi_weather_900a4b05_temperature
-      - sensor.lumi_lumi_weather_36ef4405_temperature
-      - sensor.temp_nibe_hall
-      - sensor.lumi_lumi_weather_temperature
-      name: "Medeltemp nere"
-      type: mean
-      round_digits: 1
-    - platform: min_max
-      entity_ids:
-      - sensor.lumi_lumi_weather_74c34a05_temperature
-      - sensor.lumi_lumi_weather_22df4005_temperature
-      - sensor.tv_rum_sensor_temperature_corrected
-      - sensor.lumi_lumi_weather_d6394105_temperature
-      name: "Medeltemp uppe"
-      type: mean
-      round_digits: 1
-    - platform: min_max
-      entity_ids:
-      - sensor.lumi_lumi_weather_900a4b05_temperature
-      - sensor.lumi_lumi_weather_36ef4405_temperature
-      - sensor.lumi_lumi_weather_74c34a05_temperature
-      - sensor.lumi_lumi_weather_22df4005_temperature
-      - sensor.temp_nibe_hall
-      - sensor.tv_rum_sensor_temperature_corrected
-      - sensor.lumi_lumi_weather_temperature
-      - sensor.lumi_lumi_weather_d6394105_temperature
-      name: "Medeltemp hemma"
-      type: mean
-      round_digits: 1
-"""
+    @property
+    def icon(self) -> str:
+        return "mdi:thermometer"
+
+    def update(self) -> None:
+        if self._sensorname == AVERAGESENSOR_INDOORS:
+            self._state = self._hub.sensors.average_temp_indoors.value
+        elif  self._sensorname == AVERAGESENSOR_OUTDOORS:
+            self._state = self._hub.sensors.average_temp_outdoors.value
+
+    async def async_added_to_hass(self):
+        state = await super().async_get_last_state()
+        if state:
+            self._state = state.state
+        else:
+            self._state = 0

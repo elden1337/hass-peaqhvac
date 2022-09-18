@@ -5,7 +5,8 @@
         "data": {
           "indoor_tempsensors": "[%key:common::config_flow::data::indoor_tempsensors%]",
           "outdoor_tempsensors": "[%key:common::config_flow::data::outdoor_tempsensors%]",
-          "hvac_tolerance":  "[%key:common::config_flow::data::hvac_tolerance%]"
+          "hvac_tolerance":  "[%key:common::config_flow::data::hvac_tolerance%]",
+          "systemid":  "[%key:common::config_flow::data::systemid%]"
         }
       }
     },

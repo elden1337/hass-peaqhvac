@@ -1,25 +1,14 @@
 """Config flow for Peaq integration."""
 from __future__ import annotations
-
 import logging
-
-#import homeassistant.helpers.config_validation as cv
-#import voluptuous as vol
 from homeassistant import config_entries
 #from homeassistant.core import callback
 from typing import Any, Optional
 
-#import custom_components.peaqev.peaqservice.util.constants as pk
+from custom_components.peaqhvac.configflow.config_flow_validation import ConfigFlowValidation
 from custom_components.peaqhvac.configflow.config_flow_schemas import (
-    USER_SCHEMA,
-    # SENSOR_SCHEMA,
-    # PRICEAWARE_SCHEMA,
-    # HOURS_SCHEMA,
-    # MONTHS_SCHEMA,
-    # CHARGER_SCHEMA,
-    # TYPE_SCHEMA
+    USER_SCHEMA
 )
-#from custom_components.peaqev.configflow.config_flow_validation import ConfigFlowValidation, FaultyPowerSensor
 
 from .const import DOMAIN  # pylint:disable=unused-import
 
@@ -42,11 +31,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Invoked when a user initiates a flow via the user interface."""
         errors = {}
         if user_input is not None:
+            self.info = await ConfigFlowValidation.validate_input_first(user_input)
             self.data = user_input
-            # if self.data["peaqevtype"] == pk.TYPELITE:
-            #     self.info = {"title": pk.TYPELITE}
-            #     return await self.async_step_charger()
-            #return await self.async_step_sensor()
             return self.async_create_entry(title=self.info["title"], data=self.data)
 
         return self.async_show_form(

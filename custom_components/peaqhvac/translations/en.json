@@ -5,7 +5,8 @@
         "data": {
           "indoor_tempsensors": "temp sensors indoors. comma-separated",
           "outdoor_tempsensors": "temp sensors outdoors. comma-separated",
-          "hvac_tolerance":  "tolerance in steps, 0-10"
+          "hvac_tolerance":  "tolerance in steps, 0-10",
+          "systemid":  "hvac systemid"
         }
       }
     },

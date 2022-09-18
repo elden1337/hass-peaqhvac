@@ -9,7 +9,12 @@ class HvacBrand(Enum):
     Thermia = 3
 
 @dataclass
+class MiscOptions:
+    enabled_on_boot: bool = True
+
+@dataclass
 class ConfigModel:
+    misc_options: MiscOptions = MiscOptions()
     indoor_tempsensors: List = field(default_factory=lambda: [])
     outdoor_tempsensors: List = field(default_factory=lambda: [])
     hvacbrand: HvacBrand = field(init=False)

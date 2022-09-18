@@ -7,9 +7,11 @@ from homeassistant.core import (
     HomeAssistant,
 )
 
-from .const import DOMAIN
-from .sensors.min_maxsensor import MinMaxSensor
+from .const import DOMAIN, TRENDSENSOR_INDOORS, TRENDSENSOR_OUTDOORS, AVERAGESENSOR_INDOORS, AVERAGESENSOR_OUTDOORS
+import custom_components.peaqhvac.extensionmethods as ex
+from .sensors.min_maxsensor import AverageSensor
 from .sensors.trendsensor import TrendSensor
+from .sensors.gradientsensor import GradientSensor
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,51 +29,44 @@ async def _gather_sensors(hub, config, hass) -> list:
 
     #waterheatersensor
     #hvacsensor
-
     #temperature input_numbersensor
     # tolerance (-5 - 5) input_numbersensor
 
-    """sensor.peaqhvac_average_temperature_indoors"""
-    ret.append(MinMaxSensor(
-        hub,
-        config.entry_id,
-        name="average temperature indoors",
-        listenerentities=hub.sensors.temp_sensors_indoor,
-        sensortype="mean",
-        rounding_precision=1
+    ret.append(AverageSensor(
+        hub=hub,
+        entry_id=config.entry_id,
+        name=AVERAGESENSOR_INDOORS
+    ))
+    ret.append(AverageSensor(
+        hub=hub,
+        entry_id=config.entry_id,
+        name=AVERAGESENSOR_OUTDOORS
     ))
 
-    """sensor.peaqhvac_average_temperature_outdoors"""
-    ret.append(MinMaxSensor(
-        hub,
-        config.entry_id,
-        name="average temperature outdoors",
-        listenerentities=hub.sensors.temp_sensors_outdoor,
-        sensortype="mean",
-        rounding_precision=1
-    ))
-
-    ret.append(TrendSensor(
+    ret.append(GradientSensor(
         hub,
         hass,
         config.entry_id,
-        name="temperature trend indoors",
-        listenerentity="sensor.peaqhvac_average_temperature_indoors",
+        name="temperature rising indoors",
+        listenerentity=ex.nametoid(f"sensor.{DOMAIN} {AVERAGESENSOR_INDOORS}"),
         sample_duration=7200,
         max_samples=120,
         min_gradient=0.0008,
         device_class="heat")
     )
-    ret.append(TrendSensor(
+    ret.append(GradientSensor(
         hub,
         hass,
         config.entry_id,
-        name="temperature trend outdoors",
-        listenerentity="sensor.peaqhvac_average_temperature_outdoors",
+        name="temperature rising outdoors",
+        listenerentity=ex.nametoid(f"sensor.{DOMAIN} {AVERAGESENSOR_OUTDOORS}"),
         sample_duration=7200,
         max_samples=120,
         min_gradient=0.0008,
         device_class="heat")
     )
+
+    ret.append(TrendSensor(hub, config.entry_id, TRENDSENSOR_OUTDOORS))
+    ret.append(TrendSensor(hub, config.entry_id, TRENDSENSOR_INDOORS))
 
     return ret
