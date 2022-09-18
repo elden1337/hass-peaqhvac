@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from custom_components.peaqhvac.service.hub.hub import Hub
 from .const import (
     DOMAIN,
-    PLATFORMS, LISTENER_FN_CLOSE
+    PLATFORMS, LISTENER_FN_CLOSE, HVACBRAND_NIBE
 )
 from .service.models.config_model import ConfigModel
 
@@ -40,6 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     huboptions.outdoor_tempsensors = huboptions.set_sensors_from_string(config.data["outdoor_tempsensors"])
     huboptions.hvac_tolerance = config.data["hvac_tolerance"]
     huboptions.systemid = config.data["systemid"]
+    huboptions.hvacbrand = huboptions.set_hvacbrand(HVACBRAND_NIBE)
     #configinputs["hvacbrand"] = config.data["hvacbrand"]
 
     hub = Hub(hass, huboptions)

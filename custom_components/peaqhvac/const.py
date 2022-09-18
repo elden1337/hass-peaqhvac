@@ -9,3 +9,7 @@ TRENDSENSOR_OUTDOORS = "Temperature trend outdoors"
 
 AVERAGESENSOR_INDOORS = "Average temperature indoors"
 AVERAGESENSOR_OUTDOORS = "Average temperature outdoors"
+
+HVACBRAND_NIBE = "Nibe"
+HVACBRAND_IVT = "IVT"
+HVACBRAND_THERMIA = "Thermia"

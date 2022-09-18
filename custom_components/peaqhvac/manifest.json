@@ -13,11 +13,11 @@
     "version": "0.1.0",
     "iot_class": "calculated",
     "dependencies": [
-      "recorder",
-      "utility_meter"
+      "recorder"
     ],
     "after_dependencies": [
       "nibe",
-      "nordpool"
+      "nordpool",
+      "peaqev"
     ]
   }

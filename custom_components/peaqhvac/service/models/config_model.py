@@ -1,12 +1,7 @@
 from dataclasses import dataclass, field
-from typing import List, Dict
-
-from enum import Enum
-
-class HvacBrand(Enum):
-    Nibe = 1
-    IVT = 2
-    Thermia = 3
+from typing import List
+from custom_components.peaqhvac.const import HVACBRAND_NIBE, HVACBRAND_THERMIA, HVACBRAND_IVT
+from custom_components.peaqhvac.service.models.hvacbrands import HvacBrand
 
 @dataclass
 class MiscOptions:
@@ -20,6 +15,14 @@ class ConfigModel:
     hvacbrand: HvacBrand = field(init=False)
     systemid:str = field(init=False)
     hvac_tolerance: int = 0
+
+    def set_hvacbrand(self, configstring: str) -> HvacBrand:
+        branddict = {
+            HVACBRAND_NIBE: HvacBrand.Nibe,
+            HVACBRAND_IVT: HvacBrand.IVT,
+            HVACBRAND_THERMIA: HvacBrand.Thermia
+        }
+        return branddict[configstring]
 
     def set_sensors_from_string(self, inputstr: str) -> list:
         input_list = inputstr.split(',')

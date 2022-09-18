@@ -18,17 +18,20 @@ class Average:
     @value.setter
     def value(self, val):
         try:
-            filteredlist = [i for i in self._values.values() if i != 0.0]
+            filteredlist = [i for i in val.values() if i != 0.0]
             ret = sum(filteredlist) / len(filteredlist)
             self._value = ret
+            _LOGGER.debug(f"values are: {val}")
         except:
-            self._value = val
+            self._value = 0
+            _LOGGER.debug("unable to set averagesensor")
 
     def update_values(self, entity, value):
         try:
             floatval = (float(value))
             if isinstance(floatval, float):
                 self._values[entity] = floatval
-                self.value = 0
+                self.value = self._values
         except:
+            _LOGGER.debug(f"unable to set average-val for {entity}: {value}")
             return

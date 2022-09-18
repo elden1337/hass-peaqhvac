@@ -2,6 +2,7 @@ import logging
 
 from custom_components.peaqhvac.service.hub.hubsensors import HubSensors
 from custom_components.peaqhvac.service.hub.state_changes import StateChanges
+from custom_components.peaqhvac.service.hvac.hvac import HvacFactory
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.core import (
@@ -21,7 +22,7 @@ class Hub:
         self._hass = hass
         self.sensors = HubSensors(hub_options, self._hass)
         self.states = StateChanges(self, self._hass)
-
+        self.hvac = HvacFactory.create(self._hass, self.options)
         self.trackerentities = [
             self.sensors.temp_trend_outdoors.entity,
             self.sensors.temp_trend_indoors.entity
@@ -37,13 +38,12 @@ class Hub:
         if entity_id is not None:
             try:
                 if old_state is None or old_state != new_state:
-                    await self.states.update_sensor(entity_id, new_state.state)
+                    await self.states.update_sensor_async(entity_id, new_state.state)
             except Exception as e:
-                msg = f"Unable to handle data: {entity_id} ({e}) {old_state}|{new_state}"
-                _LOGGER.error(msg)
+                _LOGGER.error(f"Unable to handle data: {entity_id} ({e}) {old_state}|{new_state}")
 
     async def call_enable_peaq(self):
-        self.sensors.peaqenabled.value = True
+        self.sensors.peaq_enabled.value = True
 
     async def call_disable_peaq(self):
-        self.sensors.peaqenabled.value = False
+        self.sensors.peaq_enabled.value = False
