@@ -21,7 +21,7 @@ class Average:
             filteredlist = [i for i in val.values() if i != 0.0]
             ret = sum(filteredlist) / len(filteredlist)
             self._value = ret
-            _LOGGER.debug(f"values are: {val}")
+            #_LOGGER.debug(f"values are: {val}")
         except:
             self._value = 0
             _LOGGER.debug("unable to set averagesensor")

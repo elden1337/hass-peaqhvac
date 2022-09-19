@@ -10,6 +10,7 @@ from homeassistant.core import (
 from .const import DOMAIN, TRENDSENSOR_INDOORS, TRENDSENSOR_OUTDOORS, AVERAGESENSOR_INDOORS, AVERAGESENSOR_OUTDOORS
 import custom_components.peaqhvac.extensionmethods as ex
 from .sensors.min_maxsensor import AverageSensor
+from .sensors.offsetsensor import OffsetSensor
 from .sensors.trendsensor import TrendSensor
 from .sensors.gradientsensor import GradientSensor
 
@@ -68,5 +69,7 @@ async def _gather_sensors(hub, config, hass) -> list:
 
     ret.append(TrendSensor(hub, config.entry_id, TRENDSENSOR_OUTDOORS))
     ret.append(TrendSensor(hub, config.entry_id, TRENDSENSOR_INDOORS))
+
+    ret.append(OffsetSensor(hub, config.entry_id, "calculated hvac offset"))
 
     return ret

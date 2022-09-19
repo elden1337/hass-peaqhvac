@@ -21,15 +21,8 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
 
     """
     needed in config:
-
     check for nordpool
     check for peaqev, otherwise ignore peak-management
-
-    list of indoor tempsensors
-    list of outdoor tempsensors
-
-    nibe-system-id? or even better, pick type first (to allow for more brands later)
-    nibe-model? or can that be derived or not necessary?
 
     weather? demand one integration or pick whichever?
     """
@@ -40,7 +33,7 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     huboptions.outdoor_tempsensors = huboptions.set_sensors_from_string(config.data["outdoor_tempsensors"])
     huboptions.hvac_tolerance = config.data["hvac_tolerance"]
     huboptions.systemid = config.data["systemid"]
-    huboptions.hvacbrand = huboptions.set_hvacbrand(HVACBRAND_NIBE)
+    huboptions.hvacbrand = huboptions.set_hvacbrand(HVACBRAND_NIBE) #todo:move to proper dropdown in configflow
     #configinputs["hvacbrand"] = config.data["hvacbrand"]
 
     hub = Hub(hass, huboptions)
