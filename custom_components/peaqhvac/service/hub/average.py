@@ -7,10 +7,21 @@ class Average:
         self.listenerentities = entities
         self._value: float = 0
         self._values = {}
-
+        self._initialized_values = 0
+        self._total_sensors = len(self.listenerentities)
+        self._initialized_sensors = {}
+        
         for i in self.listenerentities:
-            self._values[i] = 0.0
+            self._values[i] = 999.0
+            self._initialized_sensors[i] = False
 
+    @property
+    def initialized_percentage(self) -> float:
+        try:
+            return self._initialized_values / self._total_sensors
+        except:
+            return 0.0
+        
     @property
     def value(self) -> float:
         return self._value
@@ -18,10 +29,9 @@ class Average:
     @value.setter
     def value(self, val):
         try:
-            filteredlist = [i for i in val.values() if i != 0.0]
+            filteredlist = [i for i in val.values() if i != 999.0]
             ret = sum(filteredlist) / len(filteredlist)
             self._value = ret
-            #_LOGGER.debug(f"values are: {val}")
         except:
             self._value = 0
             _LOGGER.debug("unable to set averagesensor")
@@ -32,6 +42,9 @@ class Average:
             if isinstance(floatval, float):
                 self._values[entity] = floatval
                 self.value = self._values
+                if self._initialized_sensors[entity] == False:
+                    self._initialized_sensors[entity] = True
+                    self._initialized_values += 1
         except:
             _LOGGER.debug(f"unable to set average-val for {entity}: {value}")
             return
