@@ -31,7 +31,9 @@ class Average:
         try:
             filteredlist = [i for i in val.values() if i != 999.0]
             ret = sum(filteredlist) / len(filteredlist)
-            self._value = ret
+            if self.initialized_percentage > 0.2:
+                self._value = ret
+            self._value = 0
         except:
             self._value = 0
             _LOGGER.debug("unable to set averagesensor")
