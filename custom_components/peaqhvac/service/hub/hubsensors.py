@@ -1,16 +1,16 @@
 from peaqevcore.models.hub.hubmember import HubMember
 from custom_components.peaqhvac.service.hub.average import Average
-from custom_components.peaqhvac.service.hub.trend import Trend
+from custom_components.peaqhvac.service.hub.trend import Gradient
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.models.demand import Demand
 
 
 class HubSensors:
     peaq_enabled: HubMember
-    temp_trend_outdoors: Trend
-    temp_trend_indoors: Trend
+    temp_trend_outdoors: Gradient
+    temp_trend_indoors: Gradient
     #prognosis: str
-    #set_temp_indoors: float #input-numbersensor
+    set_temp_indoors: float #input-numbersensor
     average_temp_indoors: Average
     average_temp_outdoors: Average
     hvac_tolerance: int
@@ -22,7 +22,8 @@ class HubSensors:
         self.hvac_tolerance = options.hvac_tolerance
         self.average_temp_indoors = Average(entities=options.indoor_tempsensors)
         self.average_temp_outdoors = Average(entities=options.outdoor_tempsensors)
-        self.temp_trend_indoors = Trend(entity="sensor.peaqhvac_temperature_rising_indoors", hass=hass)
-        self.temp_trend_outdoors = Trend(entity="sensor.peaqhvac_temperature_rising_outdoors", hass=hass)
+        self.temp_trend_indoors = Gradient(max_samples=len(options.indoor_tempsensors)*5, max_age=7200)
+        self.temp_trend_outdoors = Gradient(max_samples=len(options.outdoor_tempsensors)*5, max_age=7200)
         self.water_heater_demand = Demand.NoDemand
         self.hvac_demand = Demand.HighDemand
+        self.set_temp_indoors = 20 #todo: fix this to input number

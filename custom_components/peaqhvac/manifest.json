@@ -5,7 +5,7 @@
     "documentation": "https://github.com/elden1337/hass-peaqhvac",
     "issue_tracker": "https://github.com/elden1337/hass-peaqhvac/issues",
     "requirements": [
-      "peaqevcore==5.18.3"
+      "peaqevcore==5.18.4"
     ],
     "codeowners": [
       "@elden1337"

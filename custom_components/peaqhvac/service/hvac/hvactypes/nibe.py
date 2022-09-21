@@ -2,6 +2,7 @@ import logging
 
 from custom_components.peaqhvac.service.hvac.ihvac import IHvac
 from custom_components.peaqhvac.service.models.hvacoperations import HvacOperations
+from custom_components.peaqhvac.service.models.sensortypes import SensorType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -13,6 +14,17 @@ class Nibe(IHvac):
         HvacOperations.VentBoost: "HotWaterBoost",
         HvacOperations.WaterBoost: "VentilationBoost"
     }
+
+    """
+    make function that returns nodemand for heating if degree-minutes are > 0
+    degree minutes: sensor.nibe_{systemid}_43005
+    """
+
+    def get_sensor(self, sensor: SensorType) -> str:
+        types = {
+            SensorType.DegreeMinutes: f"sensor.nibe_{self._hub.options.systemid}_43005"
+        }
+        return types[sensor]
 
     @property
     def hvac_offset(self) -> int:
@@ -27,17 +39,27 @@ class Nibe(IHvac):
         return 0
 
     async def update_system(self, operation: HvacOperations):
-        _LOGGER.debug("Requesting to update hvac-offset")
-        _value = self.current_offset if operation is HvacOperations.Offset else 1 # todo: fix this later. must be more fluid.
-        params = {
-            "system": int(self._hub.options.systemid),
-            "parameter": self.calltypes[operation],
-            "value": _value
-        }
+        if self._hub.sensors.peaq_enabled.value is True:
+            _LOGGER.debug("Requesting to update hvac-offset")
+            _value = self.current_offset if operation is HvacOperations.Offset else 1 # todo: fix this later. must be more fluid.
+            match operation:
+                case HvacOperations.Offset:
+                    _value = await self._set_offset_value(_value)
+                case _:
+                    pass
+            params = {
+                "system": int(self._hub.options.systemid),
+                "parameter": self.calltypes[operation],
+                "value": _value
+            }
+            await self._hass.services.async_call(
+                self.domain,
+                "set_parameter",
+                params
+            )
 
-        await self._hass.services.async_call(
-            self.domain,
-            "set_parameter",
-            params
-        )
-        _LOGGER.debug(f"Calling hvac-system with {operation} and {_value}")
+    async def _set_offset_value(self, val: int):
+        if abs(val) <= 10:
+            return val
+        return 10 if val > 10 else -10
+

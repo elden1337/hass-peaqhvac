@@ -10,15 +10,24 @@ class Offset:
     def getoffset(
             tolerance: int,
             prices: list,
-            prices_tomorrow: list,
-            hour: int = datetime.now().hour
-    ) -> int:
+            prices_tomorrow: list
+    ) -> dict:
         try:
-            current_hour = prices[hour]
-            adjustment = ((current_hour / Offset._getaverage(prices, prices_tomorrow)) - 1) * -1 * tolerance
-            return int(min(adjustment, tolerance) if adjustment > 0 else max(adjustment, tolerance * -1))
+            ret = {}
+            for hour in range(0,24):
+                current_hour = prices[hour]
+                adjustment = ((current_hour / Offset._getaverage(prices, prices_tomorrow)) - 1) * -1 * tolerance
+                ret[hour] = Offset.adjust_to_threshold(adjustment=adjustment, tolerance=tolerance)
+            return ret
         except:
-            return 0
+            return {}
+
+    @staticmethod
+    def adjust_to_threshold(
+            adjustment: int,
+            tolerance: int
+    ) -> int:
+        return int(min(adjustment, tolerance) if adjustment > 0 else max(adjustment, tolerance * -1))
 
     @staticmethod
     def _getaverage(prices: list, prices_tomorrow: list = None) -> float:

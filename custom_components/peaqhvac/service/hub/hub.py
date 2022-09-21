@@ -25,10 +25,7 @@ class Hub:
         self.states = StateChanges(self, self._hass)
         self.hvac = HvacFactory.create(self._hass, self.options, self)
         self.nordpool = NordPoolUpdater(self._hass, self)
-        self.trackerentities = [
-            self.sensors.temp_trend_outdoors.entity,
-            self.sensors.temp_trend_indoors.entity
-        ]
+        self.trackerentities = []
         self.trackerentities.append(self.nordpool.nordpool_entity)
         self.trackerentities.extend(self.options.indoor_tempsensors)
         self.trackerentities.extend(self.options.outdoor_tempsensors)
