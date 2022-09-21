@@ -5,6 +5,7 @@ _LOGGER = logging.getLogger(__name__)
 
 UPDATE_TIMER = 30
 
+from datetime import datetime
 import time
 
 class Gradient:
@@ -16,6 +17,25 @@ class Gradient:
     @property
     def gradient(self):
         return round(self._gradient,3)
+
+    @property
+    def samples(self) -> int:
+        return len(self._t)
+
+    @property
+    def oldest_sample(self) -> datetime:
+        if len(self._t) > 0:
+            return self._dt_from_epoch(self._t[0][0])
+        return datetime.min()
+
+    @property
+    def newest_sample(self) -> datetime:
+        if len(self._t) > 0:
+            return self._dt_from_epoch(self._t[-1][0])
+        return datetime.min()
+
+    def _dt_from_epoch(self, epoch:int) -> datetime:
+        return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch))
 
     def set_gradient(self):
         self.remove_from_list()
@@ -40,12 +60,16 @@ class Gradient:
         gen = (x for x in self._t if time.time() - int(x[0]) > self._max_age)
         for i in gen:
             self._t.remove(i)
+            
 
 #g = Gradient()
 #g.add_to_list(22.5,1663754400)
 #g.add_to_list(21.5, 1663758000)
 #g.add_to_list(23.5, 1663765740)
 #print(g.gradient)
+
+#print(g.oldest_sample)
+#print(g.newest_sample)
 
 #https://www.epochconverter.com/
 
