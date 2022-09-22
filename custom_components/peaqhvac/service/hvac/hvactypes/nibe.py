@@ -39,12 +39,15 @@ class Nibe(IHvac):
         return 0
 
     async def update_system(self, operation: HvacOperations):
+        _should_call = False
+        
         if self._hub.sensors.peaq_enabled.value is True:
             _LOGGER.debug("Requesting to update hvac-offset")
             _value = self.current_offset if operation is HvacOperations.Offset else 1 # todo: fix this later. must be more fluid.
             match operation:
                 case HvacOperations.Offset:
                     _value = await self._set_offset_value(_value)
+                    _should_call = self._hub.sensors.average_temp_outdoors.initialized_percentage > 0.5
                 case _:
                     pass
             params = {
@@ -52,11 +55,12 @@ class Nibe(IHvac):
                 "parameter": self.calltypes[operation],
                 "value": _value
             }
-            await self._hass.services.async_call(
-                self.domain,
-                "set_parameter",
-                params
-            )
+            if _should_call:
+                await self._hass.services.async_call(
+                    self.domain,
+                    "set_parameter",
+                    params
+                )
 
     async def _set_offset_value(self, val: int):
         if abs(val) <= 10:
