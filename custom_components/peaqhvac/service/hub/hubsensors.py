@@ -22,8 +22,8 @@ class HubSensors:
         self.hvac_tolerance = options.hvac_tolerance
         self.average_temp_indoors = Average(entities=options.indoor_tempsensors)
         self.average_temp_outdoors = Average(entities=options.outdoor_tempsensors)
-        self.temp_trend_indoors = Gradient(max_samples=len(options.indoor_tempsensors)*5, max_age=7200)
-        self.temp_trend_outdoors = Gradient(max_samples=len(options.outdoor_tempsensors)*5, max_age=7200)
+        self.temp_trend_indoors = Gradient(max_samples=20, max_age=7200)
+        self.temp_trend_outdoors = Gradient(max_samples=20, max_age=7200)
         self.water_heater_demand = Demand.NoDemand
         self.hvac_demand = Demand.HighDemand
         self.set_temp_indoors = 20 #todo: fix this to input number

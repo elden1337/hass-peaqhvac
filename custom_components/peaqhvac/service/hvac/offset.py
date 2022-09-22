@@ -1,4 +1,3 @@
-from datetime import datetime
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -11,23 +10,34 @@ class Offset:
             tolerance: int,
             prices: list,
             prices_tomorrow: list
-    ) -> dict:
+    ) -> (dict,dict):
         try:
-            ret = {}
-            for hour in range(0,24):
-                current_hour = prices[hour]
-                adjustment = ((current_hour / Offset._getaverage(prices, prices_tomorrow)) - 1) * -1 * tolerance
-                ret[hour] = Offset.adjust_to_threshold(adjustment=adjustment, tolerance=tolerance)
-            return ret
+            today = Offset._get_offset_per_day(tolerance, prices, prices_tomorrow)
+            tomorrow = Offset._get_offset_per_day(tolerance, prices, prices_tomorrow, is_tomorrow=True)
+            return today, tomorrow
         except:
-            return {}
+            return {},{}
+
+    @staticmethod
+    def _get_offset_per_day(
+            tolerance: int,
+            prices: list,
+            prices_tomorrow: list,
+            is_tomorrow: bool = False
+    ):
+        ret = {}
+        for hour in range(0, 24):
+            current_hour = prices[hour] if not is_tomorrow else prices_tomorrow[hour]
+            adjustment = ((current_hour / Offset._getaverage(prices, prices_tomorrow)) - 1) * -1 * tolerance
+            ret[hour] = Offset.adjust_to_threshold(adjustment=adjustment, tolerance=tolerance)
+        return ret
 
     @staticmethod
     def adjust_to_threshold(
             adjustment: int,
             tolerance: int
     ) -> int:
-        return int(min(adjustment, tolerance) if adjustment > 0 else max(adjustment, tolerance * -1))
+        return int(round(min(adjustment, tolerance) if adjustment > 0 else max(adjustment, tolerance * -1),0))
 
     @staticmethod
     def _getaverage(prices: list, prices_tomorrow: list = None) -> float:

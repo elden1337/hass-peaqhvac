@@ -22,7 +22,8 @@ class Nibe(IHvac):
 
     def get_sensor(self, sensor: SensorType) -> str:
         types = {
-            SensorType.DegreeMinutes: f"sensor.nibe_{self._hub.options.systemid}_43005"
+            SensorType.DegreeMinutes: f"sensor.nibe_{self._hub.options.systemid}_43005",
+            SensorType.WaterTemp: f"states.water_heater.nibe_{self._hub.options.systemid}_40014_47387|current_temperature"
         }
         return types[sensor]
 

@@ -5,6 +5,8 @@ from custom_components.peaqhvac.service.hvac.offset import Offset
 from homeassistant.core import (
     HomeAssistant
 )
+
+from custom_components.peaqhvac.service.models.demand import Demand
 from custom_components.peaqhvac.service.models.hvacoperations import HvacOperations
 from custom_components.peaqhvac.service.models.sensortypes import SensorType
 
@@ -14,6 +16,9 @@ _LOGGER = logging.getLogger(__name__)
 class IHvac:
     current_offset: int = 0
     current_offset_dict: dict = {}
+    current_offset_dict_tomorrow: dict = {}
+    heating_demand: Demand = Demand.NoDemand
+    water_demand: Demand = Demand.NoDemand
 
     def __init__(self, hass: HomeAssistant, hub):
         self._hub = hub
@@ -25,13 +30,13 @@ class IHvac:
             self._hub.nordpool.prices,
             self._hub.nordpool.prices_tomorrow
         )
-        self.current_offset_dict = ret
+        self.current_offset_dict = ret[0]
+        self.current_offset_dict_tomorrow = ret[1]
         _hvac_offset = self.hvac_offset
-        new_offset = self._get_current_offset(ret)
+        new_offset = self._get_current_offset(ret[0])
         if new_offset != self.current_offset:
             self.current_offset = new_offset
         if self.current_offset != _hvac_offset:
-            _LOGGER.debug(f"desired offset: {ret}. current offset: {self.current_offset}. Hvac offset: {_hvac_offset}")
             return True
         return False
 

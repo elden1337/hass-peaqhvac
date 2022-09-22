@@ -3,8 +3,6 @@ import time
 
 _LOGGER = logging.getLogger(__name__)
 
-UPDATE_TIMER = 120
-
 from datetime import datetime
 import time
 
@@ -18,8 +16,7 @@ class Gradient:
 
     @property
     def gradient(self) -> float:
-        if time.time() - self._latest_update > UPDATE_TIMER and len(self._temp_readings) > 0:
-            self.add_reading(val=self._temp_readings[-1][1], t=time.time())
+        self.set_gradient()
         return round(self._gradient,2)
 
     @property
@@ -44,20 +41,15 @@ class Gradient:
     def set_gradient(self):
         self._remove_from_list()
         temps = self._temp_readings
-        samples = len(temps)-1
-        if samples > 0:
-            x1 = temps[0][0]
-            x2 = temps[samples][0]
-            y1 = temps[0][1]
-            y2 = temps[samples][1]
+        if len(temps)-1 > 0:
             try:
-                x = (y2 - y1) / ((x2 - x1)/3600)
+                x = (temps[-1][1] - temps[0][1]) / ((time.time() - temps[0][0])/3600)
                 self._gradient = x
             except ZeroDivisionError as e:
                 _LOGGER.warning({e})
                 self._gradient = 0
 
-    def add_reading(self, val:float, t:int):
+    def add_reading(self, val:float, t:float):
         self._temp_readings.append((t, val))
         self._latest_update = time.time()
         self._remove_from_list()
