@@ -3,7 +3,7 @@ import time
 
 _LOGGER = logging.getLogger(__name__)
 
-UPDATE_TIMER = 30
+UPDATE_TIMER = 300
 
 from datetime import datetime
 import time
@@ -14,10 +14,13 @@ class Gradient:
         self._gradient = 0
         self._max_age = max_age
         self._max_samples = max_samples
+        self._latest_update = 0
 
     @property
     def gradient(self) -> float:
-        return round(self._gradient,5)
+        if time.time() - self._latest_update > UPDATE_TIMER and len(self._temp_readings > 0):
+            self.add_reading(val=self._temp_readings[0][1], t=time.time())
+        return round(self._gradient,2)
 
     @property
     def samples(self) -> int:
@@ -56,6 +59,7 @@ class Gradient:
 
     def add_reading(self, val:float, t:int):
         self._temp_readings.append((t, val))
+        self._latest_update = time.time()
         self._remove_from_list()
         self.set_gradient()
 
@@ -65,5 +69,3 @@ class Gradient:
         gen = (x for x in self._temp_readings if time.time() - int(x[0]) > self._max_age)
         for i in gen:
             self._temp_readings.remove(i)
-
-
