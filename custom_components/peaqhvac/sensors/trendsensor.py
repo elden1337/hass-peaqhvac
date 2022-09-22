@@ -1,7 +1,6 @@
 
 from custom_components.peaqhvac.sensors.sensorbase import SensorBase
 from custom_components.peaqhvac.const import DOMAIN, TRENDSENSOR_INDOORS, TRENDSENSOR_OUTDOORS
-#from homeassistant.helpers.restore_state import RestoreEntity
 
 class TrendSensor(SensorBase):
     def __init__(self, hub, entry_id, name):
@@ -48,20 +47,3 @@ class TrendSensor(SensorBase):
             self._samples = self._hub.sensors.temp_trend_outdoors.samples
             self._oldest_sample = self._hub.sensors.temp_trend_outdoors.oldest_sample
             self._newest_sample = self._hub.sensors.temp_trend_outdoors.newest_sample
-
-    # async def async_added_to_hass(self):
-    #     state = await super().async_get_last_state()
-    #     if state:
-    #         self._state = state.state
-    #     else:
-    #         self._state = 0
-
-"""
- entity_id: sensor.medeltemp_hemma
- sample_duration: 7200
- max_samples: 120
- min_gradient: 0.0008
- device_class: heat
-"""
-
-
