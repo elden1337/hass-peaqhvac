@@ -3,7 +3,7 @@ import time
 
 _LOGGER = logging.getLogger(__name__)
 
-UPDATE_TIMER = 300
+UPDATE_TIMER = 120
 
 from datetime import datetime
 import time
@@ -18,7 +18,7 @@ class Gradient:
 
     @property
     def gradient(self) -> float:
-        if time.time() - self._latest_update > UPDATE_TIMER and len(self._temp_readings > 0):
+        if time.time() - self._latest_update > UPDATE_TIMER and len(self._temp_readings) > 0:
             self.add_reading(val=self._temp_readings[0][1], t=time.time())
         return round(self._gradient,2)
 
