@@ -7,9 +7,10 @@ from homeassistant.core import (
     HomeAssistant,
 )
 
-from .const import DOMAIN, TRENDSENSOR_INDOORS, TRENDSENSOR_OUTDOORS, AVERAGESENSOR_INDOORS, AVERAGESENSOR_OUTDOORS
+from .const import DOMAIN, TRENDSENSOR_INDOORS, TRENDSENSOR_OUTDOORS, AVERAGESENSOR_INDOORS, AVERAGESENSOR_OUTDOORS, DEMANDSENSORS
 from .sensors.min_maxsensor import AverageSensor
 from .sensors.offsetsensor import OffsetSensor
+from .sensors.peaqsensor import PeaqSensor
 from .sensors.trendsensor import TrendSensor
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,8 +27,6 @@ async def async_setup_entry(hass : HomeAssistant, config: ConfigEntry, async_add
 async def _gather_sensors(hub, config, hass) -> list:
     ret = []
 
-    #waterheatersensor
-    #hvacsensor
     #temperature input_numbersensor
     # tolerance (-5 - 5) input_numbersensor
 
@@ -46,5 +45,8 @@ async def _gather_sensors(hub, config, hass) -> list:
     ret.append(TrendSensor(hub, config.entry_id, TRENDSENSOR_INDOORS))
 
     ret.append(OffsetSensor(hub, config.entry_id, "calculated hvac offset"))
+
+    for key in DEMANDSENSORS:
+        ret.append(PeaqSensor(hub, config.entry_id, key, DEMANDSENSORS[key]))
 
     return ret

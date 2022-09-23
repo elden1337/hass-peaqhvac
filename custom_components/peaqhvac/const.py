@@ -9,6 +9,13 @@ TRENDSENSOR_OUTDOORS = "Temperature trend outdoors"
 
 AVERAGESENSOR_INDOORS = "Average temperature indoors"
 AVERAGESENSOR_OUTDOORS = "Average temperature outdoors"
+WATERDEMAND = "Water demand"
+HEATINGDEMAND = "Heating demand"
+
+DEMANDSENSORS = {
+    WATERDEMAND: "mdi:water-boiler",
+    HEATINGDEMAND: "mdi:heat-pump"
+}
 
 HVACBRAND_NIBE = "Nibe"
 HVACBRAND_IVT = "IVT"

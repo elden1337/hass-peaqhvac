@@ -12,7 +12,6 @@ from custom_components.peaqhvac.service.models.sensortypes import SensorType
 
 _LOGGER = logging.getLogger(__name__)
 
-
 class IHvac:
     current_offset: int = 0
     current_offset_dict: dict = {}
@@ -54,6 +53,16 @@ class IHvac:
     @property
     @abstractmethod
     def hvac_offset(self) -> int:
+        pass
+
+    @property
+    @abstractmethod
+    def hvac_dm(self) -> int:
+        pass
+
+    @property
+    @abstractmethod
+    def hvac_watertemp(self) -> float:
         pass
 
     @abstractmethod

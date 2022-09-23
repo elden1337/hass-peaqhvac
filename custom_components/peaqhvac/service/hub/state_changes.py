@@ -30,9 +30,6 @@ class StateChanges:
             self._hub.nordpool.update_nordpool()
             self._hub.hvac.get_offset()
 
-        """always update the trend-sensors to get gradient"""
-        #self._hub.sensors.temp_trend_indoors.value = value
-        #self._hub.sensors.temp_trend_outdoors.value = value
 
     async def update_sensor_async(self, entity, value):
         if entity in self._hub.options.indoor_tempsensors:
@@ -47,7 +44,3 @@ class StateChanges:
             self.latest_nordpool_update = time.time()
             if self._hub.hvac.get_offset():
                 await self._hub.hvac.update_system(HvacOperations.Offset)
-
-        """always update the trend-sensors to get gradient"""
-        #self._hub.sensors.temp_trend_indoors.value = value
-        #self._hub.sensors.temp_trend_outdoors.value = value

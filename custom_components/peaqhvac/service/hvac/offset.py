@@ -10,13 +10,13 @@ class Offset:
             tolerance: int,
             prices: list,
             prices_tomorrow: list
-    ) -> (dict,dict):
+    ) -> (dict, dict):
         try:
             today = Offset._get_offset_per_day(tolerance, prices, prices_tomorrow)
             tomorrow = Offset._get_offset_per_day(tolerance, prices, prices_tomorrow, is_tomorrow=True)
             return today, tomorrow
         except:
-            return {},{}
+            return {}, {}
 
     @staticmethod
     def _get_offset_per_day(
@@ -26,10 +26,13 @@ class Offset:
             is_tomorrow: bool = False
     ):
         ret = {}
-        for hour in range(0, 24):
-            current_hour = prices[hour] if not is_tomorrow else prices_tomorrow[hour]
-            adjustment = ((current_hour / Offset._getaverage(prices, prices_tomorrow)) - 1) * -1 * tolerance
-            ret[hour] = Offset.adjust_to_threshold(adjustment=adjustment, tolerance=tolerance)
+        try:
+            for hour in range(0, 24):
+                current_hour = prices[hour] if not is_tomorrow else prices_tomorrow[hour]
+                adjustment = ((current_hour / Offset._getaverage(prices, prices_tomorrow)) - 1) * -1 * tolerance
+                ret[hour] = Offset.adjust_to_threshold(adjustment=adjustment, tolerance=tolerance)
+        except:
+            pass
         return ret
 
     @staticmethod
@@ -37,7 +40,7 @@ class Offset:
             adjustment: int,
             tolerance: int
     ) -> int:
-        return int(round(min(adjustment, tolerance) if adjustment > 0 else max(adjustment, tolerance * -1),0))
+        return int(round(min(adjustment, tolerance) if adjustment > 0 else max(adjustment, tolerance * -1), 0))
 
     @staticmethod
     def _getaverage(prices: list, prices_tomorrow: list = None) -> float:
@@ -53,13 +56,13 @@ class Offset:
 
     @staticmethod
     def _sanitize_pricelists(inputlist) -> list:
-        if len(inputlist) < 24:
+        if inputlist is None or len(inputlist) < 24:
             return []
         for i in inputlist:
-            if not isinstance(i, float|int):
+            if not isinstance(i, float | int):
                 return []
         return inputlist
 
-    #def calc with trend temp
-    #def calc with prognosis
-    #def calc with current outside vs set temp
+    # def calc with trend temp
+    # def calc with prognosis
+    # def calc with current outside vs set temp

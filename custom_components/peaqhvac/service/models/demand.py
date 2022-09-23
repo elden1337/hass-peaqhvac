@@ -1,7 +1,7 @@
 from enum import Enum
 
 class Demand(Enum):
-    NoDemand = 0
-    LowDemand = 1
-    MediumDemand = 2
-    HighDemand = 3
+    NoDemand = 'No demand'
+    LowDemand = 'Low demand'
+    MediumDemand = 'Medium demand'
+    HighDemand = 'High demand'
