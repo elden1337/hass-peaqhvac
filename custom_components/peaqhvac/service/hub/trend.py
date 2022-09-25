@@ -43,7 +43,7 @@ class Gradient:
         temps = self._temp_readings
         if len(temps)-1 > 0:
             try:
-                x = (temps[-1][1] - temps[0][1]) / ((time.time() - temps[0][0])/3600)
+                x = (temps[-1][1] - temps[0][1]) / ((temps[-1][0] - temps[0][0])/3600)
                 self._gradient = x
             except ZeroDivisionError as e:
                 _LOGGER.warning({e})

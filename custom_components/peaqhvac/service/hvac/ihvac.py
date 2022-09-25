@@ -1,12 +1,14 @@
 from abc import abstractmethod
 import logging
 from datetime import datetime
+
+from custom_components.peaqhvac.service.hvac.house_heater import HouseHeater
 from custom_components.peaqhvac.service.hvac.offset import Offset
 from homeassistant.core import (
     HomeAssistant
 )
 
-from custom_components.peaqhvac.service.models.demand import Demand
+from custom_components.peaqhvac.service.hvac.water_heater import WaterHeater
 from custom_components.peaqhvac.service.models.hvacoperations import HvacOperations
 from custom_components.peaqhvac.service.models.sensortypes import SensorType
 
@@ -16,11 +18,11 @@ class IHvac:
     current_offset: int = 0
     current_offset_dict: dict = {}
     current_offset_dict_tomorrow: dict = {}
-    heating_demand: Demand = Demand.NoDemand
-    water_demand: Demand = Demand.NoDemand
 
     def __init__(self, hass: HomeAssistant, hub):
         self._hub = hub
+        self.house_heater = HouseHeater(hvac=self)
+        self.water_heater = WaterHeater(hvac=self)
         self._hass = hass
 
     def get_offset(self) -> bool:
@@ -46,8 +48,32 @@ class IHvac:
     def _get_tempdiff(self) -> int:
         return int((self._hub.sensors.average_temp_indoors.value - self._hub.sensors.set_temp_indoors)/2)
 
+    def _handle_sensor(self, sensor:str):
+        sensorobj = sensor.split('|')
+        if len(sensorobj) == 1:
+            return self._handle_sensor_basic(sensor)
+        elif len(sensorobj) == 2:
+            return self._handle_sensor_attribute(sensorobj)
+        raise ValueError
+
+    def _handle_sensor_basic(self, sensor:str):
+        ret = self._hass.states.get(sensor)
+        if ret is not None:
+            return ret.state
+        return None
+
+    def _handle_sensor_attribute(self, sensorobj):
+        ret = self._hass.states.get(sensorobj[0])
+        if ret is not None:
+            try:
+                ret_attr = ret.attributes.get(sensorobj[1])
+                return ret_attr
+            except Exception as e:
+                _LOGGER.exception(e)
+        return 0
+
     @abstractmethod
-    def get_sensor(self, sensor: SensorType) -> str:
+    def get_sensor(self, sensor: SensorType = None) -> str|list:
         pass
 
     @property

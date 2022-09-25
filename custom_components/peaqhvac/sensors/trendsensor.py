@@ -3,9 +3,10 @@ from custom_components.peaqhvac.sensors.sensorbase import SensorBase
 from custom_components.peaqhvac.const import DOMAIN, TRENDSENSOR_INDOORS, TRENDSENSOR_OUTDOORS
 
 class TrendSensor(SensorBase):
-    def __init__(self, hub, entry_id, name):
+    def __init__(self, hub, entry_id, name, icon):
         self._sensorname = name
         self._attr_name = f"{hub.hubname} {name}"
+        self._icon = icon
         self._attr_unit_of_measurement = '°C/h'
         super().__init__(hub, self._attr_name, entry_id)
         self._state = 0
@@ -24,9 +25,7 @@ class TrendSensor(SensorBase):
 
     @property
     def icon(self) -> str:
-        if self._sensorname == TRENDSENSOR_INDOORS:
-            return "mdi:home-thermometer"
-        return "mdi:sun-thermometer"
+        return self._icon
 
     @property
     def extra_state_attributes(self) -> dict:

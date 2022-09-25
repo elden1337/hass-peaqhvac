@@ -29,6 +29,7 @@ class Hub:
         self.trackerentities.append(self.nordpool.nordpool_entity)
         self.trackerentities.extend(self.options.indoor_tempsensors)
         self.trackerentities.extend(self.options.outdoor_tempsensors)
+        self.trackerentities.extend(self.hvac.get_sensor())
         self.states.initialize_values()
 
         async_track_state_change(hass, self.trackerentities, self.state_changed)

@@ -30,7 +30,6 @@ class StateChanges:
             self._hub.nordpool.update_nordpool()
             self._hub.hvac.get_offset()
 
-
     async def update_sensor_async(self, entity, value):
         if entity in self._hub.options.indoor_tempsensors:
             self._hub.sensors.average_temp_indoors.update_values(entity=entity, value=value)
@@ -44,3 +43,5 @@ class StateChanges:
             self.latest_nordpool_update = time.time()
             if self._hub.hvac.get_offset():
                 await self._hub.hvac.update_system(HvacOperations.Offset)
+
+        self._hub.hvac.house_heater.update_demand()

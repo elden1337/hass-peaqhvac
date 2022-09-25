@@ -12,6 +12,16 @@ AVERAGESENSOR_OUTDOORS = "Average temperature outdoors"
 WATERDEMAND = "Water demand"
 HEATINGDEMAND = "Heating demand"
 
+AVERAGESENSORS = [
+    AVERAGESENSOR_INDOORS,
+    AVERAGESENSOR_OUTDOORS
+]
+
+TRENDSENSORS = {
+    TRENDSENSOR_INDOORS: "mdi:home-thermometer",
+    TRENDSENSOR_OUTDOORS: "mdi:sun-thermometer"
+}
+
 DEMANDSENSORS = {
     WATERDEMAND: "mdi:water-boiler",
     HEATINGDEMAND: "mdi:heat-pump"
