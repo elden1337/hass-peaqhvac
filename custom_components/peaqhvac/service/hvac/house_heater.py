@@ -25,17 +25,16 @@ class HouseHeater(IHeater):
 
     def _get_dm_demand(self, dm:int) -> Demand:
         match dm:
-            case _ if dm > 0:
+            case _ if dm >= 0:
                 return Demand.NoDemand
-            case _ if 0 < dm < 100:
+            case _ if dm > -100:
                 return Demand.LowDemand
-            case _ if 100 < dm < 500:
+            case _ if dm > -500:
                 return Demand.MediumDemand
-            case _ if dm < 500:
+            case _ if dm < -500:
                 return Demand.HighDemand
             case _:
                 _LOGGER.warn(f"Could not get DM from hvac-system. Setting {Demand.NoDemand.name} for heating.")
                 return Demand.NoDemand
 
     # def compare to water demand
-

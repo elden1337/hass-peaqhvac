@@ -40,7 +40,7 @@ class Nibe(IHvac):
         sensor = self.get_sensor(SensorType.DegreeMinutes)
         ret = self._handle_sensor(sensor)
         if ret is not None:
-            return int(ret)
+            return int(float(ret))
         return 0
 
     @property

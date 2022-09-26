@@ -29,7 +29,7 @@ class Hub:
         self.trackerentities.append(self.nordpool.nordpool_entity)
         self.trackerentities.extend(self.options.indoor_tempsensors)
         self.trackerentities.extend(self.options.outdoor_tempsensors)
-        self.trackerentities.extend(self.hvac.get_sensor())
+        #self.trackerentities.extend(self.hvac.get_sensor())
         self.states.initialize_values()
 
         async_track_state_change(hass, self.trackerentities, self.state_changed)
@@ -41,7 +41,7 @@ class Hub:
                 if old_state is None or old_state != new_state:
                     await self.states.update_sensor_async(entity_id, new_state.state)
             except Exception as e:
-                _LOGGER.error(f"Unable to handle data: {entity_id} ({e}) {old_state}|{new_state}")
+                _LOGGER.exception(f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}")
 
     async def call_enable_peaq(self):
         self.sensors.peaq_enabled.value = True
