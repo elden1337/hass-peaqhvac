@@ -11,6 +11,7 @@ class HouseHeater(IHeater):
         self._degree_minutes = 0
         self._latest_update = 0
         self._hvac = hvac
+        self._dm_compressor_start = hvac.compressor_start
         super().__init__(hvac=hvac)
 
     @IHeater.demand.setter
