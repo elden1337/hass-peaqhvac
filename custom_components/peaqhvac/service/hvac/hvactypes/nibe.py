@@ -1,6 +1,7 @@
 import logging
 
 from custom_components.peaqhvac.service.hvac.ihvac import IHvac
+from custom_components.peaqhvac.service.models.hvacmode import HvacMode
 from custom_components.peaqhvac.service.models.hvacoperations import HvacOperations
 from custom_components.peaqhvac.service.models.sensortypes import SensorType
 
@@ -11,11 +12,14 @@ class Nibe(IHvac):
     domain = "Nibe"
     listenerentities = []
 
-    def get_sensor(self, getsensor: SensorType = None) -> str|list:
+    def get_sensor(self, getsensor: SensorType = None):
         types = {
+            SensorType.HvacMode: f"climate.nibe_{self._hub.options.systemid}_s1_supply|hvac_action",
             SensorType.Offset: f"climate.nibe_{self._hub.options.systemid}_s1_supply|offset_heat",
             SensorType.DegreeMinutes: f"sensor.nibe_{self._hub.options.systemid}_43005",
-            SensorType.WaterTemp: f"states.water_heater.nibe_{self._hub.options.systemid}_40014_47387|current_temperature"
+            SensorType.WaterTemp: f"water_heater.nibe_{self._hub.options.systemid}_40014_47387|current_temperature",
+            SensorType.ElectricalAddition: f"sensor.nibe_{self._hub.options.systemid}_43084",
+            SensorType.CompressorFrequency: f"sensor.nibe_{self._hub.options.systemid}_43136"
         }
         return types[getsensor] if getsensor is not None else self._get_sensors_for_callback(types)
 
@@ -50,6 +54,18 @@ class Nibe(IHvac):
         if ret is not None:
             return float(ret)
         return 0.0
+
+    @property
+    def hvac_mode(self) -> HvacMode:
+        sensor = self.get_sensor(SensorType.HvacMode)
+        ret = self._handle_sensor(sensor)
+        if ret is not None:
+            if ret == "heating":
+                return HvacMode.Heat
+            elif ret == "idle":
+                return HvacMode.Idle
+        return HvacMode.Unknown
+
 
     _servicecall_types = {
         HvacOperations.Offset:     47011,

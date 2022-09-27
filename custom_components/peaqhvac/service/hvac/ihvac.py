@@ -42,11 +42,11 @@ class IHvac:
         return False
 
     def _get_current_offset(self, offsets:dict) -> int:
-        desired_offset = offsets[datetime.now().hour] - self._get_tempdiff()
+        desired_offset = offsets[datetime.now().hour] - int(self._get_tempdiff()/2)
         return Offset.adjust_to_threshold(desired_offset, self._hub.options.hvac_tolerance)
 
-    def _get_tempdiff(self) -> int:
-        return int((self._hub.sensors.average_temp_indoors.value - self._hub.sensors.set_temp_indoors)/2)
+    def _get_tempdiff(self) -> float:
+        return self._hub.sensors.average_temp_indoors.value - self._hub.sensors.set_temp_indoors
 
     def _handle_sensor(self, sensor:str):
         sensorobj = sensor.split('|')
@@ -73,7 +73,7 @@ class IHvac:
         return 0
 
     @abstractmethod
-    def get_sensor(self, sensor: SensorType = None) -> str|list:
+    def get_sensor(self, sensor: SensorType = None):
         pass
 
     @property
