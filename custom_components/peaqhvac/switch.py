@@ -9,13 +9,20 @@ from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=4)
 
+ENABLED = "enabled"
+AWAYMODE = "away mode"
+
 async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entities): # pylint:disable=unused-argument
     hub = hass.data[DOMAIN]["hub"]
 
     switches = [
         {
-            "name": "enabled",
+            "name": ENABLED,
             "entity": "_enabled"
+        },
+        {
+            "name": AWAYMODE,
+            "entity": "_away_mode"
         }
     ]
 
@@ -41,7 +48,10 @@ class PeaqSwitch(SwitchEntity):
 
     @property
     def is_on(self) -> bool:
-        return self._hub.sensors.peaq_enabled.value
+        if self._switch['name'] == ENABLED:
+            return self._hub.sensors.peaq_enabled.value
+        elif self._switch['name'] == AWAYMODE:
+            return self._hub.sensors.away_mode.value
 
     @property
     def state(self) -> str:
@@ -52,11 +62,21 @@ class PeaqSwitch(SwitchEntity):
         self._state = value
 
     def turn_on(self):
-        self._hub.sensors.peaq_enabled.value = True
-
+        if self._switch['name'] == ENABLED:
+            self._hub.sensors.peaq_enabled.value = True
+        elif self._switch['name'] == AWAYMODE:
+            self._hub.sensors.away_mode.value = True
+        
     def turn_off(self):
-        self._hub.sensors.peaq_enabled.value = False
+        if self._switch['name'] == ENABLED:
+            self._hub.sensors.peaq_enabled.value = False
+        elif self._switch['name'] == AWAYMODE:
+            self._hub.sensors.away_mode.value = False
 
     def update(self):
-        new_state = self._hub.sensors.peaq_enabled.value
+        if self._switch['name'] == ENABLED:
+            new_state = self._hub.sensors.peaq_enabled.value
+        elif self._switch['name'] == AWAYMODE:
+            new_state = self._hub.sensors.away_mode.value
+        
         self.state = "on" if new_state is True else "off"

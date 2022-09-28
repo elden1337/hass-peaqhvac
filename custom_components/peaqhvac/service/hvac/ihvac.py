@@ -21,9 +21,9 @@ class IHvac:
 
     def __init__(self, hass: HomeAssistant, hub):
         self._hub = hub
+        self._hass = hass
         self.house_heater = HouseHeater(hvac=self)
         self.water_heater = WaterHeater(hvac=self)
-        self._hass = hass
 
     def get_offset(self) -> bool:
         ret = Offset.getoffset(
@@ -34,19 +34,12 @@ class IHvac:
         self.current_offset_dict = ret[0]
         self.current_offset_dict_tomorrow = ret[1]
         _hvac_offset = self.hvac_offset
-        new_offset = self._get_current_offset(ret[0])
+        new_offset = self.house_heater.get_current_offset(ret[0])
         if new_offset != self.current_offset:
             self.current_offset = new_offset
         if self.current_offset != _hvac_offset:
             return True
         return False
-
-    def _get_current_offset(self, offsets:dict) -> int:
-        desired_offset = offsets[datetime.now().hour] - int(self._get_tempdiff()/2)
-        return Offset.adjust_to_threshold(desired_offset, self._hub.options.hvac_tolerance)
-
-    def _get_tempdiff(self) -> float:
-        return self._hub.sensors.average_temp_indoors.value - self._hub.sensors.set_temp_indoors
 
     def _handle_sensor(self, sensor:str):
         sensorobj = sensor.split('|')

@@ -18,4 +18,4 @@ class HvacFactory:
 
     @staticmethod
     def create(hass: HomeAssistant, options: ConfigModel, hub) -> IHvac:
-        return HvacFactory.HVACTYPES[options.hvacbrand](hass, hub)
+        return HvacFactory.HVACTYPES[options.hvacbrand](hass=hass, hub=hub)

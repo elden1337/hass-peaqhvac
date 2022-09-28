@@ -7,3 +7,4 @@ class SensorType(Enum):
     ElectricalAddition = 4
     CompressorFrequency = 5
     HvacMode = 6
+    DMCompressorStart = 7

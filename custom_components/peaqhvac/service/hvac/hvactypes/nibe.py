@@ -19,7 +19,8 @@ class Nibe(IHvac):
             SensorType.DegreeMinutes: f"sensor.nibe_{self._hub.options.systemid}_43005",
             SensorType.WaterTemp: f"water_heater.nibe_{self._hub.options.systemid}_40014_47387|current_temperature",
             SensorType.ElectricalAddition: f"sensor.nibe_{self._hub.options.systemid}_43084",
-            SensorType.CompressorFrequency: f"sensor.nibe_{self._hub.options.systemid}_43136"
+            SensorType.CompressorFrequency: f"sensor.nibe_{self._hub.options.systemid}_43136",
+            SensorType.DMCompressorStart: f"sensor.nibe_{self._hub.options.systemid}_47206"
         }
         return types[getsensor] if getsensor is not None else self._get_sensors_for_callback(types)
 
@@ -45,6 +46,14 @@ class Nibe(IHvac):
         ret = self._handle_sensor(sensor)
         if ret is not None:
             return int(float(ret))
+        return 0
+
+    @property
+    def hvac_compressor_start(self) -> int:
+        sensor = self.get_sensor(SensorType.DMCompressorStart)
+        ret = self._handle_sensor(sensor)
+        if ret is not None:
+            return int(ret)
         return 0
 
     @property
