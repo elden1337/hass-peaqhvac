@@ -26,6 +26,10 @@ class Average:
             return 0.0
 
     @property
+    def sensorscount(self) -> int:
+        return self._total_sensors
+
+    @property
     def value(self) -> float:
         return self._value
 

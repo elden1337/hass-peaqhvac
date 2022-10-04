@@ -44,4 +44,4 @@ class StateChanges:
             if self._hub.hvac.get_offset():
                 await self._hub.hvac.update_system(HvacOperations.Offset)
 
-        self._hub.hvac.house_heater.update_demand()
+        await self._hub.hvac.update_demands()

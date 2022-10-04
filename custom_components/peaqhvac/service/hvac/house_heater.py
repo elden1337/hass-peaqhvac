@@ -27,28 +27,38 @@ class HouseHeater(IHeater):
             self._demand = self._get_dm_demand(self._hvac.hvac_dm)
 
     def _get_dm_demand(self, dm:int) -> Demand:
-        _compressor_start = self._dm_compressor_start
-        match dm:
-            case _ if dm >= 0:
-                return Demand.NoDemand
-            case _ if dm > int(_compressor_start/2):
-                return Demand.LowDemand
-            case _ if dm > _compressor_start:
-                return Demand.MediumDemand
-            case _ if dm < _compressor_start*2:
-                return Demand.HighDemand
-            case _:
-                _LOGGER.warn(f"Could not get DM from hvac-system. Setting {Demand.NoDemand.name} for heating.")
-                return Demand.NoDemand
+        _compressor_start = self._dm_compressor_start if self._dm_compressor_start is not None else -300
+        if dm >= 0:
+            return Demand.NoDemand
+        if dm > int(_compressor_start / 2):
+            return Demand.LowDemand
+        if dm > _compressor_start:
+            return Demand.MediumDemand
+        if dm < _compressor_start:
+            return Demand.HighDemand
+
 
     def get_current_offset(self, offsets:dict) -> int:
-        desired_offset = offsets[datetime.now().hour] - int(self._get_tempdiff()/2)
-        return Offset.adjust_to_threshold(desired_offset, self._hvac._hub.options.hvac_tolerance)
+        desired_offset = offsets[datetime.now().hour] - int(self._get_tempdiff()) - int(self._get_temp_extremas()/1.3)
+        return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
 
     def _get_tempdiff(self) -> float:
-        return self._hvac._hub.sensors.average_temp_indoors.value - self._hvac._hub.sensors.set_temp_indoors
+        return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors
 
-    def _get_temp_extremes(self) -> (float, float):
-        return self._hvac_hub.sensors.average_temp_indoors.min, self._hvac._hub.sensors.average_temp_indoors.max
+    def _get_temp_extremas(self) -> float:
+        count = self._hvac.hub.sensors.average_temp_indoors.sensorscount
+        set = self._hvac.hub.sensors.set_temp_indoors
+        minval = (self._hvac.hub.sensors.average_temp_indoors.min - set) / count
+        maxval = (set - self._hvac.hub.sensors.average_temp_indoors.max) / count
+        return maxval - minval
+
+    def _get_temp_trend_offset(self) -> float:
+        if self._hvac.hub.sensors.temp_trend_outdoors.samples > 1:
+            #ok to use
+            pass
+        if self._hvac.hub.sensors.temp_trend_indoors.samples > 1:
+            #ok to use
+            pass
+
 
     # def compare to water demand

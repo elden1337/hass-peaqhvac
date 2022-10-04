@@ -14,13 +14,13 @@ class Nibe(IHvac):
 
     def get_sensor(self, getsensor: SensorType = None):
         types = {
-            SensorType.HvacMode: f"climate.nibe_{self._hub.options.systemid}_s1_supply|hvac_action",
-            SensorType.Offset: f"climate.nibe_{self._hub.options.systemid}_s1_supply|offset_heat",
-            SensorType.DegreeMinutes: f"sensor.nibe_{self._hub.options.systemid}_43005",
-            SensorType.WaterTemp: f"water_heater.nibe_{self._hub.options.systemid}_40014_47387|current_temperature",
-            SensorType.ElectricalAddition: f"sensor.nibe_{self._hub.options.systemid}_43084",
-            SensorType.CompressorFrequency: f"sensor.nibe_{self._hub.options.systemid}_43136",
-            SensorType.DMCompressorStart: f"sensor.nibe_{self._hub.options.systemid}_47206"
+            SensorType.HvacMode: f"climate.nibe_{self.hub.options.systemid}_s1_supply|hvac_action",
+            SensorType.Offset: f"climate.nibe_{self.hub.options.systemid}_s1_supply|offset_heat",
+            SensorType.DegreeMinutes: f"sensor.nibe_{self.hub.options.systemid}_43005",
+            SensorType.WaterTemp: f"water_heater.nibe_{self.hub.options.systemid}_40014_47387|current_temperature",
+            SensorType.ElectricalAddition: f"sensor.nibe_{self.hub.options.systemid}_43084",
+            SensorType.CompressorFrequency: f"sensor.nibe_{self.hub.options.systemid}_43136",
+            SensorType.DMCompressorStart: f"sensor.nibe_{self.hub.options.systemid}_47206"
         }
         return types[getsensor] if getsensor is not None else self._get_sensors_for_callback(types)
 
@@ -85,17 +85,17 @@ class Nibe(IHvac):
     async def update_system(self, operation: HvacOperations):
         _should_call = False
         
-        if self._hub.sensors.peaq_enabled.value is True:
+        if self.hub.sensors.peaq_enabled.value is True:
             _LOGGER.debug("Requesting to update hvac-offset")
             _value = self.current_offset if operation is HvacOperations.Offset else 1 # todo: fix this later. must be more fluid.
             match operation:
                 case HvacOperations.Offset:
                     _value = await self._set_offset_value(_value)
-                    _should_call = self._hub.sensors.average_temp_outdoors.initialized_percentage > 0.5
+                    _should_call = self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5
                 case _:
                     pass
             params = {
-                "system": int(self._hub.options.systemid),
+                "system": int(self.hub.options.systemid),
                 "parameter": self._servicecall_types[operation],
                 "value": _value
             }

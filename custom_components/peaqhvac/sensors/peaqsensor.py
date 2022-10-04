@@ -13,13 +13,8 @@ class PeaqSensor(SensorBase, RestoreEntity):
         self._sensorname = name
         self._icon = icon
         self._attr_name = f"{hub.hubname} {name}"
-        #self._attr_unit_of_measurement = '°C'
         super().__init__(hub, self._attr_name, entry_id)
         self._state = ""
-
-    # @property
-    # def unit_of_measurement(self):
-    #     return self._attr_unit_of_measurement
 
     @property
     def state(self) -> str:

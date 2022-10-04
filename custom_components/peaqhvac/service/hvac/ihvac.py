@@ -20,16 +20,20 @@ class IHvac:
     current_offset_dict_tomorrow: dict = {}
 
     def __init__(self, hass: HomeAssistant, hub):
-        self._hub = hub
+        self.hub = hub
         self._hass = hass
         self.house_heater = HouseHeater(hvac=self)
         self.water_heater = WaterHeater(hvac=self)
 
+    async def update_demands(self) -> None:
+        self.house_heater.update_demand()
+        self.water_heater.update_demand()
+
     def get_offset(self) -> bool:
         ret = Offset.getoffset(
-            self._hub.options.hvac_tolerance,
-            self._hub.nordpool.prices,
-            self._hub.nordpool.prices_tomorrow
+            self.hub.options.hvac_tolerance,
+            self.hub.nordpool.prices,
+            self.hub.nordpool.prices_tomorrow
         )
         self.current_offset_dict = ret[0]
         self.current_offset_dict_tomorrow = ret[1]

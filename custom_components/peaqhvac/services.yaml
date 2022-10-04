@@ -6,3 +6,12 @@ enable:
 disable:
   name: Disable Peaqhvac
   description: Disables Peaqhvac
+
+set_mode:
+  name: Set house-mode
+  description: Sets the house in modes and can have peaqhvac act accordingly.
+  fields:
+    mode:
+      description: >
+        The mode you wish to set.
+      example: HOME | AWAY | VACATION

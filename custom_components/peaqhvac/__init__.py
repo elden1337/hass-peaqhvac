@@ -46,8 +46,13 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     async def servicehandler_disable(call): # pylint:disable=unused-argument
         await hub.call_disable_peaq()
 
+    async def servicehandler_set_mode(call):
+        mode = call.data.get("mode")
+        await hub.call_set_mode(mode)
+
     hass.services.async_register(DOMAIN, "enable", servicehandler_enable)
     hass.services.async_register(DOMAIN, "disable", servicehandler_disable)
+    hass.services.async_register(DOMAIN, "set_mode", servicehandler_set_mode)
 
     hass.config_entries.async_setup_platforms(config, PLATFORMS)
 

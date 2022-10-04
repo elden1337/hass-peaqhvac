@@ -43,8 +43,14 @@ class Hub:
             except Exception as e:
                 _LOGGER.exception(f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}")
 
+    #try get peaqev sensors
+
     async def call_enable_peaq(self):
         self.sensors.peaq_enabled.value = True
 
     async def call_disable_peaq(self):
         self.sensors.peaq_enabled.value = False
+
+    async def call_set_mode(self, mode):
+        #match towards enum. set hub to that state.
+        pass

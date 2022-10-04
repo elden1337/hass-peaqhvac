@@ -60,4 +60,5 @@ class Gradient:
             self._temp_readings.pop(0)
         gen = (x for x in self._temp_readings if time.time() - int(x[0]) > self._max_age)
         for i in gen:
-            self._temp_readings.remove(i)
+            if len(self._temp_readings) > 1:
+                self._temp_readings.remove(i)
