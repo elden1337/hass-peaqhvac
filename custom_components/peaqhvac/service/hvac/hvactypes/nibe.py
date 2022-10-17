@@ -38,6 +38,8 @@ class Nibe(IHvac):
         ret = self._handle_sensor(sensor)
         if ret is not None:
             return int(ret)
+        else:
+            _LOGGER.debug("could not get offset from hvac")
         return 0
 
     @property
@@ -46,6 +48,8 @@ class Nibe(IHvac):
         ret = self._handle_sensor(sensor)
         if ret is not None:
             return int(float(ret))
+        else:
+            _LOGGER.debug("could not get DM from hvac")
         return 0
 
     @property
@@ -54,6 +58,8 @@ class Nibe(IHvac):
         ret = self._handle_sensor(sensor)
         if ret is not None:
             return int(ret)
+        else:
+            _LOGGER.debug("could not get compressor_start from hvac")
         return 0
 
     @property
@@ -62,6 +68,8 @@ class Nibe(IHvac):
         ret = self._handle_sensor(sensor)
         if ret is not None:
             return float(ret)
+        else:
+            _LOGGER.debug("could not get water temp from hvac")
         return 0.0
 
     @property
@@ -73,6 +81,8 @@ class Nibe(IHvac):
                 return HvacMode.Heat
             elif ret == "idle":
                 return HvacMode.Idle
+        else:
+            _LOGGER.debug("could not get hvac mode from hvac")
         return HvacMode.Unknown
 
 

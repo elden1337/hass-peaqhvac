@@ -28,6 +28,8 @@ class IHvac:
     async def update_hvac(self) -> None:
         self.house_heater.update_demand()
         self.water_heater.update_demand()
+        if self.house_heater.call_vent_boost():
+            await self.update_system(operation=HvacOperations.VentBoost)
 
     def get_offset(self) -> bool:
         ret = Offset.getoffset(

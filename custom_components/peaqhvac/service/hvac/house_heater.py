@@ -53,6 +53,15 @@ class HouseHeater(IHeater):
             return datetime.now().hour == Offset.max_hour_today
         return False
 
+    def call_vent_boost(self) -> bool:
+        if self._get_tempdiff() > 1 and self._hvac.hub.sensors.temp_trend_indoors > 0.5:
+            _LOGGER.debug("Preparing to run ventilation-boost based on current temperature rising.")
+            return True
+        elif self._hvac.hvac_dm <= -700:
+            _LOGGER.debug("Preparing to run ventilation-boost based on low degree minutes.")
+            return True
+        return False
+
     def _get_tempdiff_rounded(self) -> int:
         return int(self._get_tempdiff()/1.1)
 
