@@ -25,7 +25,7 @@ class IHvac:
         self.house_heater = HouseHeater(hvac=self)
         self.water_heater = WaterHeater(hvac=self)
 
-    async def update_demands(self) -> None:
+    async def update_hvac(self) -> None:
         self.house_heater.update_demand()
         self.water_heater.update_demand()
 

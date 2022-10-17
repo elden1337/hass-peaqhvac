@@ -1,25 +1,23 @@
-#
 # import logging
 # from homeassistant.components.climate import (
-#     ENTITY_ID_FORMAT,
-#     ClimateEntity,
-#     ClimateEntityFeature,
-#     HVACAction,
-#     HVACMode,
-# )
+#      ENTITY_ID_FORMAT,
+#      ClimateEntity,
+#      ClimateEntityFeature,
+#      HVACAction,
+#      HVACMode,
+#  )
 # from homeassistant.const import (
-#     ATTR_TEMPERATURE,
-#     CONF_NAME,
-#     STATE_UNAVAILABLE,
-#     STATE_UNKNOWN,
-#     TEMP_CELSIUS,
-# )
+#      ATTR_TEMPERATURE,
+#      CONF_NAME,
+#      STATE_UNAVAILABLE,
+#      STATE_UNKNOWN,
+#      TEMP_CELSIUS,
+#  )
 # from homeassistant.helpers.restore_state import RestoreEntity
 # import custom_components.peaqhvac.extensionmethods as ex
 # from custom_components.peaqhvac.const import DOMAIN
 #
 # _LOGGER = logging.getLogger(__name__)
-#
 # DEFAULT_THERMOSTAT_TEMPERATURE = 20
 #
 # async def async_setup_entry(
@@ -42,26 +40,26 @@
 #         thermostats = system.config[CONF_THERMOSTATS]
 #         for thermostat_id, thermostat_config in thermostats.items():
 #             entities.append(
-#                 NibeThermostat(
-#                     system,
-#                     thermostat_id,
-#                     thermostat_config.get(CONF_NAME),
-#                     thermostat_config.get(CONF_CURRENT_TEMPERATURE),
-#                     thermostat_config.get(CONF_VALVE_POSITION),
-#                     thermostat_config.get(CONF_CLIMATE_SYSTEMS),
-#                 )
-#             )
+#                  NibeThermostat(
+#                      system,
+#                      thermostat_id,
+#                      thermostat_config.get(CONF_NAME),
+#                      thermostat_config.get(CONF_CURRENT_TEMPERATURE),
+#                      thermostat_config.get(CONF_VALVE_POSITION),
+#                      thermostat_config.get(CONF_CLIMATE_SYSTEMS),
+#                  )
+#              )
 #
-#     #await asyncio.gather(*[add_active(system) for system in systems.values()])
+#      await asyncio.gather(*[add_active(system) for system in systems.values()])
 #
-#     async_add_entities(entities, True)
+#      async_add_entities(entities, True)
 #
 # class PeaqThermostat(ClimateEntity, RestoreEntity):
 #     def __init__(
 #         self,
 #         name,
 #         hub,
-#         current_temperature_id
+#         #current_temperature_id
 #     ):
 #         """Init."""
 #         self._attr_name = name
@@ -72,12 +70,11 @@
 #         #self._attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
 #
 #         self._attr_target_temperature_step = 0.5
-#         self._current_temperature_id = current_temperature_id
+#         #self._current_temperature_id = current_temperature_id
 #         self._current_temperature: float | None = None
 #         self._attr_temperature_unit = TEMP_CELSIUS
 #         self._attr_should_poll = False
 #         self._target_temperature = DEFAULT_THERMOSTAT_TEMPERATURE
-#
 #
 #     async def async_added_to_hass(self):
 #         await super().async_added_to_hass()
@@ -130,14 +127,14 @@
 #             self._current_temperature = None
 #             _LOGGER.error("Unable to update from sensor: %s", ex)
 #
-#     async def async_set_hvac_mode(self, hvac_mode: str):
-#         """Set operation mode."""
-#         if hvac_mode in self._attr_hvac_modes:
-#             self._attr_hvac_mode = hvac_mode
-#         else:
-#             _LOGGER.error("Unrecognized hvac mode: %s", hvac_mode)
-#             return
-#         await self._async_publish_update()
+#     # async def async_set_hvac_mode(self, hvac_mode: str):
+#     #     """Set operation mode."""
+#     #     if hvac_mode in self._attr_hvac_modes:
+#     #         self._attr_hvac_mode = hvac_mode
+#     #     else:
+#     #         _LOGGER.error("Unrecognized hvac mode: %s", hvac_mode)
+#     #         return
+#     #     await self._async_publish_update()
 #
 #     async def async_set_temperature(self, **kwargs):
 #         """Set new target temperature."""

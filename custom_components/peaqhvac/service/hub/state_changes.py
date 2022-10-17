@@ -44,4 +44,4 @@ class StateChanges:
             if self._hub.hvac.get_offset():
                 await self._hub.hvac.update_system(HvacOperations.Offset)
 
-        await self._hub.hvac.update_demands()
+        await self._hub.hvac.update_hvac()

@@ -37,20 +37,34 @@ class HouseHeater(IHeater):
         if dm < _compressor_start:
             return Demand.HighDemand
 
-
     def get_current_offset(self, offsets:dict) -> int:
-        desired_offset = offsets[datetime.now().hour] - int(self._get_tempdiff()) - int(self._get_temp_extremas()/1.3)
-        return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
+        if not self.max_price_lower() and not self.peak_lower():
+            desired_offset = offsets[datetime.now().hour] - self._get_tempdiff_rounded() - self._get_temp_extremas()
+            return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
+        return -10
+
+    def peak_lower(self) -> bool:
+        """Lower if peaqev prediction is breaching and minute > x"""
+        return False
+
+    def max_price_lower(self) -> bool:
+        """Temporarily lower to -10 if this hour is maxhour and temp > set-temp + 0.5C"""
+        if self._get_tempdiff() >= 0.5:
+            return datetime.now().hour == Offset.max_hour_today
+        return False
+
+    def _get_tempdiff_rounded(self) -> int:
+        return int(self._get_tempdiff()/1.1)
 
     def _get_tempdiff(self) -> float:
         return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors
 
-    def _get_temp_extremas(self) -> float:
+    def _get_temp_extremas(self) -> int:
         count = self._hvac.hub.sensors.average_temp_indoors.sensorscount
-        set = self._hvac.hub.sensors.set_temp_indoors
-        minval = (self._hvac.hub.sensors.average_temp_indoors.min - set) / count
-        maxval = (set - self._hvac.hub.sensors.average_temp_indoors.max) / count
-        return maxval - minval
+        set_temp = self._hvac.hub.sensors.set_temp_indoors
+        minval = (self._hvac.hub.sensors.average_temp_indoors.min - set_temp) / count
+        maxval = (set_temp - self._hvac.hub.sensors.average_temp_indoors.max) / count
+        return int((maxval - minval)/1.3)
 
     def _get_temp_trend_offset(self) -> float:
         if self._hvac.hub.sensors.temp_trend_outdoors.samples > 1:
@@ -59,6 +73,5 @@ class HouseHeater(IHeater):
         if self._hvac.hub.sensors.temp_trend_indoors.samples > 1:
             #ok to use
             pass
-
 
     # def compare to water demand

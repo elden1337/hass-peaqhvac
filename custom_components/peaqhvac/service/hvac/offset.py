@@ -1,16 +1,20 @@
 import logging
 from statistics import mean
+from typing import Tuple
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class Offset:
+    max_hour_today: int = -1
+    max_hour_tomorrow: int = -1
+
     @staticmethod
     def getoffset(
             tolerance: int,
             prices: list,
             prices_tomorrow: list
-    ) -> (dict, dict):
+    ) -> Tuple[dict, dict]:
         try:
             average = Offset._getaverage(prices, prices_tomorrow)
             today = Offset._get_offset_per_day(tolerance, prices, prices_tomorrow, average)
@@ -46,9 +50,11 @@ class Offset:
     def _getaverage(prices: list, prices_tomorrow: list = None) -> float:
         try:
             total = prices
+            Offset.max_hour_today = max(prices)
             prices_tomorrow_cleaned = Offset._sanitize_pricelists(prices_tomorrow)
             if len(prices_tomorrow_cleaned) == 24:
                 total.extend(prices_tomorrow_cleaned)
+                Offset.max_hour_tomorrow = max(prices_tomorrow_cleaned)
             return mean(total)
         except Exception as e:
             _LOGGER.exception(f"Could not set offset. prices: {prices}, prices_tomorrow: {prices_tomorrow}. {e}")
