@@ -38,7 +38,7 @@ class HouseHeater(IHeater):
             return Demand.HighDemand
 
     def get_current_offset(self, offsets:dict) -> int:
-        if not self.max_price_lower() and not self.peak_lower():
+        if not self.max_price_lower():
             desired_offset = offsets[datetime.now().hour] - self._get_tempdiff_rounded() - self._get_temp_extremas()
             return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
         return -10

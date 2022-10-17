@@ -50,11 +50,11 @@ class Offset:
     def _getaverage(prices: list, prices_tomorrow: list = None) -> float:
         try:
             total = prices
-            Offset.max_hour_today = max(prices)
+            Offset.max_hour_today = prices.index(max(prices))
             prices_tomorrow_cleaned = Offset._sanitize_pricelists(prices_tomorrow)
             if len(prices_tomorrow_cleaned) == 24:
                 total.extend(prices_tomorrow_cleaned)
-                Offset.max_hour_tomorrow = max(prices_tomorrow_cleaned)
+                Offset.max_hour_tomorrow = prices_tomorrow_cleaned.index(max(prices_tomorrow_cleaned))
             return mean(total)
         except Exception as e:
             _LOGGER.exception(f"Could not set offset. prices: {prices}, prices_tomorrow: {prices_tomorrow}. {e}")
