@@ -10,7 +10,12 @@ _LOGGER = logging.getLogger(__name__)
 
 class Nibe(IHvac):
     domain = "Nibe"
-    listenerentities = []
+
+    _servicecall_types = {
+        HvacOperations.Offset:     47011,
+        HvacOperations.VentBoost:  "VentilationBoost",
+        HvacOperations.WaterBoost: "HotWaterBoost"
+    }
 
     def get_sensor(self, getsensor: SensorType = None):
         types = {
@@ -23,14 +28,6 @@ class Nibe(IHvac):
             SensorType.DMCompressorStart: f"sensor.nibe_{self.hub.options.systemid}_47206"
         }
         return types[getsensor] if getsensor is not None else self._get_sensors_for_callback(types)
-
-    def _get_sensors_for_callback(self, types:dict) -> list:
-        ret = []
-        for t in types:
-            item = types[t]
-            ret.append(item.split('|')[0])
-        self.listenerentities = ret
-        return ret
 
     @property
     def hvac_offset(self) -> int:
@@ -86,13 +83,6 @@ class Nibe(IHvac):
         else:
             _LOGGER.debug("could not get hvac mode from hvac")
         return HvacMode.Unknown
-
-
-    _servicecall_types = {
-        HvacOperations.Offset:     47011,
-        HvacOperations.VentBoost:  "HotWaterBoost",
-        HvacOperations.WaterBoost: "VentilationBoost"
-    }
 
     async def update_system(self, operation: HvacOperations, set_val: any = None):
         _should_call = False

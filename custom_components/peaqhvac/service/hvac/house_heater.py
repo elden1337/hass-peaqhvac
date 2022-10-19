@@ -1,6 +1,7 @@
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.demand import Demand
 from custom_components.peaqhvac.service.hvac.offset import Offset
+import custom_components.peaqhvac.extensionmethods as ex
 from datetime import datetime
 import logging
 import time
@@ -20,6 +21,17 @@ class HouseHeater(IHeater):
     def demand(self, val):
         self._demand = val
 
+    @property
+    def vent_boost(self) -> bool:
+        if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
+            if self._get_tempdiff() > 1 and self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5:
+                _LOGGER.debug("Preparing to run ventilation-boost based on current temperature rising.")
+                return True
+            elif self._hvac.hvac_dm <= -700:
+                _LOGGER.debug("Preparing to run ventilation-boost based on low degree minutes.")
+                return True
+        return False
+
     def update_demand(self):
         """this function will be the most complex in this class. add more as we go"""
         if time.time() - self._latest_update > UPDATE_INTERVAL:
@@ -28,7 +40,7 @@ class HouseHeater(IHeater):
 
     def _get_dm_demand(self, dm:int) -> Demand:
         _compressor_start = self._dm_compressor_start if self._dm_compressor_start is not None else -300
-        _LOGGER.debug(f"compressor_start is: {_compressor_start} and pushed DM is: {dm}")
+        #_LOGGER.debug(f"compressor_start is: {_compressor_start} and pushed DM is: {dm}")
         if dm >= 0:
             return Demand.NoDemand
         if dm > int(_compressor_start / 2):
@@ -39,31 +51,30 @@ class HouseHeater(IHeater):
             return Demand.HighDemand
 
     def get_current_offset(self, offsets:dict) -> int:
-        if not self.max_price_lower():
-            desired_offset = offsets[datetime.now().hour] - self._get_tempdiff_rounded() - self._get_temp_extremas()
-            return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
-        return -10
+        if self.max_price_lower():
+            return -10
+        if self.peak_lower():
+            desired_offset = -5
+        else:
+            desired_offset = ex.subtract(
+                offsets[datetime.now().hour],
+                self._get_tempdiff_rounded(),
+                self._get_temp_extremas()
+             )
+        return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
 
     def peak_lower(self) -> bool:
         """Lower if peaqev prediction is breaching and minute > x"""
         if self._hvac.hub.sensors.peaqev_installed:
-            pass
+            if datetime.now().minute >= 40 and self._hvac.hub.sensors.peaqev_facade.above_stop_threshold:
+                _LOGGER.debug("Lowering offset because of peak about to be breached.")
+                return True
         return False
 
     def max_price_lower(self) -> bool:
         """Temporarily lower to -10 if this hour is maxhour and temp > set-temp + 0.5C"""
         if self._get_tempdiff() >= 0.5:
             return datetime.now().hour == Offset.max_hour_today
-        return False
-
-    @property
-    def vent_boost(self) -> bool:
-        if self._get_tempdiff() > 1 and self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5:
-            _LOGGER.debug("Preparing to run ventilation-boost based on current temperature rising.")
-            return True
-        elif self._hvac.hvac_dm <= -700:
-            _LOGGER.debug("Preparing to run ventilation-boost based on low degree minutes.")
-            return True
         return False
 
     def _get_tempdiff_rounded(self) -> int:
@@ -85,10 +96,10 @@ class HouseHeater(IHeater):
         return int((maxval - minval)/1.3)
 
     def _get_temp_trend_offset(self) -> float:
-        if self._hvac.hub.sensors.temp_trend_outdoors.samples > 1:
+        if self._hvac.hub.sensors.temp_trend_outdoors.is_clean:
             #ok to use
             pass
-        if self._hvac.hub.sensors.temp_trend_indoors.samples > 1:
+        if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
             #ok to use
             pass
 

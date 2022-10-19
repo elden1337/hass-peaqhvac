@@ -8,6 +8,7 @@ import time
 
 class Gradient:
     def __init__(self, max_age:int, max_samples:int):
+        self._init_time = time.time()
         self._temp_readings = []
         self._gradient = 0
         self._max_age = max_age
@@ -34,6 +35,10 @@ class Gradient:
         if len(self._temp_readings) > 0:
             return self._dt_from_epoch(self._temp_readings[-1][0])
         return datetime.min
+
+    @property
+    def is_clean(self) -> bool:
+        return time.time() - self._init_time > 300
 
     def _dt_from_epoch(self, epoch:int) -> str:
         return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch))

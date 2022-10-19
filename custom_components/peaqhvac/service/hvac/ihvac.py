@@ -12,13 +12,14 @@ from custom_components.peaqhvac.service.models.hvacoperations import HvacOperati
 from custom_components.peaqhvac.service.models.sensortypes import SensorType
 
 _LOGGER = logging.getLogger(__name__)
-UPDATE_INTERVAL = 60
+UPDATE_INTERVAL = 300
 
 class IHvac:
     current_offset: int = 0
     current_offset_dict: dict = {}
     current_offset_dict_tomorrow: dict = {}
     periodic_update_list: list = []
+    listenerentities = []
 
     def __init__(self, hass: HomeAssistant, hub):
         self.hub = hub
@@ -32,7 +33,8 @@ class IHvac:
         self.water_heater.update_demand()
         await self.request_periodic_updates()
 
-    def get_offset(self) -> bool:
+    @property
+    def update_offset(self) -> bool:
         ret = Offset.getoffset(
             self.hub.options.hvac_tolerance,
             self.hub.nordpool.prices,
@@ -49,12 +51,12 @@ class IHvac:
         return False
 
     async def request_periodic_updates(self):
-        if time.time() - self.periodic_update_timer > UPDATE_INTERVAL:
+        if time.time() - self.periodic_update_timer > UPDATE_INTERVAL or datetime.now().minute == 0:
             if self.house_heater.vent_boost:
                 self.periodic_update_list.append((HvacOperations.VentBoost, 1))
             if self.water_heater.water_boost:
                 self.periodic_update_list.append((HvacOperations.WaterBoost, 1))
-            if self.get_offset():
+            if self.update_offset:
                 self.periodic_update_list.append((HvacOperations.Offset, self.current_offset))
         return await self._do_periodic_updates()
 
@@ -88,6 +90,14 @@ class IHvac:
             except Exception as e:
                 _LOGGER.exception(e)
         return 0
+
+    def _get_sensors_for_callback(self, types:dict) -> list:
+        ret = []
+        for t in types:
+            item = types[t]
+            ret.append(item.split('|')[0])
+        self.listenerentities = ret
+        return ret
 
     @abstractmethod
     def get_sensor(self, sensor: SensorType = None):

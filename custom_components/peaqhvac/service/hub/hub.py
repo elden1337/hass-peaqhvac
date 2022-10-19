@@ -21,7 +21,7 @@ class Hub:
     def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
         self._hass = hass
         self.options = hub_options
-        self.sensors = HubSensors(hub_options, self.get_peaqev())
+        self.sensors = HubSensors(hub_options, self._hass, self.get_peaqev())
         self.states = StateChanges(self, self._hass)
         self.hvac = HvacFactory.create(self._hass, self.options, self)
         self.nordpool = NordPoolUpdater(self._hass, self)
