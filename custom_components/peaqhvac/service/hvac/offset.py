@@ -69,6 +69,3 @@ class Offset:
                 return []
         return inputlist
 
-    # def calc with trend temp
-    # def calc with prognosis
-    # def calc with current outside vs set temp

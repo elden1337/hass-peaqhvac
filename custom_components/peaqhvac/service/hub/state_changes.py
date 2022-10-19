@@ -1,7 +1,7 @@
 import logging
 import time
 
-from custom_components.peaqhvac.service.models.hvacoperations import HvacOperations
+#from custom_components.peaqhvac.service.models.hvacoperations import HvacOperations
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,7 +41,6 @@ class StateChanges:
         if entity == self._hub.nordpool.nordpool_entity or time.time() - self.latest_nordpool_update > 300:
             self._hub.nordpool.update_nordpool()
             self.latest_nordpool_update = time.time()
-            if self._hub.hvac.get_offset():
-                await self._hub.hvac.update_system(HvacOperations.Offset)
-
+            # if self._hub.hvac.get_offset():
+            #     await self._hub.hvac.update_system(HvacOperations.Offset)
         await self._hub.hvac.update_hvac()

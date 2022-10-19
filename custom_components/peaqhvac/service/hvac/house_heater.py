@@ -28,6 +28,7 @@ class HouseHeater(IHeater):
 
     def _get_dm_demand(self, dm:int) -> Demand:
         _compressor_start = self._dm_compressor_start if self._dm_compressor_start is not None else -300
+        _LOGGER.debug(f"compressor_start is: {_compressor_start} and pushed DM is: {dm}")
         if dm >= 0:
             return Demand.NoDemand
         if dm > int(_compressor_start / 2):
@@ -45,6 +46,8 @@ class HouseHeater(IHeater):
 
     def peak_lower(self) -> bool:
         """Lower if peaqev prediction is breaching and minute > x"""
+        if self._hvac.hub.sensors.peaqev_installed:
+            pass
         return False
 
     def max_price_lower(self) -> bool:
@@ -53,8 +56,9 @@ class HouseHeater(IHeater):
             return datetime.now().hour == Offset.max_hour_today
         return False
 
-    def call_vent_boost(self) -> bool:
-        if self._get_tempdiff() > 1 and self._hvac.hub.sensors.temp_trend_indoors > 0.5:
+    @property
+    def vent_boost(self) -> bool:
+        if self._get_tempdiff() > 1 and self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5:
             _LOGGER.debug("Preparing to run ventilation-boost based on current temperature rising.")
             return True
         elif self._hvac.hvac_dm <= -700:
@@ -63,7 +67,12 @@ class HouseHeater(IHeater):
         return False
 
     def _get_tempdiff_rounded(self) -> int:
-        return int(self._get_tempdiff()/1.1)
+        diff = self._get_tempdiff()
+        if diff == 0:
+            return 0
+        if diff > 0:
+            return int(diff/1.1)
+        return int(diff/0.7)
 
     def _get_tempdiff(self) -> float:
         return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors
@@ -84,3 +93,4 @@ class HouseHeater(IHeater):
             pass
 
     # def compare to water demand
+    # def calc with prognosis

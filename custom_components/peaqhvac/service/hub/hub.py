@@ -19,9 +19,9 @@ class Hub:
     hubname = "PeaqHvac"
 
     def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
-        self.options = hub_options
         self._hass = hass
-        self.sensors = HubSensors(hub_options, self._hass)
+        self.options = hub_options
+        self.sensors = HubSensors(hub_options, self.get_peaqev())
         self.states = StateChanges(self, self._hass)
         self.hvac = HvacFactory.create(self._hass, self.options, self)
         self.nordpool = NordPoolUpdater(self._hass, self)
@@ -29,7 +29,6 @@ class Hub:
         self.trackerentities.append(self.nordpool.nordpool_entity)
         self.trackerentities.extend(self.options.indoor_tempsensors)
         self.trackerentities.extend(self.options.outdoor_tempsensors)
-        #self.trackerentities.extend(self.hvac.get_sensor())
         self.states.initialize_values()
 
         async_track_state_change(hass, self.trackerentities, self.state_changed)
@@ -43,7 +42,13 @@ class Hub:
             except Exception as e:
                 _LOGGER.exception(f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}")
 
-    #try get peaqev sensors
+    def get_peaqev(self):
+        ret = self._hass.states.get("sensor.peaqev_threshold")
+        if ret is not None:
+            _LOGGER.debug("Discovered Peaqev-entities, will adhere to peak-shaving.")
+            return True
+        _LOGGER.debug("Unable to discover Peaqev-entities, will not adhere to peak-shaving.")
+        return False
 
     async def call_enable_peaq(self):
         self.sensors.peaq_enabled.value = True

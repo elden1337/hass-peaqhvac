@@ -78,8 +78,10 @@ class Nibe(IHvac):
         ret = self._handle_sensor(sensor)
         if ret is not None:
             if ret == "heating":
+                _LOGGER.debug("hvac mode is heating")
                 return HvacMode.Heat
             elif ret == "idle":
+                _LOGGER.debug("hvac mode is idle")
                 return HvacMode.Idle
         else:
             _LOGGER.debug("could not get hvac mode from hvac")
@@ -92,24 +94,25 @@ class Nibe(IHvac):
         HvacOperations.WaterBoost: "VentilationBoost"
     }
 
-    async def update_system(self, operation: HvacOperations):
+    async def update_system(self, operation: HvacOperations, set_val: any = None):
         _should_call = False
-        
         if self.hub.sensors.peaq_enabled.value is True:
-            _LOGGER.debug("Requesting to update hvac-offset")
-            _value = self.current_offset if operation is HvacOperations.Offset else 1 # todo: fix this later. must be more fluid.
+            _value = 0
+            _should_call = self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5
             match operation:
                 case HvacOperations.Offset:
-                    _value = await self._set_offset_value(_value)
-                    _should_call = self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5
-                case _:
-                    pass
+                    _value = await self._set_offset_value(set_val)
+                case HvacOperations.VentBoost:
+                    _value = set_val
+                case HvacOperations.WaterBoost:
+                    _value = set_val
             params = {
                 "system": int(self.hub.options.systemid),
                 "parameter": self._servicecall_types[operation],
                 "value": _value
             }
             if _should_call:
+                _LOGGER.debug(f"Requesting to update hvac-{operation.name}")
                 await self._hass.services.async_call(
                     self.domain,
                     "set_parameter",

@@ -39,6 +39,10 @@ class WaterHeater(IHeater):
             self._latest_update = time.time()
             self._demand = self._get_dm_demand(self._hvac.hvac_watertemp)
 
+    @property
+    def water_boost(self) -> bool:
+        return False
+
     def _get_dm_demand(self, temp: int) -> Demand:
         if temp >= 45:
             return Demand.NoDemand

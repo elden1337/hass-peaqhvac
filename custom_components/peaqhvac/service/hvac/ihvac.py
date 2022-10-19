@@ -1,35 +1,36 @@
 from abc import abstractmethod
 import logging
+import time
 from datetime import datetime
-
 from custom_components.peaqhvac.service.hvac.house_heater import HouseHeater
 from custom_components.peaqhvac.service.hvac.offset import Offset
 from homeassistant.core import (
     HomeAssistant
 )
-
 from custom_components.peaqhvac.service.hvac.water_heater import WaterHeater
 from custom_components.peaqhvac.service.models.hvacoperations import HvacOperations
 from custom_components.peaqhvac.service.models.sensortypes import SensorType
 
 _LOGGER = logging.getLogger(__name__)
+UPDATE_INTERVAL = 60
 
 class IHvac:
     current_offset: int = 0
     current_offset_dict: dict = {}
     current_offset_dict_tomorrow: dict = {}
+    periodic_update_list: list = []
 
     def __init__(self, hass: HomeAssistant, hub):
         self.hub = hub
         self._hass = hass
         self.house_heater = HouseHeater(hvac=self)
         self.water_heater = WaterHeater(hvac=self)
+        self.periodic_update_timer: float = 0
 
     async def update_hvac(self) -> None:
         self.house_heater.update_demand()
         self.water_heater.update_demand()
-        if self.house_heater.call_vent_boost():
-            await self.update_system(operation=HvacOperations.VentBoost)
+        await self.request_periodic_updates()
 
     def get_offset(self) -> bool:
         ret = Offset.getoffset(
@@ -46,6 +47,23 @@ class IHvac:
         if self.current_offset != _hvac_offset:
             return True
         return False
+
+    async def request_periodic_updates(self):
+        if time.time() - self.periodic_update_timer > UPDATE_INTERVAL:
+            if self.house_heater.vent_boost:
+                self.periodic_update_list.append((HvacOperations.VentBoost, 1))
+            if self.water_heater.water_boost:
+                self.periodic_update_list.append((HvacOperations.WaterBoost, 1))
+            if self.get_offset():
+                self.periodic_update_list.append((HvacOperations.Offset, self.current_offset))
+        return await self._do_periodic_updates()
+
+    async def _do_periodic_updates(self):
+        if len(self.periodic_update_list) > 0:
+            for u in self.periodic_update_list:
+                await self.update_system(operation=u[0], set_val=u[1])
+            self.periodic_update_list = []
+            self.periodic_update_timer = time.time()
 
     def _handle_sensor(self, sensor:str):
         sensorobj = sensor.split('|')
@@ -91,8 +109,10 @@ class IHvac:
         pass
 
     @abstractmethod
-    async def update_system(self, operation: HvacOperations):
+    async def update_system(self, operation: HvacOperations, set_val: any = None):
         pass
+
+
 
 
 

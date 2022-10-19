@@ -1,6 +1,6 @@
 from enum import Enum
 
 class HvacOperations(Enum):
-    Offset = 1
-    WaterBoost = 2
-    VentBoost = 3
+    Offset = "Offset"
+    WaterBoost = "Hotwater-boost"
+    VentBoost = "Ventilation-boost"
