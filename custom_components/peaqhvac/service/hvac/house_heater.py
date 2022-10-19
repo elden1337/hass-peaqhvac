@@ -60,6 +60,7 @@ class HouseHeater(IHeater):
                 offsets[datetime.now().hour],
                 self._get_tempdiff_rounded(),
                 self._get_temp_extremas()
+                #self._get_temp_trend_offset()
              )
         return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
 
@@ -96,12 +97,12 @@ class HouseHeater(IHeater):
         return int((maxval - minval)/1.3)
 
     def _get_temp_trend_offset(self) -> float:
+        ret = 0
         if self._hvac.hub.sensors.temp_trend_outdoors.is_clean:
-            #ok to use
-            pass
+            ret = self._hvac.hub.sensors.temp_trend_outdoors.gradient
         if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
-            #ok to use
-            pass
+            ret += self._hvac.hub.sensors.temp_trend_indoors.gradient
+        return (ret*-1)/3
 
     # def compare to water demand
     # def calc with prognosis

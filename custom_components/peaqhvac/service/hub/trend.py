@@ -38,7 +38,12 @@ class Gradient:
 
     @property
     def is_clean(self) -> bool:
-        return time.time() - self._init_time > 300
+        return all(
+            [
+            time.time() - self._init_time > 300,
+            self.samples > 1
+            ]
+        )
 
     def _dt_from_epoch(self, epoch:int) -> str:
         return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch))
