@@ -53,22 +53,26 @@ class HouseHeater(IHeater):
     def get_current_offset(self, offsets:dict) -> int:
         if self.max_price_lower():
             return -10
-        if self.peak_lower():
-            desired_offset = -5
         else:
-            desired_offset = ex.subtract(
+            desired_offset = self._set_calculated_offset(offsets)
+        if self._should_temp_lower():
+            desired_offset -= 1
+        return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
+
+    def _set_calculated_offset(self, offsets: dict) -> int:
+        return ex.subtract(
                 offsets[datetime.now().hour],
                 self._get_tempdiff_rounded(),
                 self._get_temp_extremas()
                 #self._get_temp_trend_offset()
              )
-        return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
 
-    def peak_lower(self) -> bool:
-        """Lower if peaqev prediction is breaching and minute > x"""
+    def _should_temp_lower(self) -> bool:
         if self._hvac.hub.sensors.peaqev_installed:
-            if datetime.now().minute >= 40 and self._hvac.hub.sensors.peaqev_facade.above_stop_threshold:
+            if datetime.now().minute >= 35 and self._hvac.hub.sensors.peaqev_facade.above_stop_threshold:
                 _LOGGER.debug("Lowering offset because of peak about to be breached.")
+                return True
+            elif self._hvac.hvac_electrical_addon > 0:
                 return True
         return False
 

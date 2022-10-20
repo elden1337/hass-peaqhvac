@@ -115,6 +115,11 @@ class IHvac:
 
     @property
     @abstractmethod
+    def hvac_electrical_addon(self) -> float:
+        pass
+
+    @property
+    @abstractmethod
     def hvac_watertemp(self) -> float:
         pass
 

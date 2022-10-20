@@ -44,10 +44,26 @@ class Nibe(IHvac):
         sensor = self.get_sensor(SensorType.DegreeMinutes)
         ret = self._handle_sensor(sensor)
         if ret is not None:
-            return int(float(ret))
+            try:
+                return int(float(ret))
+            except Exception as e:
+                _LOGGER.debug(f"could not get DM from hvac. {e}")
         else:
             _LOGGER.debug("could not get DM from hvac")
         return 0
+
+    @property
+    def hvac_electrical_addon(self) -> float:
+        sensor = self.get_sensor(SensorType.ElectricalAddition)
+        ret = self._handle_sensor(sensor)
+        if ret is not None:
+            try:
+                return int(float(ret))
+            except Exception as e:
+                _LOGGER.debug(f"could not get DM from hvac. {e}")
+        else:
+            _LOGGER.debug("could not get DM from hvac")
+        return 0.0
 
     @property
     def hvac_compressor_start(self) -> int:
