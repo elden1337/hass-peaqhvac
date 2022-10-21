@@ -69,12 +69,13 @@ class HouseHeater(IHeater):
         return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
 
     def _set_calculated_offset(self, offsets: dict) -> int:
-        return int(ex.subtract(
+        ret = ex.subtract(
                 offsets[datetime.now().hour],
                 self._get_tempdiff_rounded(),
                 self._get_temp_extremas(),
                 self._get_temp_trend_offset()
-             ))
+             )
+        return int(round(ret,0))
 
     def _should_temp_lower(self) -> bool:
         if self._hvac.hub.sensors.peaqev_installed:
@@ -109,15 +110,11 @@ class HouseHeater(IHeater):
         mintemp = self._hvac.hub.sensors.average_temp_indoors.min
         minval = (mintemp - set_temp)
         maxval = (maxtemp - set_temp)
-
         if maxval < 0 and minval < 0:
-            # both are smaller than desired, boost.
             ret = (((set_temp - maxtemp) + (set_temp - mintemp) / 2) * -1)
         elif minval < 0:
-            # only minval is smaller, take into account.
             ret = (maxval - minval) / count
         else:
-            # both are over set temp, negative-boost.
             ret = (((set_temp - maxtemp) + (set_temp - mintemp) / 2) * -1) / (count / 2)
         return round(ret, 2)
 
