@@ -1,6 +1,7 @@
 import logging
 from statistics import mean
 from typing import Tuple
+import custom_components.peaqhvac.service.hvac.peakfinder as peakfinder
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -8,6 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 class Offset:
     max_hour_today: int = -1
     max_hour_tomorrow: int = -1
+    peaks_today: list[int] = []
 
     @staticmethod
     def getoffset(
@@ -50,11 +52,12 @@ class Offset:
     def _getaverage(prices: list, prices_tomorrow: list = None) -> float:
         try:
             total = prices
-            Offset.max_hour_today = prices.index(max(prices))
+            #Offset.max_hour_today = prices.index(max(prices))
+            Offset.peaks_today = peakfinder.identify_peaks(prices)
             prices_tomorrow_cleaned = Offset._sanitize_pricelists(prices_tomorrow)
             if len(prices_tomorrow_cleaned) == 24:
                 total.extend(prices_tomorrow_cleaned)
-                Offset.max_hour_tomorrow = prices_tomorrow_cleaned.index(max(prices_tomorrow_cleaned))
+                #Offset.max_hour_tomorrow = prices_tomorrow_cleaned.index(max(prices_tomorrow_cleaned))
             return mean(total)
         except Exception as e:
             _LOGGER.exception(f"Could not set offset. prices: {prices}, prices_tomorrow: {prices_tomorrow}. {e}")

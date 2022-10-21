@@ -2,6 +2,9 @@ from abc import abstractmethod
 import logging
 import time
 from datetime import datetime
+from typing import Tuple
+
+import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.service.hvac.house_heater import HouseHeater
 from custom_components.peaqhvac.service.hvac.offset import Offset
 from homeassistant.core import (
@@ -99,34 +102,63 @@ class IHvac:
         self.listenerentities = ret
         return ret
 
+    @property
+    def hvac_offset(self) -> int:
+        return self.get_value(SensorType.Offset, int)
+
+    @property
+    def hvac_dm(self) -> int:
+        return self.get_value(SensorType.DegreeMinutes, int)
+
+    @property
+    def hvac_electrical_addon(self) -> float:
+        return self.get_value(SensorType.ElectricalAddition, float)
+
+    @property
+    def hvac_compressor_start(self) -> int:
+        return self.get_value(SensorType.DMCompressorStart, int)
+
+    @property
+    def hvac_watertemp(self) -> float:
+        return self.get_value(SensorType.WaterTemp, float)
+
     @abstractmethod
     def get_sensor(self, sensor: SensorType = None):
         pass
 
-    @property
-    @abstractmethod
-    def hvac_offset(self) -> int:
-        pass
-
-    @property
-    @abstractmethod
-    def hvac_dm(self) -> int:
-        pass
-
-    @property
-    @abstractmethod
-    def hvac_electrical_addon(self) -> float:
-        pass
-
-    @property
-    @abstractmethod
-    def hvac_watertemp(self) -> float:
-        pass
-
-    @abstractmethod
     async def update_system(self, operation: HvacOperations, set_val: any = None):
+        if self.hub.sensors.peaq_enabled.value is True:
+            _value = 0
+            if self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5:
+                _value = await self._get_operation_value(operation, set_val)
+                call_operation, params, domain = await self._get_operation_call_parameters(operation, _value)
+
+                _LOGGER.debug(f"Requesting to update hvac-{operation.name}")
+                await self._hass.services.async_call(
+                    domain,
+                    call_operation,
+                    params
+                )
+
+    @abstractmethod
+    async def _get_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
         pass
 
+    @abstractmethod
+    async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):
+        pass
+
+    def get_value(self, sensor: SensorType, returntype):
+        _sensor = self.get_sensor(sensor)
+        ret = self._handle_sensor(_sensor)
+        if ret is not None:
+            try:
+                return ex.parse_to_type(ret, returntype)
+            except Exception as e:
+                _LOGGER.debug(f"could not parse {sensor.name} from hvac. {e}")
+        else:
+            _LOGGER.debug(f"could not get {sensor.name} from hvac")
+        return 0
 
 
 
