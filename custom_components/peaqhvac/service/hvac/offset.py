@@ -32,7 +32,7 @@ class Offset:
             prices_tomorrow: list,
             average: float,
             is_tomorrow: bool = False
-    ):
+    ) -> dict:
         ret = {}
         try:
             for hour in range(0, 24):
