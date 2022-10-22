@@ -35,7 +35,7 @@ class PeaqevFacade:
     def above_stop_threshold(self) -> bool:
         data = self._get_state(ENTITIES[Entities.Threshold])
         if data is not None:
-            return float(data["state"]) > float(data["stop_threshold"])
+            return float(data["state"]) > (float(data["stop_threshold"]) + 5)
         return False
 
     @property

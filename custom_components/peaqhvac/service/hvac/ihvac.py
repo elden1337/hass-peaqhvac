@@ -31,11 +31,6 @@ class IHvac:
         self.water_heater = WaterHeater(hvac=self)
         self.periodic_update_timer: float = 0
 
-    async def update_hvac(self) -> None:
-        self.house_heater.update_demand()
-        self.water_heater.update_demand()
-        await self.request_periodic_updates()
-
     @property
     def update_offset(self) -> bool:
         ret = Offset.getoffset(
@@ -52,55 +47,6 @@ class IHvac:
         if self.current_offset != _hvac_offset:
             return True
         return False
-
-    async def request_periodic_updates(self):
-        if time.time() - self.periodic_update_timer > UPDATE_INTERVAL or datetime.now().minute == 0:
-            if self.house_heater.vent_boost:
-                self.periodic_update_list.append((HvacOperations.VentBoost, 1))
-            if self.water_heater.water_boost:
-                self.periodic_update_list.append((HvacOperations.WaterBoost, 1))
-            if self.update_offset:
-                self.periodic_update_list.append((HvacOperations.Offset, self.current_offset))
-        return await self._do_periodic_updates()
-
-    async def _do_periodic_updates(self):
-        if len(self.periodic_update_list) > 0:
-            for u in self.periodic_update_list:
-                await self.update_system(operation=u[0], set_val=u[1])
-            self.periodic_update_list = []
-            self.periodic_update_timer = time.time()
-
-    def _handle_sensor(self, sensor:str):
-        sensorobj = sensor.split('|')
-        if len(sensorobj) == 1:
-            return self._handle_sensor_basic(sensor)
-        elif len(sensorobj) == 2:
-            return self._handle_sensor_attribute(sensorobj)
-        raise ValueError
-
-    def _handle_sensor_basic(self, sensor:str):
-        ret = self._hass.states.get(sensor)
-        if ret is not None:
-            return ret.state
-        return None
-
-    def _handle_sensor_attribute(self, sensorobj):
-        ret = self._hass.states.get(sensorobj[0])
-        if ret is not None:
-            try:
-                ret_attr = ret.attributes.get(sensorobj[1])
-                return ret_attr
-            except Exception as e:
-                _LOGGER.exception(e)
-        return 0
-
-    def _get_sensors_for_callback(self, types:dict) -> list:
-        ret = []
-        for t in types:
-            item = types[t]
-            ret.append(item.split('|')[0])
-        self.listenerentities = ret
-        return ret
 
     @property
     def hvac_offset(self) -> int:
@@ -122,9 +68,51 @@ class IHvac:
     def hvac_watertemp(self) -> float:
         return self.get_value(SensorType.WaterTemp, float)
 
-    @abstractmethod
-    def get_sensor(self, sensor: SensorType = None):
-        pass
+    async def update_hvac(self) -> None:
+        self.house_heater.update_demand()
+        self.water_heater.update_demand()
+        await self.request_periodic_updates()
+
+    async def request_periodic_updates(self) -> None:
+        if time.time() - self.periodic_update_timer > UPDATE_INTERVAL or datetime.now().minute == 0:
+            if self.house_heater.vent_boost:
+                self.periodic_update_list.append((HvacOperations.VentBoost, 1))
+            if self.water_heater.water_boost:
+                self.periodic_update_list.append((HvacOperations.WaterBoost, 1))
+            if self.update_offset:
+                self.periodic_update_list.append((HvacOperations.Offset, self.current_offset))
+        return await self._do_periodic_updates()
+
+    async def _do_periodic_updates(self) -> None:
+        if len(self.periodic_update_list) > 0:
+            for u in self.periodic_update_list:
+                await self.update_system(operation=u[0], set_val=u[1])
+            self.periodic_update_list = []
+            self.periodic_update_timer = time.time()
+
+    def _handle_sensor(self, sensor:str):
+        sensorobj = sensor.split('|')
+        if 0 < len(sensorobj) <= 2:
+            ret = self._hass.states.get(sensorobj[0])
+            if ret is not None:
+                if len(sensorobj) == 2:
+                    try:
+                        ret_attr = ret.attributes.get(sensorobj[1])
+                        return ret_attr
+                    except Exception as e:
+                        _LOGGER.exception(e)
+                else:
+                    return ret.state
+            return None
+        raise ValueError
+
+    def _get_sensors_for_callback(self, types:dict) -> list:
+        ret = []
+        for t in types:
+            item = types[t]
+            ret.append(item.split('|')[0])
+        self.listenerentities = ret
+        return ret
 
     async def update_system(self, operation: HvacOperations, set_val: any = None):
         if self.hub.sensors.peaq_enabled.value is True:
@@ -140,14 +128,6 @@ class IHvac:
                     params
                 )
 
-    @abstractmethod
-    async def _get_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
-        pass
-
-    @abstractmethod
-    async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):
-        pass
-
     def get_value(self, sensor: SensorType, returntype):
         _sensor = self.get_sensor(sensor)
         ret = self._handle_sensor(_sensor)
@@ -159,6 +139,20 @@ class IHvac:
         else:
             _LOGGER.debug(f"could not get {sensor.name} from hvac")
         return 0
+
+    @abstractmethod
+    def get_sensor(self, sensor: SensorType = None):
+        pass
+
+    @abstractmethod
+    async def _get_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
+        pass
+
+    @abstractmethod
+    async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):
+        pass
+
+
 
 
 
