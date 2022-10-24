@@ -36,13 +36,11 @@ class Nibe(IHvac):
         ret = self._handle_sensor(sensor)
         if ret is not None:
             if ret == "heating":
-                _LOGGER.debug("hvac mode is heating")
                 return HvacMode.Heat
             elif ret == "idle":
-                _LOGGER.debug("hvac mode is idle")
                 return HvacMode.Idle
         else:
-            _LOGGER.debug("could not get hvac mode from hvac")
+            _LOGGER.warning("could not get hvac mode from hvac")
         return HvacMode.Unknown
 
     async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):

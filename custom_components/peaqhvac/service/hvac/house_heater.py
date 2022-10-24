@@ -6,8 +6,11 @@ from datetime import datetime
 import logging
 import time
 
+from custom_components.peaqhvac.service.models.hvacmode import HvacMode
+
 _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = 60
+HEATBOOST_TIMER = 7200
 
 class HouseHeater(IHeater):
     def __init__(self, hvac):
@@ -74,7 +77,28 @@ class HouseHeater(IHeater):
                 self._get_temp_extremas()
                 #self._get_temp_trend_offset()
              )
-        return int(round(ret,0))
+        ret = self._add_temp_boost(ret)
+        return int(round(ret, 0))
+
+    latest_boost = 0
+
+    def _add_temp_boost(self, preoffset: int) -> int:
+        if time.time() - self.latest_boost > HEATBOOST_TIMER:
+            if self._hvac.hvac_mode == HvacMode.Idle:
+                if self._get_tempdiff() < 0:
+                    if self._hvac.hub.sensors.temp_trend_indoors.gradient <= 0.3:
+                        """boost +1 since there is no sunwarming and no heating atm"""
+                        _LOGGER.debug("adding additional heating since there is no sunwarming happening and house is too cold.")
+                        preoffset += 1
+                        self.latest_boost = time.time()
+        else:
+            preoffset += 1
+            if self._get_tempdiff() > 1:
+                """Turn off the boost prematurely"""
+                preoffset -= 1
+                self.latest_boost = 0
+        return preoffset
+
 
     def _should_temp_lower(self) -> bool:
         if self._hvac.hub.sensors.peaqev_installed:

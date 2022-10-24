@@ -21,7 +21,7 @@ class Offset:
             average = Offset._getaverage(prices, prices_tomorrow)
             today = Offset._get_offset_per_day(tolerance, prices, prices_tomorrow, average)
             tomorrow = Offset._get_offset_per_day(tolerance, prices, prices_tomorrow, average, is_tomorrow=True)
-            return today, tomorrow
+            return Offset._smooth_transitions(today, tomorrow, tolerance)
         except:
             return {}, {}
 
@@ -43,6 +43,52 @@ class Offset:
         except:
             pass
         return ret
+
+    @staticmethod
+    def _smooth_transitions(today: dict, tomorrow: dict, tolerance: int) -> Tuple[dict, dict]:
+        tolerance = min(tolerance, 4)
+        start_list = []
+        start_list.extend(today.values())
+        start_list.extend(tomorrow.values())
+
+        # Find and remove single anomalies.
+        start_list = Offset._find_single_anomalies(start_list)
+
+        # Smooth out transitions upwards so that there is less risk of electrical addon usage.
+        for idx, v in enumerate(start_list):
+            if idx < len(start_list) - 1:
+                if start_list[idx + 1] >= start_list[idx] + tolerance:
+                    start_list[idx] += 1
+
+        # Package it and return
+        ret1 = {}
+        ret2 = {}
+        for hour in range(0, 24):
+            ret1[hour] = start_list[hour]
+        if len(tomorrow.items()) == 24:
+            for hour in range(24, 48):
+                ret2[hour - 24] = start_list[hour]
+        return ret1, ret2
+
+    @staticmethod
+    def _find_single_anomalies(adjustments: list) -> list[int]:
+        for idx, p in enumerate(adjustments):
+            if idx <= 1 or idx >= len(adjustments) - 1:
+                pass
+            else:
+                if all([
+                    adjustments[idx - 1] == adjustments[idx + 1],
+                    adjustments[idx - 1] != adjustments[idx]
+                ]):
+                    _prev = adjustments[idx - 1]
+                    _curr = adjustments[idx]
+                    diff = max(_prev, _curr) - min(_prev, _curr)
+                    if int(diff / 2) > 0:
+                        if _prev > _curr:
+                            adjustments[idx] += int(diff / 2)
+                        else:
+                            adjustments[idx] -= int(diff / 2)
+        return adjustments
 
     @staticmethod
     def adjust_to_threshold(adjustment: int, tolerance: int) -> int:

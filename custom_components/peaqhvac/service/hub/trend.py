@@ -25,6 +25,15 @@ class Gradient:
         return len(self._temp_readings)
 
     @property
+    def samples_raw(self) -> list:
+        return self._temp_readings
+
+    @samples_raw.setter
+    def samples_raw(self, lst):
+        self._temp_readings.extend(lst)
+        self.set_gradient()
+
+    @property
     def oldest_sample(self) -> str:
         if len(self._temp_readings) > 0:
             return self._dt_from_epoch(self._temp_readings[0][0])
@@ -60,7 +69,7 @@ class Gradient:
                 self._gradient = 0
 
     def add_reading(self, val:float, t:float):
-        self._temp_readings.append((t, val))
+        self._temp_readings.append((int(t), round(val,3)))
         self._latest_update = time.time()
         self._remove_from_list()
         self.set_gradient()

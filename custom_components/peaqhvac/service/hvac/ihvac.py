@@ -11,6 +11,7 @@ from homeassistant.core import (
     HomeAssistant
 )
 from custom_components.peaqhvac.service.hvac.water_heater import WaterHeater
+from custom_components.peaqhvac.service.models.hvacmode import HvacMode
 from custom_components.peaqhvac.service.models.hvacoperations import HvacOperations
 from custom_components.peaqhvac.service.models.sensortypes import SensorType
 
@@ -47,6 +48,11 @@ class IHvac:
         if self.current_offset != _hvac_offset:
             return True
         return False
+
+    @property
+    @abstractmethod
+    def hvac_mode(self) -> HvacMode:
+        pass
 
     @property
     def hvac_offset(self) -> int:
