@@ -1,5 +1,5 @@
 DOMAIN = "peaqhvac"
-PLATFORMS = ["sensor", "binary_sensor", "switch"]
+PLATFORMS = ["sensor", "binary_sensor", "switch", "climate"]
 DOMAIN_DATA = f"{DOMAIN}_data"
 LISTENER_FN_CLOSE = "update_listener_close_fn"
 
@@ -11,6 +11,7 @@ AVERAGESENSOR_INDOORS = "Average temperature indoors"
 AVERAGESENSOR_OUTDOORS = "Average temperature outdoors"
 WATERDEMAND = "Water demand"
 HEATINGDEMAND = "Heating demand"
+CLIMATE_SENSOR = "Climate control"
 
 AVERAGESENSORS = [
     AVERAGESENSOR_INDOORS,

@@ -1,5 +1,6 @@
 from peaqevcore.models.hub.hubmember import HubMember
 from custom_components.peaqhvac.service.hub.average import Average
+from custom_components.peaqhvac.service.hub.target_temp import TargetTemp
 from custom_components.peaqhvac.service.hub.trend import Gradient
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.peaqev_facade import PeaqevFacade
@@ -10,8 +11,8 @@ class HubSensors:
     away_mode: HubMember
     temp_trend_outdoors: Gradient
     temp_trend_indoors: Gradient
-    #prognosis: str
-    set_temp_indoors: float #input-numbersensor
+    # prognosis: str
+    set_temp_indoors: TargetTemp
     average_temp_indoors: Average
     average_temp_outdoors: Average
     hvac_tolerance: int
@@ -26,11 +27,10 @@ class HubSensors:
         self.average_temp_outdoors = Average(entities=options.outdoor_tempsensors)
         self.temp_trend_indoors = Gradient(max_samples=20, max_age=7200)
         self.temp_trend_outdoors = Gradient(max_samples=20, max_age=7200)
-        self.set_temp_indoors = 20 #todo: fix this to input number
+        self.set_temp_indoors = TargetTemp()
 
         if peaqev_discovered:
             self.peaqev_installed = True
             self.peaqev_facade = PeaqevFacade(hass)
         else:
             self.peaqev_installed = False
-

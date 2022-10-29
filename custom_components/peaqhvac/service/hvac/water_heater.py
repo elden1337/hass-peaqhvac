@@ -17,6 +17,7 @@ class WaterHeater(IHeater):
         super().__init__(hvac=hvac)
         self._current_temp = 0
         self._latest_update = 0
+        self._heat_water: bool = False
 
     @property
     def current_temperature(self) -> float:
@@ -26,24 +27,30 @@ class WaterHeater(IHeater):
     def current_temperature(self, val):
         try:
             self._current_temp = float(val)
+            self._update_water_heater_operation()
         except:
             _LOGGER.warning(f"unable to set {val} as watertemperature")
+            self.heat_water = False
 
     @IHeater.demand.setter
     def demand(self, val):
         self._demand = val
 
+    @property
+    def heat_water(self) -> bool:
+        return self._heat_water
+
+    @heat_water.setter
+    def heat_water(self, val) -> None:
+        self._heat_water = val
+
     def update_demand(self):
         """this function will be the most complex in this class. add more as we go"""
         if time.time() - self._latest_update > UPDATE_INTERVAL:
             self._latest_update = time.time()
-            self._demand = self._get_dm_demand(self._hvac.hvac_watertemp)
+            self._demand = self._get_deg_demand(self._hvac.hvac_watertemp)
 
-    @property
-    def water_boost(self) -> bool:
-        return False
-
-    def _get_dm_demand(self, temp: int) -> Demand:
+    def _get_deg_demand(self, temp: int) -> Demand:
         if temp >= 45:
             return Demand.NoDemand
         if temp > 35:
@@ -62,9 +69,15 @@ class WaterHeater(IHeater):
         }
         return _demandlimits[input]
 
+    def _update_water_heater_operation(self):
+        """this function updates the heat-water property based on various logic for hourly price, peak level, presence and current water temp"""
+        #turn on if reversed_degree_demand >= current_temp
+        #turn off after x time to not do a full boost
+        #sometimes do a full boost
+        pass
+
     #check threshold if available
 
     # def compare to heating demand
     # def get current water temp from nibe
-    # def turn on waterboost or not
 

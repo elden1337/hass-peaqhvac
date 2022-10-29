@@ -75,9 +75,11 @@ class Gradient:
         self.set_gradient()
 
     def _remove_from_list(self):
+        """Removes overflowing number of samples and old samples from the list."""
         while len(self._temp_readings) > self._max_samples:
             self._temp_readings.pop(0)
         gen = (x for x in self._temp_readings if time.time() - int(x[0]) > self._max_age)
         for i in gen:
-            if len(self._temp_readings) > 1:
+            if len(self._temp_readings) > 2:
+                # Always keep two readings to be able to calc trend
                 self._temp_readings.remove(i)

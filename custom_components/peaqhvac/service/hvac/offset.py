@@ -11,18 +11,38 @@ class Offset:
     max_hour_tomorrow: int = -1
     peaks_today: list[int] = []
 
+    prices_today = [1]
+    prices_tomorrow = [1]
+    calculated_offsets = {}, {}
+
     @staticmethod
     def getoffset(
             tolerance: int,
             prices: list,
             prices_tomorrow: list
     ) -> Tuple[dict, dict]:
+        if any(
+                [
+                    Offset.prices_today != prices,
+                    Offset.prices_tomorrow != prices_tomorrow
+                 ]
+        ):
+            Offset.prices_today = prices
+            Offset.prices_tomorrow = prices_tomorrow
+            Offset.calculated_offsets = Offset._update_offset(tolerance)
+
+        #_LOGGER.debug(f"Offset not recalculated since prices are not changed.")
+        return Offset.calculated_offsets
+
+    @staticmethod
+    def _update_offset(tolerance: int) -> Tuple[dict, dict]:
         try:
-            average = Offset._getaverage(prices, prices_tomorrow)
-            today = Offset._get_offset_per_day(tolerance, prices, prices_tomorrow, average)
-            tomorrow = Offset._get_offset_per_day(tolerance, prices, prices_tomorrow, average, is_tomorrow=True)
+            average = Offset._getaverage(Offset.prices_today, Offset.prices_tomorrow)
+            today = Offset._get_offset_per_day(tolerance, Offset.prices_today, Offset.prices_tomorrow, average)
+            tomorrow = Offset._get_offset_per_day(tolerance, Offset.prices_today, Offset.prices_tomorrow, average, is_tomorrow=True)
             return Offset._smooth_transitions(today, tomorrow, tolerance)
-        except:
+        except Exception as e:
+            _LOGGER.debug(f"Exception while trying to calculate offset: {e}")
             return {}, {}
 
     @staticmethod
@@ -38,8 +58,7 @@ class Offset:
             for hour in range(0, 24):
                 current_hour = prices[hour] if not is_tomorrow else prices_tomorrow[hour]
                 adjustment = (((current_hour/average) - 1) * tolerance) * -1
-                adjustment_capped = Offset.adjust_to_threshold(adjustment=adjustment, tolerance=tolerance)
-                ret[hour] = adjustment_capped
+                ret[hour] = Offset.adjust_to_threshold(adjustment=adjustment, tolerance=tolerance)
         except:
             pass
         return ret
@@ -61,34 +80,33 @@ class Offset:
                     start_list[idx] += 1
 
         # Package it and return
-        ret1 = {}
-        ret2 = {}
+        ret = {}, {}
         for hour in range(0, 24):
-            ret1[hour] = start_list[hour]
+            ret[0][hour] = start_list[hour]
         if len(tomorrow.items()) == 24:
             for hour in range(24, 48):
-                ret2[hour - 24] = start_list[hour]
-        return ret1, ret2
+                ret[1][hour - 24] = start_list[hour]
+        return ret
 
     @staticmethod
-    def _find_single_anomalies(adjustments: list) -> list[int]:
-        for idx, p in enumerate(adjustments):
-            if idx <= 1 or idx >= len(adjustments) - 1:
+    def _find_single_anomalies(adj: list) -> list[int]:
+        for idx, p in enumerate(adj):
+            if idx <= 1 or idx >= len(adj) - 1:
                 pass
             else:
                 if all([
-                    adjustments[idx - 1] == adjustments[idx + 1],
-                    adjustments[idx - 1] != adjustments[idx]
+                    adj[idx - 1] == adj[idx + 1],
+                    adj[idx - 1] != adj[idx]
                 ]):
-                    _prev = adjustments[idx - 1]
-                    _curr = adjustments[idx]
+                    _prev = adj[idx - 1]
+                    _curr = adj[idx]
                     diff = max(_prev, _curr) - min(_prev, _curr)
                     if int(diff / 2) > 0:
                         if _prev > _curr:
-                            adjustments[idx] += int(diff / 2)
+                            adj[idx] += int(diff / 2)
                         else:
-                            adjustments[idx] -= int(diff / 2)
-        return adjustments
+                            adj[idx] -= int(diff / 2)
+        return adj
 
     @staticmethod
     def adjust_to_threshold(adjustment: int, tolerance: int) -> int:
@@ -98,12 +116,10 @@ class Offset:
     def _getaverage(prices: list, prices_tomorrow: list = None) -> float:
         try:
             total = prices
-            #Offset.max_hour_today = prices.index(max(prices))
             Offset.peaks_today = peakfinder.identify_peaks(prices)
             prices_tomorrow_cleaned = Offset._sanitize_pricelists(prices_tomorrow)
             if len(prices_tomorrow_cleaned) == 24:
                 total.extend(prices_tomorrow_cleaned)
-                #Offset.max_hour_tomorrow = prices_tomorrow_cleaned.index(max(prices_tomorrow_cleaned))
             return mean(total)
         except Exception as e:
             _LOGGER.exception(f"Could not set offset. prices: {prices}, prices_tomorrow: {prices_tomorrow}. {e}")

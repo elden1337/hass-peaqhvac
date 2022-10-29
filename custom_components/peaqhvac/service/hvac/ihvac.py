@@ -83,7 +83,7 @@ class IHvac:
         if time.time() - self.periodic_update_timer > UPDATE_INTERVAL or datetime.now().minute == 0:
             if self.house_heater.vent_boost:
                 self.periodic_update_list.append((HvacOperations.VentBoost, 1))
-            if self.water_heater.water_boost:
+            if self.water_heater.heat_water:
                 self.periodic_update_list.append((HvacOperations.WaterBoost, 1))
             if self.update_offset:
                 self.periodic_update_list.append((HvacOperations.Offset, self.current_offset))

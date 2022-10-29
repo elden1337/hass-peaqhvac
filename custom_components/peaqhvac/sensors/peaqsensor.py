@@ -27,7 +27,7 @@ class PeaqSensor(SensorBase, RestoreEntity):
     def update(self) -> None:
         if self._sensorname == HEATINGDEMAND:
             self._state = self._hub.hvac.house_heater.demand.value
-        elif  self._sensorname == WATERDEMAND:
+        elif self._sensorname == WATERDEMAND:
             self._state = self._hub.hvac.water_heater.demand.value
 
     async def async_added_to_hass(self):
