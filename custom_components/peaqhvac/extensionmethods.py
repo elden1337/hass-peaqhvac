@@ -1,11 +1,14 @@
 import logging
+import time
 
 _LOGGER = logging.getLogger(__name__)
+
 
 def nametoid(input_string) -> str:
     if isinstance(input_string, str):
         return input_string.lower().replace(" ", "_").replace(",", "")
     return input_string
+
 
 def try_parse(input_string:str, parsetype:type):
     try:
@@ -14,10 +17,12 @@ def try_parse(input_string:str, parsetype:type):
     except Exception as e:
         return False
 
+
 def subtract(*args):
     if len(args) == 1:
         return args[0]
     return args[0] - sum(args[1:])
+
 
 def parse_to_type(value, _type):
     if isinstance(value, _type):
@@ -46,3 +51,7 @@ def parse_to_type(value, _type):
             return False
     elif _type is str:
         return str(value)
+
+
+def dt_from_epoch(epoch: int) -> str:
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch))

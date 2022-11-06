@@ -118,14 +118,13 @@ class PeaqClimate(ClimateEntity):
     def hvac_action(self):
         if self._hub.sensors.peaq_enabled.value is False:
             return HVACAction.OFF
-        else:
-            match self._hub.hvac.hvac_mode:
-                case HvacModeInternal.Heat:
-                    return HVACAction.HEATING
-                case HvacModeInternal.Idle:
-                    return HVACAction.IDLE
-                case _:
-                    return HVACAction.OFF
+        match self._hub.hvac.hvac_mode:
+            case HvacModeInternal.Heat:
+                return HVACAction.HEATING
+            case HvacModeInternal.Idle:
+                return HVACAction.IDLE
+            case _:
+                return HVACAction.OFF
 
     async def async_will_remove_from_hass(self):
         pass

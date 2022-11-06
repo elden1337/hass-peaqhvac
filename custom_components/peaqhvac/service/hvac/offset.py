@@ -7,6 +7,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Offset:
+    """The class that provides the offsets for the hvac"""
     max_hour_today: int = -1
     max_hour_tomorrow: int = -1
     peaks_today: list[int] = []
@@ -21,6 +22,7 @@ class Offset:
             prices: list,
             prices_tomorrow: list
     ) -> Tuple[dict, dict]:
+        """External entrypoint to the class"""
         if any(
                 [
                     Offset.prices_today != prices,
@@ -29,7 +31,8 @@ class Offset:
         ):
             Offset.prices_today = prices
             Offset.prices_tomorrow = prices_tomorrow
-            Offset.calculated_offsets = Offset._update_offset(tolerance)
+            if 23 <= len(prices) <= 25:
+                Offset.calculated_offsets = Offset._update_offset(tolerance)
 
         #_LOGGER.debug(f"Offset not recalculated since prices are not changed.")
         return Offset.calculated_offsets

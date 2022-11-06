@@ -127,11 +127,12 @@ class HouseHeater(IHeater):
         return False
 
     def _get_tempdiff_rounded(self) -> int:
+        """+/- 0.5 C is accepted"""
         diff = self._get_tempdiff()
         if diff == 0:
             return 0
         if diff > 0:
-            return int(diff)
+            return int(diff / 0.5)
         return int(diff / 0.5)
 
     def _get_tempdiff(self) -> float:
@@ -140,17 +141,17 @@ class HouseHeater(IHeater):
     def _get_temp_extremas(self) -> float:
         count = self._hvac.hub.sensors.average_temp_indoors.sensorscount
         set_temp = self._hvac.hub.sensors.set_temp_indoors.value
-        maxtemp = self._hvac.hub.sensors.average_temp_indoors.max
-        mintemp = self._hvac.hub.sensors.average_temp_indoors.min
-        minval = (mintemp - set_temp)
-        maxval = (maxtemp - set_temp)
+        max_temp = self._hvac.hub.sensors.average_temp_indoors.max
+        min_temp = self._hvac.hub.sensors.average_temp_indoors.min
+        min_val = (min_temp - set_temp)
+        max_val = (max_temp - set_temp)
         try:
-            if maxval < 0 and minval < 0:
-                ret = (((set_temp - maxtemp) + (set_temp - mintemp) / 2) * -1)
-            elif minval < 0:
-                ret = (maxval - minval) / count
+            if max_val < 0 and min_val < 0:
+                ret = (((set_temp - max_temp) + (set_temp - min_temp) / 2) * -1)
+            elif min_val < 0:
+                ret = (max_val - min_val) / count
             else:
-                ret = (((set_temp - maxtemp) + (set_temp - mintemp) / 2) * -1) / (count / 2)
+                ret = (((set_temp - max_temp) + (set_temp - min_temp) / 2) * -1) / (count / 2)
             return round(ret, 2)
         except ZeroDivisionError as e:
             return 0
@@ -159,7 +160,7 @@ class HouseHeater(IHeater):
         try:
             ret = 0
             if self._hvac.hub.sensors.temp_trend_outdoors.is_clean:
-                ret = self._hvac.hub.sensors.temp_trend_outdoors.gradient / 2  # outdoors is halfed
+                ret = self._hvac.hub.sensors.temp_trend_outdoors.gradient / 4  # outdoors is quartered
             if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
                 ret += self._hvac.hub.sensors.temp_trend_indoors.gradient
             return round((ret / 1.2), 2)

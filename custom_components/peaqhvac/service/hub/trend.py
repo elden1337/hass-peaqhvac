@@ -1,13 +1,13 @@
 import logging
 import time
+from datetime import datetime
+import custom_components.peaqhvac.extensionmethods as ex
 
 _LOGGER = logging.getLogger(__name__)
 
-from datetime import datetime
-import time
 
 class Gradient:
-    def __init__(self, max_age:int, max_samples:int):
+    def __init__(self, max_age: int, max_samples: int):
         self._init_time = time.time()
         self._temp_readings = []
         self._gradient = 0
@@ -18,7 +18,7 @@ class Gradient:
     @property
     def gradient(self) -> float:
         self.set_gradient()
-        return round(self._gradient,2)
+        return round(self._gradient, 2)
 
     @property
     def samples(self) -> int:
@@ -36,40 +36,37 @@ class Gradient:
     @property
     def oldest_sample(self) -> str:
         if len(self._temp_readings) > 0:
-            return self._dt_from_epoch(self._temp_readings[0][0])
+            return ex.dt_from_epoch(self._temp_readings[0][0])
         return datetime.min
 
     @property
     def newest_sample(self) -> str:
         if len(self._temp_readings) > 0:
-            return self._dt_from_epoch(self._temp_readings[-1][0])
+            return ex.dt_from_epoch(self._temp_readings[-1][0])
         return datetime.min
 
     @property
     def is_clean(self) -> bool:
         return all(
             [
-            time.time() - self._init_time > 300,
-            self.samples > 1
+                time.time() - self._init_time > 300,
+                self.samples > 1
             ]
         )
-
-    def _dt_from_epoch(self, epoch:int) -> str:
-        return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch))
 
     def set_gradient(self):
         self._remove_from_list()
         temps = self._temp_readings
-        if len(temps)-1 > 0:
+        if len(temps) - 1 > 0:
             try:
-                x = (temps[-1][1] - temps[0][1]) / ((time.time() - temps[0][0])/3600)
+                x = (temps[-1][1] - temps[0][1]) / ((time.time() - temps[0][0]) / 3600)
                 self._gradient = x
             except ZeroDivisionError as e:
                 _LOGGER.warning({e})
                 self._gradient = 0
 
-    def add_reading(self, val:float, t:float):
-        self._temp_readings.append((int(t), round(val,3)))
+    def add_reading(self, val: float, t: float):
+        self._temp_readings.append((int(t), round(val, 3)))
         self._latest_update = time.time()
         self._remove_from_list()
         self.set_gradient()
