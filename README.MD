@@ -1,9 +1,10 @@
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-brightgreen.svg)](https://github.com/hacs/integration) 
-![Validate with hassfest](https://github.com/elden1337/hass-peaqhvac/workflows/Validate%20with%20hassfest/badge.svg) 
-[![Peaq_downloads](https://img.shields.io/github/downloads/elden1337/hass-peaqhvac/total)](https://github.com/elden1337/hass-peaqhvac) 
-[![hass-peaq_downloads](https://img.shields.io/github/downloads/elden1337/hass-peaqhvac/latest/total)](https://github.com/elden1337/hass-peaqhvac)
-[![Buy me a coffee](https://img.shields.io/static/v1.svg?label=Buy%20me%20a%20coffee&message=🥨&color=black&logo=buy%20me%20a%20coffee&logoColor=white&labelColor=6f4e37)](https://www.buymeacoffee.com/elden)
-[![](https://img.shields.io/github/sponsors/elden1337)](https://github.com/sponsors/elden1337)
+<img src="https://raw.githubusercontent.com/creativecommons/cc-assets/main/license_badges/big/by_nc_nd.svg" width="90">
+
+[![Peaq_downloads](https://img.shields.io/github/downloads/elden1337/hass-peaq/total)](https://github.com/elden1337/hass-peaqhvac) 
+[![hass-peaq_downloads](https://img.shields.io/github/downloads/elden1337/hass-peaq/latest/total)](https://github.com/elden1337/hass-peaqhvac)
+[![Paypal](https://img.shields.io/badge/Sponsor-PayPal-orange.svg)](https://www.paypal.com/donate/?hosted_button_id=GLGW8QAAQC2FG)
+[![BuyMeACoffee](https://img.shields.io/badge/Sponsor-BuyMeACoffee-orange.svg)](https://buymeacoffee.com/elden)
+[![Discord](https://img.shields.io/badge/Join-Discord-green.svg)](https://discord.gg/kgZzdsf4XA)
 
 # Peaqhvac
 
