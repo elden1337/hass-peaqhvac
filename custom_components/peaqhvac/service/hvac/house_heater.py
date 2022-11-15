@@ -11,12 +11,13 @@ from custom_components.peaqhvac.service.models.hvacmode import HvacMode
 _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = 60
 HEATBOOST_TIMER = 7200
-
+TEMP_TOLERANCE = 0.3
 
 class HouseHeater(IHeater):
     _latest_boost = 0
     _latest_update = 0
     _degree_minutes = 0
+    _current_offset = 0
 
     def __init__(self, hvac):
         self._hvac = hvac
@@ -58,7 +59,7 @@ class HouseHeater(IHeater):
             return Demand.LowDemand
         if dm > _compressor_start:
             return Demand.MediumDemand
-        if dm < _compressor_start:
+        if dm <= _compressor_start:
             return Demand.HighDemand
         else:
             _LOGGER.debug(
@@ -74,18 +75,47 @@ class HouseHeater(IHeater):
             desired_offset -= 1
         return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
 
+    @property
+    def current_offset(self) -> int:
+        return self._current_offset
+
+    @property
+    def current_tempdiff(self):
+        return self._get_tempdiff_rounded()
+
+    @property
+    def current_temp_extremas(self):
+        return self._get_temp_extremas()
+
+    @property
+    def current_temp_trend_offset(self):
+        return self._get_temp_trend_offset()
+
     def _set_calculated_offset(self, offsets: dict) -> int:
         hour = datetime.now().hour
         if datetime.now().hour < 23 and datetime.now().minute >= 50:
             hour = datetime.now().hour + 1
-        _offset = offsets[hour]
-
-        ret = ex.subtract(
-            _offset,
-            self._get_tempdiff_rounded(),
-            self._get_temp_extremas(),
-            self._get_temp_trend_offset()
+        try:
+            _offset = offsets[hour]
+        except:
+            _LOGGER.warning("No Price-offsets have been calculated. Setting base-offset to 0.")
+            _offset = 0
+        self._current_offset = _offset
+        ret = sum(
+            [
+                _offset,
+                self._get_tempdiff_rounded(),
+                self._get_temp_extremas(),
+                self._get_temp_trend_offset()
+             ]
         )
+
+        # ret = ex.subtract(
+        #     _offset,
+        #     self._get_tempdiff_rounded(),
+        #     self._get_temp_extremas(),
+        #     self._get_temp_trend_offset()
+        # )
         ret = self._add_temp_boost(ret)
         return int(round(ret, 0))
 
@@ -127,45 +157,36 @@ class HouseHeater(IHeater):
         return False
 
     def _get_tempdiff_rounded(self) -> int:
-        """+/- 0.5 C is accepted"""
+        """+/- 0.3 C is accepted"""
         diff = self._get_tempdiff()
         if diff == 0:
             return 0
-        if diff > 0:
-            return int(diff / 0.5)
-        return int(diff / 0.5)
+        return int(diff / TEMP_TOLERANCE)
 
     def _get_tempdiff(self) -> float:
         return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.value
 
-    def _get_temp_extremas(self) -> float:
-        count = self._hvac.hub.sensors.average_temp_indoors.sensorscount
+    def _get_temp_extremas(self) -> int:
         set_temp = self._hvac.hub.sensors.set_temp_indoors.value
-        max_temp = self._hvac.hub.sensors.average_temp_indoors.max
-        min_temp = self._hvac.hub.sensors.average_temp_indoors.min
-        min_val = (min_temp - set_temp)
-        max_val = (max_temp - set_temp)
-        try:
-            if max_val < 0 and min_val < 0:
-                ret = (((set_temp - max_temp) + (set_temp - min_temp) / 2) * -1)
-            elif min_val < 0:
-                ret = (max_val - min_val) / count
-            else:
-                ret = (((set_temp - max_temp) + (set_temp - min_temp) / 2) * -1) / (count / 2)
-            return round(ret, 2)
-        except ZeroDivisionError as e:
-            return 0
+        min_diff = abs(set_temp - self._hvac.hub.sensors.average_temp_indoors.min)
+        max_diff = abs(set_temp - self._hvac.hub.sensors.average_temp_indoors.max)
 
-    def _get_temp_trend_offset(self) -> float:
-        try:
-            ret = 0
-            if self._hvac.hub.sensors.temp_trend_outdoors.is_clean:
-                ret = self._hvac.hub.sensors.temp_trend_outdoors.gradient / 4  # outdoors is quartered
-            if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
-                ret += self._hvac.hub.sensors.temp_trend_indoors.gradient
-            return round((ret / 1.2), 2)
-        except ZeroDivisionError as e:
-            return 0
+        if min_diff == max_diff:
+            return 1
+        if max_diff >= min_diff * 2:
+            return -1
+        if min_diff >= max_diff * 2:
+            return 1
+        return 0
+
+    def _get_temp_trend_offset(self) -> int:
+        if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
+            if self._hvac.hub.sensors.temp_trend_indoors.gradient == 0:
+                return 0
+            predicted_temp = self._hvac.hub.sensors.average_temp_indoors.value + self._hvac.hub.sensors.temp_trend_indoors.gradient
+            return int(((predicted_temp - self._hvac.hub.sensors.set_temp_indoors.value) / TEMP_TOLERANCE) * -1)
+        return 0
+
 
     # def compare to water demand
     # def calc with prognosis

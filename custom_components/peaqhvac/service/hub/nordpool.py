@@ -12,7 +12,7 @@ class NordPoolUpdater:
         self.currency: str = ""
         self._prices: list = []
         self._prices_tomorrow: list = []
-        self.state:float  = 0
+        self.state: float = 0
         self.nordpool_entity: str = ""
 
         self._setup_nordpool()
@@ -30,13 +30,19 @@ class NordPoolUpdater:
         if ret is not None:
             try:
                 ret_attr = list(ret.attributes.get("today"))
-                self._prices = ret_attr
+                if 23 <= len(ret_attr) <= 25:
+                    self._prices = ret_attr
+                else:
+                    _LOGGER.error(f"Nordpool returned a faulty length of prices for today ({len(ret_attr)})")
             except Exception as e:
                 _LOGGER.exception(f"Could not parse today's prices from Nordpool. Unsolveable error. {e}")
                 return
             try:
                 ret_attr_tomorrow = list(ret.attributes.get("tomorrow"))
-                self._prices_tomorrow = ret_attr_tomorrow
+                if (23 <= len(ret_attr_tomorrow) <= 25) or len(ret_attr_tomorrow) == 0:
+                    self._prices_tomorrow = ret_attr_tomorrow
+                else:
+                    _LOGGER.error(f"Nordpool returned a faulty length of prices for tomorrow ({len(ret_attr_tomorrow)})")
             except Exception as e:
                 _LOGGER.warning(f"Couldn't parse tomorrow's prices from Nordpool. Array will be empty. {e}")
                 self._prices_tomorrow = []

@@ -45,9 +45,9 @@ class IHvac:
     @property
     def update_offset(self) -> bool:
         ret = Offset.getoffset(
-            self.hub.options.hvac_tolerance,
-            self.hub.nordpool.prices,
-            self.hub.nordpool.prices_tomorrow
+            tolerance=self.hub.options.hvac_tolerance,
+            prices=self.hub.nordpool.prices,
+            prices_tomorrow=self.hub.nordpool.prices_tomorrow
         )
         self.current_offset_dict = ret[0]
         self.current_offset_dict_tomorrow = ret[1]

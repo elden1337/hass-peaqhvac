@@ -26,15 +26,14 @@ class Offset:
         if any(
                 [
                     Offset.prices_today != prices,
-                    Offset.prices_tomorrow != prices_tomorrow
+                    Offset.prices_tomorrow != prices_tomorrow,
+                    Offset.calculated_offsets == {}, {}
                  ]
         ):
             Offset.prices_today = prices
             Offset.prices_tomorrow = prices_tomorrow
             if 23 <= len(prices) <= 25:
                 Offset.calculated_offsets = Offset._update_offset(tolerance)
-
-        #_LOGGER.debug(f"Offset not recalculated since prices are not changed.")
         return Offset.calculated_offsets
 
     @staticmethod
@@ -62,8 +61,9 @@ class Offset:
                 current_hour = prices[hour] if not is_tomorrow else prices_tomorrow[hour]
                 adjustment = (((current_hour/average) - 1) * tolerance) * -1
                 ret[hour] = Offset.adjust_to_threshold(adjustment=adjustment, tolerance=tolerance)
-        except:
-            pass
+        except Exception as e:
+            if not is_tomorrow:
+                _LOGGER.exception(f"Unable to calculate the offset-pattern for today. {e}")
         return ret
 
     @staticmethod
@@ -133,7 +133,7 @@ class Offset:
         if inputlist is None or len(inputlist) < 24:
             return []
         for i in inputlist:
-            if not isinstance(i, float | int):
+            if not isinstance(i, (float, int)):
                 return []
         return inputlist
 
