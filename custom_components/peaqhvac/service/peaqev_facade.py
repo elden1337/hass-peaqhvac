@@ -26,10 +26,16 @@ ENTITIES = {
     }
 }
 
-
 class PeaqevFacade:
     def __init__(self, hass: HomeAssistant):
         self._hass = hass
+
+    @property
+    def exact_threshold(self) -> float:
+        data = self._get_state(ENTITIES[Entities.Threshold])
+        if data is not None:
+            return float(data["state"])
+        return 0
 
     @property
     def above_stop_threshold(self) -> bool:

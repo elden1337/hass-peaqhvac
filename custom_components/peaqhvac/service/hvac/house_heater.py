@@ -100,6 +100,7 @@ class HouseHeater(IHeater):
         except:
             _LOGGER.warning("No Price-offsets have been calculated. Setting base-offset to 0.")
             _offset = 0
+
         self._current_offset = _offset
         ret = sum(
             [
@@ -110,13 +111,7 @@ class HouseHeater(IHeater):
              ]
         )
 
-        # ret = ex.subtract(
-        #     _offset,
-        #     self._get_tempdiff_rounded(),
-        #     self._get_temp_extremas(),
-        #     self._get_temp_trend_offset()
-        # )
-        ret = self._add_temp_boost(ret)
+        #ret = self._add_temp_boost(ret)
         return int(round(ret, 0))
 
     def _add_temp_boost(self, preoffset: int) -> int:
@@ -140,8 +135,8 @@ class HouseHeater(IHeater):
     def _temporary_lower(self) -> bool:
         if self._hvac.hub.sensors.peaqev_installed and self._hvac.hvac_mode == HvacMode.Heat:
             if all([
-                40 <= datetime.now().minute < 55,
-                self._hvac.hub.sensors.peaqev_facade.above_stop_threshold
+                30 <= datetime.now().minute < 55,
+                self._hvac.hub.sensors.peaqev_facade.exact_threshold > 100
             ]):
                 _LOGGER.debug("Lowering offset because of peak about to be breached.")
                 return True
@@ -161,12 +156,12 @@ class HouseHeater(IHeater):
         diff = self._get_tempdiff()
         if diff == 0:
             return 0
-        return int(diff / TEMP_TOLERANCE)
+        return int(diff / TEMP_TOLERANCE)*-1
 
     def _get_tempdiff(self) -> float:
         return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.value
 
-    def _get_temp_extremas(self) -> int:
+    def _get_temp_extremas(self) -> float:
         set_temp = self._hvac.hub.sensors.set_temp_indoors.value
         min_diff = abs(set_temp - self._hvac.hub.sensors.average_temp_indoors.min)
         max_diff = abs(set_temp - self._hvac.hub.sensors.average_temp_indoors.max)
@@ -174,19 +169,21 @@ class HouseHeater(IHeater):
         if min_diff == max_diff:
             return 1
         if max_diff >= min_diff * 2:
-            return -1
+            return -0.3
         if min_diff >= max_diff * 2:
-            return 1
+            return 0.3
         return 0
 
-    def _get_temp_trend_offset(self) -> int:
+    def _get_temp_trend_offset(self) -> float:
         if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
             if self._hvac.hub.sensors.temp_trend_indoors.gradient == 0:
                 return 0
             predicted_temp = self._hvac.hub.sensors.average_temp_indoors.value + self._hvac.hub.sensors.temp_trend_indoors.gradient
-            return int(((predicted_temp - self._hvac.hub.sensors.set_temp_indoors.value) / TEMP_TOLERANCE) * -1)
+            new_temp = predicted_temp - self._hvac.hub.sensors.set_temp_indoors.value
+            if abs(new_temp) >= TEMP_TOLERANCE:
+                ret = (int(self._hvac.hub.sensors.temp_trend_indoors.gradient / TEMP_TOLERANCE) *-1)
+                return ret
         return 0
-
 
     # def compare to water demand
     # def calc with prognosis

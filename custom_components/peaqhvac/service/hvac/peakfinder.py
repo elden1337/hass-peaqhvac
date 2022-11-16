@@ -18,7 +18,7 @@ def _check_deviation(p: float, neighbor: float) -> bool:
         neighbor += 0.01
         p += 0.01
     if p > neighbor:
-        return neighbor / p > 0.8
+        return neighbor / p > 0.7
     return False
 
 
