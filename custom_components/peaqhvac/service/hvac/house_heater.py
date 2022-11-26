@@ -11,7 +11,8 @@ from custom_components.peaqhvac.service.models.hvacmode import HvacMode
 _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = 60
 HEATBOOST_TIMER = 7200
-TEMP_TOLERANCE = 0.3
+TEMP_TOLERANCE = 0.2
+
 
 class HouseHeater(IHeater):
     _latest_boost = 0
@@ -53,7 +54,8 @@ class HouseHeater(IHeater):
 
     def _get_dm_demand(self, dm: int) -> Demand:
         _compressor_start = self._dm_compressor_start if self._dm_compressor_start is not None else -300
-        if dm >= 0:
+        _return_temp = self._hvac.delta_return_temp if self._hvac.delta_return_temp is not None else 1000
+        if dm >= 0 or _return_temp < 0:
             return Demand.NoDemand
         if dm > int(_compressor_start / 2):
             return Demand.LowDemand
@@ -63,7 +65,7 @@ class HouseHeater(IHeater):
             return Demand.HighDemand
         else:
             _LOGGER.debug(
-                f"compressor_start is: {_compressor_start} and pushed DM is: {dm}. Could not calculate demand.")
+                f"Compressor_start: {_compressor_start}, delta-return: {self._hvac.delta_return_temp} and pushed DM: {dm}. Could not calculate demand.")
             return Demand.NoDemand
 
     def get_current_offset(self, offsets: dict) -> int:
@@ -73,6 +75,8 @@ class HouseHeater(IHeater):
             desired_offset = self._set_calculated_offset(offsets)
         if self._temporary_lower():
             desired_offset -= 1
+        elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0, self._get_temp_trend_offset() < 0]):
+            return max(-10, sum([self._current_offset, self._get_tempdiff_rounded(), self._get_temp_trend_offset()]))
         return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
 
     @property
@@ -102,16 +106,20 @@ class HouseHeater(IHeater):
             _offset = 0
 
         self._current_offset = _offset
+        _tempdiff = self._get_tempdiff_rounded()
+        _tempextremas = self._get_temp_extremas()
+        _temptrend = self._get_temp_trend_offset()
+
         ret = sum(
             [
                 _offset,
-                self._get_tempdiff_rounded(),
-                self._get_temp_extremas(),
-                self._get_temp_trend_offset()
-             ]
+                _tempdiff,
+                _tempextremas,
+                _temptrend
+            ]
         )
 
-        #ret = self._add_temp_boost(ret)
+        # ret = self._add_temp_boost(ret)
         return int(round(ret, 0))
 
     def _add_temp_boost(self, preoffset: int) -> int:
@@ -156,22 +164,22 @@ class HouseHeater(IHeater):
         diff = self._get_tempdiff()
         if diff == 0:
             return 0
-        return int(diff / TEMP_TOLERANCE)*-1
+        return int(diff / TEMP_TOLERANCE) * -1
 
     def _get_tempdiff(self) -> float:
         return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.value
 
     def _get_temp_extremas(self) -> float:
-        set_temp = self._hvac.hub.sensors.set_temp_indoors.value
-        min_diff = abs(set_temp - self._hvac.hub.sensors.average_temp_indoors.min)
-        max_diff = abs(set_temp - self._hvac.hub.sensors.average_temp_indoors.max)
-
-        if min_diff == max_diff:
-            return 1
-        if max_diff >= min_diff * 2:
-            return -0.3
-        if min_diff >= max_diff * 2:
-            return 0.3
+        # set_temp = self._hvac.hub.sensors.set_temp_indoors.value
+        # min_diff = abs(set_temp - self._hvac.hub.sensors.average_temp_indoors.min)
+        # max_diff = abs(set_temp - self._hvac.hub.sensors.average_temp_indoors.max)
+        #
+        # if min_diff == max_diff:
+        #     return 0
+        # if max_diff >= min_diff * 2:
+        #     return -0.3
+        # if min_diff >= max_diff * 2:
+        #     return 0.3
         return 0
 
     def _get_temp_trend_offset(self) -> float:
@@ -179,9 +187,10 @@ class HouseHeater(IHeater):
             if self._hvac.hub.sensors.temp_trend_indoors.gradient == 0:
                 return 0
             predicted_temp = self._hvac.hub.sensors.average_temp_indoors.value + self._hvac.hub.sensors.temp_trend_indoors.gradient
-            new_temp = predicted_temp - self._hvac.hub.sensors.set_temp_indoors.value
-            if abs(new_temp) >= TEMP_TOLERANCE:
-                ret = (int(self._hvac.hub.sensors.temp_trend_indoors.gradient / TEMP_TOLERANCE) *-1)
+            new_temp_diff = predicted_temp - self._hvac.hub.sensors.set_temp_indoors.value
+            if abs(new_temp_diff) >= TEMP_TOLERANCE:
+                steps = new_temp_diff / TEMP_TOLERANCE
+                ret = int(steps) * -1
                 return ret
         return 0
 

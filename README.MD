@@ -21,3 +21,14 @@ Peaqev is developed without static funding. If you lack your locale/charger type
 
 ---
 
+For Nibe it is required to have at least this setup in your `configuration.yaml`:
+
+```yaml
+nibe:
+  systems:
+    - system: 1234567890
+      sensors:
+        - 40995
+        - 40997
+        - 47206
+```

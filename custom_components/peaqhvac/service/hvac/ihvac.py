@@ -44,20 +44,28 @@ class IHvac:
 
     @property
     def update_offset(self) -> bool:
-        ret = Offset.getoffset(
-            tolerance=self.hub.options.hvac_tolerance,
+        try:
+            ret = self.hub.offset.getoffset(
             prices=self.hub.nordpool.prices,
             prices_tomorrow=self.hub.nordpool.prices_tomorrow
-        )
-        self.current_offset_dict = ret[0]
-        self.current_offset_dict_tomorrow = ret[1]
-        _hvac_offset = self.hvac_offset
-        new_offset = self.house_heater.get_current_offset(ret[0])
-        if new_offset != self.current_offset:
-            self.current_offset = new_offset
-        if self.current_offset != _hvac_offset:
-            return True
-        return False
+            )
+            self.current_offset_dict = ret[0]
+            self.current_offset_dict_tomorrow = ret[1]
+            _hvac_offset = self.hvac_offset
+            new_offset = self.house_heater.get_current_offset(ret[0])
+            if new_offset != self.current_offset:
+                self.current_offset = new_offset
+            if self.current_offset != _hvac_offset:
+                return True
+            return False
+        except Exception as e:
+            _LOGGER.exception(f"Error on updating offsets: {e}")
+            return False
+
+    @property
+    @abstractmethod
+    def delta_return_temp(self):
+        pass
 
     @property
     @abstractmethod
@@ -156,9 +164,9 @@ class IHvac:
             try:
                 return ex.parse_to_type(ret, returntype)
             except Exception as e:
-                _LOGGER.debug(f"could not parse {sensor.name} from hvac. {e}")
+                _LOGGER.debug(f"Could not parse {sensor.name} from hvac. {e}")
         else:
-            _LOGGER.debug(f"could not get {sensor.name} from hvac")
+            _LOGGER.warning(f"Could not get {sensor.name} from hvac.")
         return 0
 
     @abstractmethod

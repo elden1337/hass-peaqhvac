@@ -3,7 +3,9 @@ import logging
 from custom_components.peaqhvac.service.hub.hubsensors import HubSensors
 from custom_components.peaqhvac.service.hub.nordpool import NordPoolUpdater
 from custom_components.peaqhvac.service.hub.state_changes import StateChanges
+from custom_components.peaqhvac.service.hub.weather_prognosis import WeatherPrognosis
 from custom_components.peaqhvac.service.hvac.hvacfactory import HvacFactory
+from custom_components.peaqhvac.service.hvac.offset import Offset
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.core import (
@@ -25,6 +27,8 @@ class Hub:
         self.states = StateChanges(self, self._hass)
         self.hvac = HvacFactory.create(self._hass, self.options, self)
         self.nordpool = NordPoolUpdater(self._hass, self)
+        self.offset = Offset(tolerance=self.options.hvac_tolerance)
+        self.prognosis = WeatherPrognosis(self._hass)
         self.trackerentities = []
         self.trackerentities.append(self.nordpool.nordpool_entity)
         self.trackerentities.extend(self.options.indoor_tempsensors)

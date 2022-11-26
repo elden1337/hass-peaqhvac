@@ -28,6 +28,7 @@ class StateChanges:
             self._hub.sensors.temp_trend_outdoors.add_reading(val=self._hub.sensors.average_temp_outdoors.value, t=time.time())
         elif entity == self._hub.nordpool.nordpool_entity:
             self._hub.nordpool.update_nordpool()
+            self._hub.prognosis.update_weather_prognosis()
 
     async def update_sensor_async(self, entity, value):
         if entity in self._hub.options.indoor_tempsensors:
@@ -39,5 +40,6 @@ class StateChanges:
 
         if entity == self._hub.nordpool.nordpool_entity or time.time() - self.latest_nordpool_update > 300:
             self._hub.nordpool.update_nordpool()
+            self._hub.prognosis.update_weather_prognosis()
             self.latest_nordpool_update = time.time()
         await self._hub.hvac.update_hvac()

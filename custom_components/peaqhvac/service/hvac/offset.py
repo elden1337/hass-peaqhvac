@@ -2,6 +2,7 @@ import logging
 from statistics import mean
 from typing import Tuple
 import custom_components.peaqhvac.service.hvac.peakfinder as peakfinder
+from peaqevcore.services.hourselection.hoursselection import Hoursselection
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -11,59 +12,51 @@ class Offset:
     max_hour_today: int = -1
     max_hour_tomorrow: int = -1
     peaks_today: list[int] = []
-
-    prices_today = [1]
-    prices_tomorrow = [1]
     calculated_offsets = {}, {}
 
-    @staticmethod
+    def __init__(self, tolerance: int):
+        self.hours = Hoursselection()
+        self._tolerance = tolerance
+
     def getoffset(
-            tolerance: int,
+            self,
             prices: list,
             prices_tomorrow: list
     ) -> Tuple[dict, dict]:
         """External entrypoint to the class"""
         if any(
                 [
-                    Offset.prices_today != prices,
-                    Offset.prices_tomorrow != prices_tomorrow,
-                    Offset.calculated_offsets == {}, {}
-                 ]
+                    self.hours.prices != prices,
+                    self.hours.prices_tomorrow != prices_tomorrow,
+                    self.calculated_offsets == {}, {}
+                ]
         ):
-            Offset.prices_today = prices
-            Offset.prices_tomorrow = prices_tomorrow
+            self.hours.prices = prices
+            self.hours.prices_tomorrow = prices_tomorrow
             if 23 <= len(prices) <= 25:
-                Offset.calculated_offsets = Offset._update_offset(tolerance)
-        return Offset.calculated_offsets
+                self.calculated_offsets = self._update_offset()
+        return self.calculated_offsets
 
-    @staticmethod
-    def _update_offset(tolerance: int) -> Tuple[dict, dict]:
+    def _update_offset(self) -> Tuple[dict, dict]:
         try:
-            average = Offset._getaverage(Offset.prices_today, Offset.prices_tomorrow)
-            today = Offset._get_offset_per_day(tolerance, Offset.prices_today, Offset.prices_tomorrow, average)
-            tomorrow = Offset._get_offset_per_day(tolerance, Offset.prices_today, Offset.prices_tomorrow, average, is_tomorrow=True)
-            return Offset._smooth_transitions(today, tomorrow, tolerance)
+            d = self.hours.offsets
+            today = self._offset_per_day(d['today'])
+            tomorrow = {}
+            if len(d['tomorrow']) > 0:
+                tomorrow = self._offset_per_day(d['tomorrow'])
+            return Offset._smooth_transitions(today, tomorrow, self._tolerance)
         except Exception as e:
-            _LOGGER.debug(f"Exception while trying to calculate offset: {e}")
+            _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
 
-    @staticmethod
-    def _get_offset_per_day(
-            tolerance: int,
-            prices: list,
-            prices_tomorrow: list,
-            average: float,
-            is_tomorrow: bool = False
-    ) -> dict:
+    def _offset_per_day(self, day_values: dict) -> dict:
         ret = {}
-        try:
-            for hour in range(0, 24):
-                current_hour = prices[hour] if not is_tomorrow else prices_tomorrow[hour]
-                adjustment = (((current_hour/average) - 1) * tolerance) * -1
-                ret[hour] = Offset.adjust_to_threshold(adjustment=adjustment, tolerance=tolerance)
-        except Exception as e:
-            if not is_tomorrow:
-                _LOGGER.exception(f"Unable to calculate the offset-pattern for today. {e}")
+        _max_today = max(day_values.values())
+        _min_today = min(day_values.values())
+        factor = max(abs(_max_today), abs(_min_today)) / self._tolerance
+
+        for k, v in day_values.items():
+            ret[k] = int(round((day_values[k] / factor) * -1, 0))
         return ret
 
     @staticmethod
@@ -136,4 +129,3 @@ class Offset:
             if not isinstance(i, (float, int)):
                 return []
         return inputlist
-

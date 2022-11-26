@@ -8,3 +8,5 @@ class SensorType(Enum):
     CompressorFrequency = 5
     HvacMode = 6
     DMCompressorStart = 7
+    HvacTemp = 8
+    CondenserReturn = 9

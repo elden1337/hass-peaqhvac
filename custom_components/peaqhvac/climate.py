@@ -10,7 +10,6 @@ from homeassistant.components.climate.const import (
     HVACMode,
     HVACAction,
     PRESET_NONE,
-    PRESET_ECO,
     PRESET_AWAY,
     SUPPORT_PRESET_MODE
 )
@@ -21,11 +20,13 @@ from homeassistant.const import (
 from custom_components.peaqhvac.service.models.hvacmode import HvacMode as HvacModeInternal
 import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.const import DOMAIN, CLIMATE_SENSOR
+from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=10)
 
-async def async_setup_entry(hass : HomeAssistant, config, async_add_entities):
+
+async def async_setup_entry(hass: HomeAssistant, config, async_add_entities):
     hub = hass.data[DOMAIN]["hub"]
 
     devices = []
@@ -40,7 +41,7 @@ async def async_setup_entry(hass : HomeAssistant, config, async_add_entities):
     async_add_entities(devices)
 
 
-class PeaqClimate(ClimateEntity):
+class PeaqClimate(ClimateEntity, RestoreEntity):
     def __init__(self, hass, entry_id, hub, name):
         self._hass = hass
         self._entry_id = entry_id
@@ -51,12 +52,12 @@ class PeaqClimate(ClimateEntity):
         self._target_temperature = None
         self._target_temperature_high = None
         self._target_temperature_low = None
-        self._hvac_mode = HVACMode.AUTO
+        self._hvac_mode = self._get_hvac_mode()
         self._preset_mode = PRESET_NONE
 
     @property
     def supported_features(self):
-        return SUPPORT_TARGET_TEMPERATURE|SUPPORT_PRESET_MODE
+        return SUPPORT_TARGET_TEMPERATURE | SUPPORT_PRESET_MODE
 
     @property
     def name(self):
@@ -104,7 +105,7 @@ class PeaqClimate(ClimateEntity):
 
     @property
     def preset_modes(self):
-        return [PRESET_NONE,PRESET_ECO,PRESET_AWAY]
+        return [PRESET_NONE, PRESET_AWAY]
 
     @property
     def min_temp(self):
@@ -133,8 +134,13 @@ class PeaqClimate(ClimateEntity):
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is None:
             return
-        self._hub.sensors.set_temp_indoors = temperature
+        self._hub.sensors.set_temp_indoors.value = temperature
         self._target_temperature = temperature
+
+    def _get_hvac_mode(self) -> HVACMode:
+        if self._hub.sensors.peaq_enabled.value:
+            return HVACMode.AUTO
+        return HVACMode.OFF
 
     def set_hvac_mode(self, hvac_mode):
         if hvac_mode == HVACMode.OFF:
@@ -144,9 +150,9 @@ class PeaqClimate(ClimateEntity):
 
     def set_preset_mode(self, preset_mode):
         if self._preset_mode == PRESET_AWAY and preset_mode != self._preset_mode:
-            self._hub.sensors.set_temp_indoors += 2
+            self._hub.sensors.set_temp_indoors.value = self._hub.sensors.set_temp_indoors.value+2
         elif self._preset_mode != PRESET_AWAY and preset_mode == PRESET_AWAY:
-            self._hub.sensors.set_temp_indoors -= 2
+            self._hub.sensors.set_temp_indoors.value = self._hub.sensors.set_temp_indoors.value-2
         self._preset_mode = preset_mode
 
     def update(self, event_time=None):
@@ -164,3 +170,11 @@ class PeaqClimate(ClimateEntity):
         self._target_temperature = target_temp
         self._target_temperature_high = target_high
         self._target_temperature_low = target_low
+
+    async def async_added_to_hass(self):
+        state = await super().async_get_last_state()
+        if state:
+            #_LOGGER.debug(f"Found old state for climate. {state.state}, {state}")
+            self._current_temperature = state.attributes.get('temperature', 50)
+            self._hub.sensors.set_temp_indoors.value = self._current_temperature
+            #state.attributes.get('preset_mode', 50)
