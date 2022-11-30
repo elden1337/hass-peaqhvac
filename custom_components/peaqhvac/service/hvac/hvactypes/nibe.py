@@ -39,7 +39,7 @@ class Nibe(IHvac):
             returntemp = self.get_sensor(SensorType.CondenserReturn)
             return round(float(self._handle_sensor(temp)) - float(self._handle_sensor(returntemp)), 2)
         except Exception as e:
-            _LOGGER.debug(f"Unable to calculate delta return: {e}")
+            #_LOGGER.debug(f"Unable to calculate delta return: {e}")
             return 0
 
     @property

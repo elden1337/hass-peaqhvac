@@ -74,7 +74,7 @@ class HouseHeater(IHeater):
         else:
             desired_offset = self._set_calculated_offset(offsets)
         if self._temporary_lower():
-            desired_offset -= 1
+            desired_offset -= 2
         elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0, self._get_temp_trend_offset() < 0]):
             return max(-10, sum([self._current_offset, self._get_tempdiff_rounded(), self._get_temp_trend_offset()]))
         return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
@@ -141,7 +141,7 @@ class HouseHeater(IHeater):
         return preoffset
 
     def _temporary_lower(self) -> bool:
-        if self._hvac.hub.sensors.peaqev_installed and self._hvac.hvac_mode == HvacMode.Heat:
+        if self._hvac.hub.sensors.peaqev_installed:
             if all([
                 30 <= datetime.now().minute < 50,
                 float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100
@@ -190,8 +190,8 @@ class HouseHeater(IHeater):
             new_temp_diff = predicted_temp - self._hvac.hub.sensors.set_temp_indoors.value
             if abs(new_temp_diff) >= TEMP_TOLERANCE:
                 steps = new_temp_diff / TEMP_TOLERANCE
-                ret = int(steps)/2 * -1
-                return ret
+                ret = int(steps)/2.01 * -1
+                return round(ret, 2)
         return 0
 
     # def compare to water demand

@@ -7,7 +7,8 @@ class TargetTemp:
         self._min_tolerance = None
         self._max_tolerance = None
         self._preset = HvacPresets.Normal
-        self.init_tolerances()
+        self._set_temperature_and_tolerances()
+        self._internal_set_temp = initval
 
     @property
     def min_tolerance(self) -> float:
@@ -24,7 +25,8 @@ class TargetTemp:
     @value.setter
     def value(self, val) -> None:
         self._value = val
-        self.init_tolerances(self._preset)
+        self._internal_set_temp = val - HvacPresets.get_tempdiff(self.preset)
+        self._set_temperature_and_tolerances()
 
     @property
     def preset(self) -> HvacPresets:
@@ -32,14 +34,18 @@ class TargetTemp:
 
     @preset.setter
     def preset(self, val):
-        self._preset = val
-        self.set_tolerances(val)
+        self._preset = HvacPresets.get_type(val)
+        self._set_temperature_and_tolerances()
 
-    def set_tolerances(self, ha_preset: str):
-        self._preset = HvacPresets.get_type(ha_preset)
-        self.init_tolerances(preset=self._preset)
+    def _set_temperature_and_tolerances(self):
+        self._init_set_temp(preset=self.preset)
+        self._init_tolerances(preset=self.preset)
 
-    def init_tolerances(self, preset: HvacPresets = HvacPresets.Normal):
+    def _init_set_temp(self, preset: HvacPresets = HvacPresets.Normal):
+        _tempdiff = HvacPresets.get_tempdiff(preset)
+        self._value = self._internal_set_temp + _tempdiff
+
+    def _init_tolerances(self, preset: HvacPresets = HvacPresets.Normal):
         _tolerances = HvacPresets.get_tolerances(preset)
         self._min_tolerance = _tolerances[0]
         self._max_tolerance = _tolerances[1]

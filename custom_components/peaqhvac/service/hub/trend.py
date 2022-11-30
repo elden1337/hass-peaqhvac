@@ -7,13 +7,14 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Gradient:
-    def __init__(self, max_age: int, max_samples: int):
+    def __init__(self, max_age: int, max_samples: int, ignore: int = None):
         self._init_time = time.time()
         self._temp_readings = []
         self._gradient = 0
         self._max_age = max_age
         self._max_samples = max_samples
         self._latest_update = 0
+        self._ignore = ignore
 
     @property
     def gradient(self) -> float:
@@ -66,10 +67,11 @@ class Gradient:
                 self._gradient = 0
 
     def add_reading(self, val: float, t: float):
-        self._temp_readings.append((int(t), round(val, 3)))
-        self._latest_update = time.time()
-        self._remove_from_list()
-        self.set_gradient()
+        if self._ignore is None or self._ignore < val:
+            self._temp_readings.append((int(t), round(val, 3)))
+            self._latest_update = time.time()
+            self._remove_from_list()
+            self.set_gradient()
 
     def _remove_from_list(self):
         """Removes overflowing number of samples and old samples from the list."""

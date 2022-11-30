@@ -1,10 +1,10 @@
 import logging
-import statistics as stat
+#import statistics as stat
 import time
 from datetime import datetime
 import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.service.hub.trend import Gradient
-from custom_components.peaqhvac.service.hvac import peakfinder
+#from custom_components.peaqhvac.service.hvac import peakfinder
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.demand import Demand
 from dataclasses import dataclass
@@ -28,10 +28,14 @@ class WaterHeater(IHeater):
     def __init__(self, hvac):
         self._hvac = hvac
         super().__init__(hvac=hvac)
-        self._current_temp = 0
+        self._current_temp = None
         self._latest_update = 0
-        self._water_temp_trend = Gradient(max_age=18000, max_samples=10)
+        self._water_temp_trend = Gradient(max_age=18000, max_samples=10, ignore=0)
         self.booster_model = WaterBoosterModel()
+
+    @property
+    def is_initialized(self) -> bool:
+        return self._current_temp is not None
 
     @property
     def temperature_trend(self) -> float:
@@ -114,12 +118,19 @@ class WaterHeater(IHeater):
             _LOGGER.debug("Could not calc peak water hours")
             return False
 
-    def _check_boost_and_temp(self):
+    def _update_water_heater_operation(self):
         """FIX SO THAT THIS ONE IMPLEMENTS DIFFERENTLY ON AWAY MODE"""
+        if self.is_initialized:
+            #if home
+            self._set_water_heater_operation_home()
+            # if away
+            #self._set_water_heater_operation_away()
+
+    def _set_water_heater_operation_home(self):
         if self._get_water_peak(datetime.now().hour):
             _LOGGER.debug("current hour is identified as a good hour to boost water")
             self.booster_model.boost = True
-            return 3600
+            self._toggle_boost(timer_timeout=3600)
         try:
             offsets = self._hvac.hub.offset.getoffset(
             prices=self._hvac.hub.nordpool.prices,
@@ -128,21 +139,24 @@ class WaterHeater(IHeater):
             current_offset = offsets[0][datetime.now().hour]
 
             if current_offset <= 0 and datetime.now().minute > 10:
-                if self.current_temperature <= 30:
+                if 0 < self.current_temperature <= 30:
                     self.booster_model.pre_heating = True
-                    return None
+                    self._toggle_boost(timer_timeout=None)
             elif current_offset > 0 and datetime.now().minute > 10:
-                if self.current_temperature <= 42:
+                if 0 < self.current_temperature <= 42:
                     self.booster_model.pre_heating = True
-                    return None
+                    self._toggle_boost(timer_timeout=None)
         except:
             _LOGGER.debug("Can't read offsets for water-heating.")
-        return None
 
-    def _update_water_heater_operation(self) -> None:
-        """this function updates the heat-water property based on various logic for hourly price, peak level, presence and current water temp"""
-        timeout = self._check_boost_and_temp()
-        self._toggle_boost(timer_timeout=timeout)
+    def _set_water_heater_operation_away(self):
+        try:
+            if datetime.now().minute > 10:
+                if 0 < self.current_temperature <= 30:
+                    self.booster_model.pre_heating = True
+                    self._toggle_boost(timer_timeout=None)
+        except:
+            _LOGGER.debug("Can't read offsets for water-heating.")
 
     def _toggle_boost(self, timer_timeout: int = None) -> None:
         if self.booster_model.try_heat_water:

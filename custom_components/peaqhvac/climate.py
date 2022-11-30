@@ -150,9 +150,9 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
 
     def set_preset_mode(self, preset_mode):
         if self._preset_mode == PRESET_AWAY and preset_mode != self._preset_mode:
-            self._hub.sensors.set_temp_indoors.value = self._hub.sensors.set_temp_indoors.value+2
+            self._hub.sensors.set_temp_indoors.preset = PRESET_NONE
         elif self._preset_mode != PRESET_AWAY and preset_mode == PRESET_AWAY:
-            self._hub.sensors.set_temp_indoors.value = self._hub.sensors.set_temp_indoors.value-2
+            self._hub.sensors.set_temp_indoors.preset = PRESET_AWAY
         self._preset_mode = preset_mode
 
     def update(self, event_time=None):

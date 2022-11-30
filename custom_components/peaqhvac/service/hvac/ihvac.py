@@ -6,7 +6,6 @@ from typing import Tuple
 
 import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.service.hvac.house_heater import HouseHeater
-from custom_components.peaqhvac.service.hvac.offset import Offset
 from homeassistant.core import (
     HomeAssistant
 )
@@ -72,6 +71,18 @@ class IHvac:
     @property
     @abstractmethod
     def hvac_mode(self) -> HvacMode:
+        pass
+
+    @abstractmethod
+    def get_sensor(self, sensor: SensorType = None):
+        pass
+
+    @abstractmethod
+    async def _get_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
+        pass
+
+    @abstractmethod
+    async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):
         pass
 
     @property
@@ -173,15 +184,3 @@ class IHvac:
         else:
             _LOGGER.warning(f"Could not get {sensor.name} from hvac.")
         return 0
-
-    @abstractmethod
-    def get_sensor(self, sensor: SensorType = None):
-        pass
-
-    @abstractmethod
-    async def _get_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
-        pass
-
-    @abstractmethod
-    async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):
-        pass
