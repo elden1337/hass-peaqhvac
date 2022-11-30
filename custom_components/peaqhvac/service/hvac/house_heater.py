@@ -143,8 +143,8 @@ class HouseHeater(IHeater):
     def _temporary_lower(self) -> bool:
         if self._hvac.hub.sensors.peaqev_installed and self._hvac.hvac_mode == HvacMode.Heat:
             if all([
-                30 <= datetime.now().minute < 55,
-                self._hvac.hub.sensors.peaqev_facade.exact_threshold > 100
+                30 <= datetime.now().minute < 50,
+                float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100
             ]):
                 _LOGGER.debug("Lowering offset because of peak about to be breached.")
                 return True
@@ -190,7 +190,7 @@ class HouseHeater(IHeater):
             new_temp_diff = predicted_temp - self._hvac.hub.sensors.set_temp_indoors.value
             if abs(new_temp_diff) >= TEMP_TOLERANCE:
                 steps = new_temp_diff / TEMP_TOLERANCE
-                ret = int(steps) * -1
+                ret = int(steps)/2 * -1
                 return ret
         return 0
 

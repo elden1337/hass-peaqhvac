@@ -30,6 +30,8 @@ class IHvac:
     current_offset_dict_tomorrow: dict = {}
     periodic_update_list: list = []
     listenerentities = []
+    current_water_boost_state: int = 0
+    current_vent_boost_state: int = 0
 
     def __init__(self, hass: HomeAssistant, hub):
         self.hub = hub
@@ -100,13 +102,16 @@ class IHvac:
         await self.request_periodic_updates()
 
     async def request_periodic_updates(self) -> None:
-        if self.house_heater.vent_boost:
+        if int(self.house_heater.vent_boost) != self.current_vent_boost_state:
             if time.time() - self.periodic_update_timers[HvacOperations.VentBoost] > UPDATE_INTERVALS[HvacOperations.VentBoost]:
-                self.periodic_update_list.append((HvacOperations.VentBoost, 1))
-        if self.water_heater.heat_water or self.water_heater.water_heating:
+                self.periodic_update_list.append((HvacOperations.VentBoost, int(self.house_heater.vent_boost)))
+                self.current_vent_boost_state = int(self.house_heater.vent_boost)
+        if self.water_heater.try_heat_water or self.water_heater.water_heating:
             if time.time() - self.periodic_update_timers[HvacOperations.WaterBoost] > UPDATE_INTERVALS[HvacOperations.WaterBoost]:
-                _LOGGER.debug(f"MOCK: Wanting to update hotwaterboost with value {int(self.water_heater.heat_water)}")
-                #self.periodic_update_list.append((HvacOperations.WaterBoost, int(self.water_heater.heat_water)))
+                if self.current_water_boost_state != int(self.water_heater.try_heat_water):
+                    _LOGGER.debug(f"MOCK: Wanting to update hotwaterboost with value {int(self.water_heater.try_heat_water)}")
+                    self.periodic_update_list.append((HvacOperations.WaterBoost, int(self.water_heater.try_heat_water)))
+                    self.current_water_boost_state = int(self.water_heater.try_heat_water)
         if self.update_offset:
             if time.time() - self.periodic_update_timers[HvacOperations.Offset] > UPDATE_INTERVALS[HvacOperations.Offset] or datetime.now().minute == 0:
                 self.periodic_update_list.append((HvacOperations.Offset, self.current_offset))

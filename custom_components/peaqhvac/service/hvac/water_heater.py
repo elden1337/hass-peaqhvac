@@ -1,4 +1,5 @@
 import logging
+import statistics as stat
 import time
 from datetime import datetime
 import custom_components.peaqhvac.extensionmethods as ex
@@ -15,7 +16,7 @@ DEFAULT_WATER_BOOST = 120
 
 @dataclass
 class WaterBoosterModel:
-    heat_water: bool = False
+    try_heat_water: bool = False
     heat_water_timer: int = 0
     heat_water_timer_timeout = DEFAULT_WATER_BOOST
     pre_heating: bool = False
@@ -63,16 +64,16 @@ class WaterHeater(IHeater):
                 self._update_water_heater_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
-            self.booster_model.heat_water = False
+            self.booster_model.try_heat_water = False
 
     @IHeater.demand.setter
     def demand(self, val):
         self._demand = val
 
     @property
-    def heat_water(self) -> bool:
+    def try_heat_water(self) -> bool:
         """Returns true if we should try and heat the water"""
-        return self.booster_model.heat_water
+        return self.booster_model.try_heat_water
 
     @property
     def water_heating(self) -> bool:
@@ -105,47 +106,50 @@ class WaterHeater(IHeater):
             _prices.extend(self._hvac.hub.nordpool.prices)
             if self._hvac.hub.nordpool.prices_tomorrow is not None:
                 _prices.extend([p for p in self._hvac.hub.nordpool.prices_tomorrow if isinstance(p, (float, int))])
-            _neg_prices = [p * -1 for p in _prices]
-            peaks = peakfinder.identify_peaks(_neg_prices)
-            return _neg_prices[hour] in peaks
+            #_neg_prices = [p * -1 for p in _prices]
+            #peaks = peakfinder.identify_peaks(_neg_prices)
+            #return _neg_prices[hour] in peaks and _prices[hour] < stat.mean(_prices)
+            return _prices[hour] == min(_prices) or (_prices[hour+1] == min(_prices) and _prices[hour+1]/_prices[hour] >= 0.7 and datetime.now().minute >= 30)
         except:
             _LOGGER.debug("Could not calc peak water hours")
             return False
 
-    def _update_water_heater_operation(self):
-        """this function updates the heat-water property based on various logic for hourly price, peak level, presence and current water temp"""
-        # turn on if reversed_degree_demand >= current_temp
-        # turn off after x time to not do a full boost
-        # sometimes do a full boost
-        is_cheapest = self._get_water_peak(datetime.now().hour)
-        if is_cheapest:
+    def _check_boost_and_temp(self):
+        """FIX SO THAT THIS ONE IMPLEMENTS DIFFERENTLY ON AWAY MODE"""
+        if self._get_water_peak(datetime.now().hour):
             _LOGGER.debug("current hour is identified as a good hour to boost water")
+            self.booster_model.boost = True
+            return 3600
+        try:
+            offsets = self._hvac.hub.offset.getoffset(
+            prices=self._hvac.hub.nordpool.prices,
+            prices_tomorrow=self._hvac.hub.nordpool.prices_tomorrow
+            )
+            current_offset = offsets[0][datetime.now().hour]
 
-        match self.demand:
-            case Demand.HighDemand:
-                self.pre_heat()
-            case Demand.MediumDemand:
-                self.pre_heat()
-            case Demand.LowDemand:
-                if is_cheapest:
-                    self.pre_heat()
-            case Demand.NoDemand:
-                if is_cheapest:
-                    self.pre_heat()
+            if current_offset <= 0 and datetime.now().minute > 10:
+                if self.current_temperature <= 30:
+                    self.booster_model.pre_heating = True
+                    return None
+            elif current_offset > 0 and datetime.now().minute > 10:
+                if self.current_temperature <= 42:
+                    self.booster_model.pre_heating = True
+                    return None
+        except:
+            _LOGGER.debug("Can't read offsets for water-heating.")
+        return None
 
-        # ideally we want to wait til the last trimester of a period before commencing the boost or pre-heat to not push peak.
+    def _update_water_heater_operation(self) -> None:
+        """this function updates the heat-water property based on various logic for hourly price, peak level, presence and current water temp"""
+        timeout = self._check_boost_and_temp()
+        self._toggle_boost(timer_timeout=timeout)
 
-    def pre_heat(self):
-        """preheat to regular temp first"""
-        self.booster_model.pre_heating = True
-        self._toggle_boost()
-
-    def _toggle_boost(self, timer_timeout: int = None):
-        if self.booster_model.heat_water:
+    def _toggle_boost(self, timer_timeout: int = None) -> None:
+        if self.booster_model.try_heat_water:
             if self.booster_model.heat_water_timer_timeout > 0:
                 if time.time() - self.booster_model.heat_water_timer > self.booster_model.heat_water_timer_timeout:
-                    self.booster_model.heat_water = False
+                    self.booster_model.try_heat_water = False
         elif self.booster_model.pre_heating or self.booster_model.boost:
-            self.booster_model.heat_water = True
+            self.booster_model.try_heat_water = True
             self.booster_model.heat_water_timer = time.time()
             self.booster_model.heat_water_timer_timeout = timer_timeout if timer_timeout is not None else DEFAULT_WATER_BOOST
