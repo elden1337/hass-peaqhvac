@@ -162,9 +162,14 @@ class HouseHeater(IHeater):
     def _get_tempdiff_rounded(self) -> int:
         """+/- 0.3 C is accepted"""
         diff = self._get_tempdiff()
+        _tolerance = 0
         if diff == 0:
             return 0
-        return int(diff / TEMP_TOLERANCE) * -1
+        if diff > 0:
+            _tolerance = self._hvac.hub.sensors.set_temp_indoors.max_tolerance
+        else:
+            _tolerance = self._hvac.hub.sensors.set_temp_indoors.min_tolerance
+        return int(diff / _tolerance) * -1
 
     def _get_tempdiff(self) -> float:
         return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.value

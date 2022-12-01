@@ -7,8 +7,8 @@ class TargetTemp:
         self._min_tolerance = None
         self._max_tolerance = None
         self._preset = HvacPresets.Normal
-        self._set_temperature_and_tolerances()
         self._internal_set_temp = initval
+        self._set_temperature_and_tolerances()
 
     @property
     def min_tolerance(self) -> float:

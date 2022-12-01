@@ -1,5 +1,5 @@
 import logging
-#import statistics as stat
+import statistics as stat
 import time
 from datetime import datetime
 import custom_components.peaqhvac.extensionmethods as ex
@@ -9,9 +9,12 @@ from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.demand import Demand
 from dataclasses import dataclass
 
+from custom_components.peaqhvac.service.models.hvac_presets import HvacPresets
+
 _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = 60
 DEFAULT_WATER_BOOST = 120
+WAITTIMER_TIMEOUT = 1800
 
 
 @dataclass
@@ -30,7 +33,8 @@ class WaterHeater(IHeater):
         super().__init__(hvac=hvac)
         self._current_temp = None
         self._latest_update = 0
-        self._water_temp_trend = Gradient(max_age=18000, max_samples=10, ignore=0)
+        self._wait_timer = 0
+        self._water_temp_trend = Gradient(max_age=3600, max_samples=10, ignore=0)
         self.booster_model = WaterBoosterModel()
 
     @property
@@ -51,7 +55,7 @@ class WaterHeater(IHeater):
 
     @latest_boost_call.setter
     def latest_boost_call(self, val):
-        self._latest_update = val
+        self.booster_model.heat_water_timer = val
 
     @property
     def current_temperature(self) -> float:
@@ -64,7 +68,6 @@ class WaterHeater(IHeater):
             if self._current_temp != float(val):
                 self._current_temp = float(val)
                 self._water_temp_trend.add_reading(val=float(val), t=time.time())
-                # _LOGGER.debug(f"Added reading {val} to water temp trend")
                 self._update_water_heater_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
@@ -110,25 +113,27 @@ class WaterHeater(IHeater):
             _prices.extend(self._hvac.hub.nordpool.prices)
             if self._hvac.hub.nordpool.prices_tomorrow is not None:
                 _prices.extend([p for p in self._hvac.hub.nordpool.prices_tomorrow if isinstance(p, (float, int))])
-            #_neg_prices = [p * -1 for p in _prices]
-            #peaks = peakfinder.identify_peaks(_neg_prices)
-            #return _neg_prices[hour] in peaks and _prices[hour] < stat.mean(_prices)
-            return _prices[hour] == min(_prices) or (_prices[hour+1] == min(_prices) and _prices[hour+1]/_prices[hour] >= 0.7 and datetime.now().minute >= 30)
+            return all([
+                _prices[hour] == min(_prices) or (_prices[hour+1] == min(_prices) and _prices[hour+1]/_prices[hour] >= 0.7 and datetime.now().minute >= 30),
+                _prices[hour] < stat.mean(_prices)/2
+                        ])
         except:
             _LOGGER.debug("Could not calc peak water hours")
             return False
 
     def _update_water_heater_operation(self):
-        """FIX SO THAT THIS ONE IMPLEMENTS DIFFERENTLY ON AWAY MODE"""
         if self.is_initialized:
-            #if home
-            self._set_water_heater_operation_home()
-            # if away
-            #self._set_water_heater_operation_away()
+            if self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Normal:
+                self._set_water_heater_operation_home()
+            elif self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
+                self._set_water_heater_operation_away()
 
     def _set_water_heater_operation_home(self):
+        if self._hvac.hub.sensors.peaqev_installed:
+            if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100:
+                return
         if self._get_water_peak(datetime.now().hour):
-            _LOGGER.debug("current hour is identified as a good hour to boost water")
+            _LOGGER.debug("Current hour is identified as a good hour to boost water")
             self.booster_model.boost = True
             self._toggle_boost(timer_timeout=3600)
         try:
@@ -146,24 +151,31 @@ class WaterHeater(IHeater):
                 if 0 < self.current_temperature <= 42:
                     self.booster_model.pre_heating = True
                     self._toggle_boost(timer_timeout=None)
-        except:
-            _LOGGER.debug("Can't read offsets for water-heating.")
+        except Exception as e:
+            _LOGGER.debug(f"Can't read offsets for water-heating: {e}")
 
     def _set_water_heater_operation_away(self):
+        if self._hvac.hub.sensors.peaqev_installed:
+            if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100:
+                return
         try:
             if datetime.now().minute > 10:
                 if 0 < self.current_temperature <= 30:
                     self.booster_model.pre_heating = True
                     self._toggle_boost(timer_timeout=None)
-        except:
-            _LOGGER.debug("Can't read offsets for water-heating.")
+        except Exception as e:
+            _LOGGER.debug(f"Could not properly update water operation in away-mode: {e}")
 
     def _toggle_boost(self, timer_timeout: int = None) -> None:
         if self.booster_model.try_heat_water:
+            _LOGGER.debug("here1")
             if self.booster_model.heat_water_timer_timeout > 0:
+                _LOGGER.debug("here2")
                 if time.time() - self.booster_model.heat_water_timer > self.booster_model.heat_water_timer_timeout:
+                    _LOGGER.debug("here3")
                     self.booster_model.try_heat_water = False
-        elif self.booster_model.pre_heating or self.booster_model.boost:
+                    self._wait_timer = time.time()
+        elif (self.booster_model.pre_heating or self.booster_model.boost) and time.time() - self._wait_timer > WAITTIMER_TIMEOUT:
             self.booster_model.try_heat_water = True
             self.booster_model.heat_water_timer = time.time()
             self.booster_model.heat_water_timer_timeout = timer_timeout if timer_timeout is not None else DEFAULT_WATER_BOOST
