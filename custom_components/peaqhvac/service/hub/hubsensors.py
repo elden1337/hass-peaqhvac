@@ -25,8 +25,8 @@ class HubSensors:
         self.hvac_tolerance = options.hvac_tolerance
         self.average_temp_indoors = Average(entities=options.indoor_tempsensors)
         self.average_temp_outdoors = Average(entities=options.outdoor_tempsensors)
-        self.temp_trend_indoors = Gradient(max_samples=20, max_age=7200)
-        self.temp_trend_outdoors = Gradient(max_samples=20, max_age=7200)
+        self.temp_trend_indoors = Gradient(max_samples=20, max_age=7200, precision=1)
+        self.temp_trend_outdoors = Gradient(max_samples=20, max_age=7200, precision=1)
         self.set_temp_indoors = TargetTemp()
 
         if peaqev_discovered:

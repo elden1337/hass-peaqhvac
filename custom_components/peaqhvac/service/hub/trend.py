@@ -7,7 +7,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Gradient:
-    def __init__(self, max_age: int, max_samples: int, ignore: int = None):
+    def __init__(self, max_age: int, max_samples: int, precision: int = 2, ignore: int = None):
         self._init_time = time.time()
         self._temp_readings = []
         self._gradient = 0
@@ -15,11 +15,12 @@ class Gradient:
         self._max_samples = max_samples
         self._latest_update = 0
         self._ignore = ignore
+        self._precision = precision
 
     @property
     def gradient(self) -> float:
         self.set_gradient()
-        return round(self._gradient, 2)
+        return round(self._gradient, self._precision)
 
     @property
     def samples(self) -> int:

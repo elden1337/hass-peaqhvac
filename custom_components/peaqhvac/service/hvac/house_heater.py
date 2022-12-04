@@ -75,8 +75,8 @@ class HouseHeater(IHeater):
             desired_offset = self._set_calculated_offset(offsets)
         if self._temporary_lower():
             desired_offset -= 2
-        elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0, self._get_temp_trend_offset() < 0]):
-            return max(-10, sum([self._current_offset, self._get_tempdiff_rounded(), self._get_temp_trend_offset()]))
+        elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0, self._get_temp_trend_offset() <= 0]):
+            return round(max(-10, sum([self._current_offset, self._get_tempdiff_rounded(), self._get_temp_trend_offset()])),0)
         return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
 
     @property
@@ -167,6 +167,7 @@ class HouseHeater(IHeater):
             return 0
         if diff > 0:
             _tolerance = self._hvac.hub.sensors.set_temp_indoors.max_tolerance
+            _tolerance += (self._current_offset/10) if self._current_offset > 0 else 0
         else:
             _tolerance = self._hvac.hub.sensors.set_temp_indoors.min_tolerance
         return int(diff / _tolerance) * -1
@@ -175,16 +176,13 @@ class HouseHeater(IHeater):
         return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.value
 
     def _get_temp_extremas(self) -> float:
-        # set_temp = self._hvac.hub.sensors.set_temp_indoors.value
-        # min_diff = abs(set_temp - self._hvac.hub.sensors.average_temp_indoors.min)
-        # max_diff = abs(set_temp - self._hvac.hub.sensors.average_temp_indoors.max)
-        #
-        # if min_diff == max_diff:
-        #     return 0
-        # if max_diff >= min_diff * 2:
-        #     return -0.3
-        # if min_diff >= max_diff * 2:
-        #     return 0.3
+        set_temp = self._hvac.hub.sensors.set_temp_indoors.value
+        min_diff = set_temp - self._hvac.hub.sensors.average_temp_indoors.min
+        max_diff = set_temp - self._hvac.hub.sensors.average_temp_indoors.max
+        if min_diff > 1:
+            return 0.49 * int(min_diff)
+        if max_diff < -3:
+            return round(0.49 * int(max_diff + 2), 2)
         return 0
 
     def _get_temp_trend_offset(self) -> float:

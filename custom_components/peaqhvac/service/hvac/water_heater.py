@@ -34,7 +34,7 @@ class WaterHeater(IHeater):
         self._current_temp = None
         self._latest_update = 0
         self._wait_timer = 0
-        self._water_temp_trend = Gradient(max_age=3600, max_samples=10, ignore=0)
+        self._water_temp_trend = Gradient(max_age=3600, max_samples=10, precision=0, ignore=0)
         self.booster_model = WaterBoosterModel()
 
     @property
