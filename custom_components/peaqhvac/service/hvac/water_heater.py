@@ -13,7 +13,7 @@ from custom_components.peaqhvac.service.models.hvac_presets import HvacPresets
 
 _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = 60
-DEFAULT_WATER_BOOST = 120
+DEFAULT_WATER_BOOST = 600
 WAITTIMER_TIMEOUT = 1800
 
 
@@ -92,7 +92,8 @@ class WaterHeater(IHeater):
         if time.time() - self._latest_update > UPDATE_INTERVAL:
             self._latest_update = time.time()
             self._demand = self._get_deg_demand()
-            self._update_water_heater_operation()
+            if self.control_module:
+                self._update_water_heater_operation()
 
     def _get_deg_demand(self) -> Demand:
         temp = self.current_temperature
@@ -114,7 +115,7 @@ class WaterHeater(IHeater):
             if self._hvac.hub.nordpool.prices_tomorrow is not None:
                 _prices.extend([p for p in self._hvac.hub.nordpool.prices_tomorrow if isinstance(p, (float, int))])
             return all([
-                _prices[hour] == min(_prices) or (_prices[hour+1] == min(_prices) and _prices[hour+1]/_prices[hour] >= 0.7 and datetime.now().minute >= 30),
+                (_prices[hour] == min(_prices) and datetime.now().minute > 20) or (_prices[hour+1] == min(_prices) and _prices[hour+1]/_prices[hour] >= 0.7 and datetime.now().minute >= 30),
                 _prices[hour] < stat.mean(_prices)/2
                         ])
         except:
@@ -168,11 +169,8 @@ class WaterHeater(IHeater):
 
     def _toggle_boost(self, timer_timeout: int = None) -> None:
         if self.booster_model.try_heat_water:
-            _LOGGER.debug("here1")
             if self.booster_model.heat_water_timer_timeout > 0:
-                _LOGGER.debug("here2")
                 if time.time() - self.booster_model.heat_water_timer > self.booster_model.heat_water_timer_timeout:
-                    _LOGGER.debug("here3")
                     self.booster_model.try_heat_water = False
                     self._wait_timer = time.time()
         elif (self.booster_model.pre_heating or self.booster_model.boost) and time.time() - self._wait_timer > WAITTIMER_TIMEOUT:

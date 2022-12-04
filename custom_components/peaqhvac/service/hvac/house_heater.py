@@ -1,7 +1,6 @@
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.demand import Demand
 from custom_components.peaqhvac.service.hvac.offset import Offset
-import custom_components.peaqhvac.extensionmethods as ex
 from datetime import datetime
 import logging
 import time
@@ -11,8 +10,6 @@ from custom_components.peaqhvac.service.models.hvacmode import HvacMode
 _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = 60
 HEATBOOST_TIMER = 7200
-TEMP_TOLERANCE = 0.2
-
 
 class HouseHeater(IHeater):
     _latest_boost = 0
@@ -46,6 +43,22 @@ class HouseHeater(IHeater):
                 return True
         return False
 
+    @property
+    def current_offset(self) -> int:
+        return self._current_offset
+
+    @property
+    def current_tempdiff(self):
+        return self._get_tempdiff_rounded()
+
+    @property
+    def current_temp_extremas(self):
+        return self._get_temp_extremas()
+
+    @property
+    def current_temp_trend_offset(self):
+        return self._get_temp_trend_offset()
+
     def update_demand(self):
         """this function will be the most complex in this class. add more as we go"""
         if time.time() - self._latest_update > UPDATE_INTERVAL:
@@ -78,22 +91,6 @@ class HouseHeater(IHeater):
         elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0, self._get_temp_trend_offset() <= 0]):
             return round(max(-10, sum([self._current_offset, self._get_tempdiff_rounded(), self._get_temp_trend_offset()])),0)
         return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
-
-    @property
-    def current_offset(self) -> int:
-        return self._current_offset
-
-    @property
-    def current_tempdiff(self):
-        return self._get_tempdiff_rounded()
-
-    @property
-    def current_temp_extremas(self):
-        return self._get_temp_extremas()
-
-    @property
-    def current_temp_trend_offset(self):
-        return self._get_temp_trend_offset()
 
     def _set_calculated_offset(self, offsets: dict) -> int:
         hour = datetime.now().hour
@@ -191,10 +188,15 @@ class HouseHeater(IHeater):
                 return 0
             predicted_temp = self._hvac.hub.sensors.average_temp_indoors.value + self._hvac.hub.sensors.temp_trend_indoors.gradient
             new_temp_diff = predicted_temp - self._hvac.hub.sensors.set_temp_indoors.value
-            if abs(new_temp_diff) >= TEMP_TOLERANCE:
-                steps = new_temp_diff / TEMP_TOLERANCE
-                ret = int(steps)/2.01 * -1
-                return round(ret, 2)
+            if new_temp_diff > 0:
+                _tolerance = self._hvac.hub.sensors.set_temp_indoors.max_tolerance
+            else:
+                _tolerance = self._hvac.hub.sensors.set_temp_indoors.min_tolerance
+            if abs(new_temp_diff) >= _tolerance:
+                steps = new_temp_diff / _tolerance
+                ret = (int(steps) / 2 * -1)
+                ret = round(ret, 2) + 0.01 if ret < 0 else round(ret, 2) - 0.01
+                return ret
         return 0
 
     # def compare to water demand

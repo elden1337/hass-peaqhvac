@@ -113,19 +113,20 @@ class IHvac:
         await self.request_periodic_updates()
 
     async def request_periodic_updates(self) -> None:
-        if int(self.house_heater.vent_boost) != self.current_vent_boost_state:
-            if time.time() - self.periodic_update_timers[HvacOperations.VentBoost] > UPDATE_INTERVALS[HvacOperations.VentBoost]:
-                self.periodic_update_list.append((HvacOperations.VentBoost, int(self.house_heater.vent_boost)))
-                self.current_vent_boost_state = int(self.house_heater.vent_boost)
-        if self.water_heater.try_heat_water or self.water_heater.water_heating:
-            if time.time() - self.periodic_update_timers[HvacOperations.WaterBoost] > UPDATE_INTERVALS[HvacOperations.WaterBoost]:
-                if self.current_water_boost_state != int(self.water_heater.try_heat_water):
-                    _LOGGER.debug(f"MOCK: Wanting to update hotwaterboost with value {int(self.water_heater.try_heat_water)}")
-                    self.periodic_update_list.append((HvacOperations.WaterBoost, int(self.water_heater.try_heat_water)))
-                    self.current_water_boost_state = int(self.water_heater.try_heat_water)
-        if self.update_offset:
-            if time.time() - self.periodic_update_timers[HvacOperations.Offset] > UPDATE_INTERVALS[HvacOperations.Offset] or datetime.now().minute == 0:
-                self.periodic_update_list.append((HvacOperations.Offset, self.current_offset))
+        if self.hub.hvac.water_heater.control_module:
+            if self.water_heater.try_heat_water or self.water_heater.water_heating:
+                if time.time() - self.periodic_update_timers[HvacOperations.WaterBoost] > UPDATE_INTERVALS[HvacOperations.WaterBoost]:
+                    if self.current_water_boost_state != int(self.water_heater.try_heat_water):
+                        self.periodic_update_list.append((HvacOperations.WaterBoost, int(self.water_heater.try_heat_water)))
+                        self.current_water_boost_state = int(self.water_heater.try_heat_water)
+        if self.hub.hvac.house_heater.control_module:
+            if int(self.house_heater.vent_boost) != self.current_vent_boost_state:
+                if time.time() - self.periodic_update_timers[HvacOperations.VentBoost] > UPDATE_INTERVALS[HvacOperations.VentBoost]:
+                    self.periodic_update_list.append((HvacOperations.VentBoost, int(self.house_heater.vent_boost)))
+                    self.current_vent_boost_state = int(self.house_heater.vent_boost)
+            if self.update_offset:
+                if time.time() - self.periodic_update_timers[HvacOperations.Offset] > UPDATE_INTERVALS[HvacOperations.Offset] or datetime.now().minute == 0:
+                    self.periodic_update_list.append((HvacOperations.Offset, self.current_offset))
         return await self._do_periodic_updates()
 
     async def _do_periodic_updates(self) -> None:
