@@ -1,12 +1,9 @@
 {
   "name": "Peaqhvac",
   "domains": [
-    "binary_sensor",
-    "switch",
-    "sensor"
+    "sensor", "binary_sensor", "switch", "climate", "number"
   ],
-  "homeassistant": "2022.4.5",
-  "country": ["SE"],
+  "homeassistant": "2022.10.5",
   "zip_release": true,
   "filename": "peaqhvaq.zip",
   "render_readme": true
