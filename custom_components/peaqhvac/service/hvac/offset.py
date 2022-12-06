@@ -13,10 +13,11 @@ class Offset:
     max_hour_tomorrow: int = -1
     peaks_today: list[int] = []
     calculated_offsets = {}, {}
+    _internal_tolerance = 0
 
-    def __init__(self, tolerance: int):
+    def __init__(self, hub):
         self.hours = Hoursselection()
-        self._tolerance = tolerance
+        self._hub = hub
 
     def getoffset(
             self,
@@ -28,11 +29,13 @@ class Offset:
                 [
                     self.hours.prices != prices,
                     self.hours.prices_tomorrow != prices_tomorrow,
-                    self.calculated_offsets == {}, {}
+                    self.calculated_offsets == {}, {},
+                    self._hub.options.hvac_tolerance != self._internal_tolerance
                 ]
         ):
             self.hours.prices = prices
             self.hours.prices_tomorrow = prices_tomorrow
+            self._internal_tolerance = self._hub.options.hvac_tolerance
             if 23 <= len(prices) <= 25:
                 self.calculated_offsets = self._update_offset()
         return self.calculated_offsets
@@ -44,7 +47,7 @@ class Offset:
             tomorrow = {}
             if len(d['tomorrow']) > 0:
                 tomorrow = self._offset_per_day(d['tomorrow'])
-            return Offset._smooth_transitions(today, tomorrow, self._tolerance)
+            return Offset._smooth_transitions(today, tomorrow, self._internal_tolerance)
         except Exception as e:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
@@ -53,7 +56,7 @@ class Offset:
         ret = {}
         _max_today = max(day_values.values())
         _min_today = min(day_values.values())
-        factor = max(abs(_max_today), abs(_min_today)) / self._tolerance
+        factor = max(abs(_max_today), abs(_min_today)) / self._internal_tolerance
 
         for k, v in day_values.items():
             ret[k] = int(round((day_values[k] / factor) * -1, 0))

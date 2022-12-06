@@ -27,7 +27,7 @@ class Hub:
         self.states = StateChanges(self, self._hass)
         self.hvac = HvacFactory.create(self._hass, self.options, self)
         self.nordpool = NordPoolUpdater(self._hass, self)
-        self.offset = Offset(tolerance=self.options.hvac_tolerance)
+        self.offset = Offset(self)
         self.prognosis = WeatherPrognosis(self._hass)
         self.trackerentities = []
         self.trackerentities.append(self.nordpool.nordpool_entity)

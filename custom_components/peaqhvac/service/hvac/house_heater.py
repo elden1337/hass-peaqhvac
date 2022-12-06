@@ -3,17 +3,16 @@ from custom_components.peaqhvac.service.models.demand import Demand
 from custom_components.peaqhvac.service.hvac.offset import Offset
 from datetime import datetime
 import logging
+import statistics as stat
 import time
 
 from custom_components.peaqhvac.service.models.hvacmode import HvacMode
 
 _LOGGER = logging.getLogger(__name__)
-UPDATE_INTERVAL = 60
 HEATBOOST_TIMER = 7200
 
 class HouseHeater(IHeater):
     _latest_boost = 0
-    _latest_update = 0
     _degree_minutes = 0
     _current_offset = 0
 
@@ -59,15 +58,10 @@ class HouseHeater(IHeater):
     def current_temp_trend_offset(self):
         return self._get_temp_trend_offset()
 
-    def update_demand(self):
-        """this function will be the most complex in this class. add more as we go"""
-        if time.time() - self._latest_update > UPDATE_INTERVAL:
-            self._latest_update = time.time()
-            self._demand = self._get_dm_demand(self._hvac.hvac_dm)
-
-    def _get_dm_demand(self, dm: int) -> Demand:
+    def _get_demand(self) -> Demand:
         _compressor_start = self._dm_compressor_start if self._dm_compressor_start is not None else -300
         _return_temp = self._hvac.delta_return_temp if self._hvac.delta_return_temp is not None else 1000
+        dm = self._hvac.hvac_dm
         if dm >= 0 or _return_temp < 0:
             return Demand.NoDemand
         if dm > int(_compressor_start / 2):
@@ -164,7 +158,7 @@ class HouseHeater(IHeater):
             return 0
         if diff > 0:
             _tolerance = self._hvac.hub.sensors.set_temp_indoors.max_tolerance
-            _tolerance += (self._current_offset/10) if self._current_offset > 0 else 0
+            _tolerance = _tolerance + (self._current_offset/10) if self._current_offset > 0 else _tolerance
         else:
             _tolerance = self._hvac.hub.sensors.set_temp_indoors.min_tolerance
         return int(diff / _tolerance) * -1
@@ -173,14 +167,22 @@ class HouseHeater(IHeater):
         return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.value
 
     def _get_temp_extremas(self) -> float:
-        set_temp = self._hvac.hub.sensors.set_temp_indoors.value
-        min_diff = set_temp - self._hvac.hub.sensors.average_temp_indoors.min
-        max_diff = set_temp - self._hvac.hub.sensors.average_temp_indoors.max
-        if min_diff > 1:
-            return 0.49 * int(min_diff)
-        if max_diff < -3:
-            return round(0.49 * int(max_diff + 2), 2)
-        return 0
+        low_diffs = []
+        high_diffs = []
+        for t in self._hvac.hub.sensors.average_temp_indoors.all_values:
+            _diff = self._hvac.hub.sensors.set_temp_indoors.value - t
+            if _diff > 0:
+                low_diffs.append(_diff)
+            elif _diff < 0:
+                high_diffs.append(_diff)
+        if len(low_diffs) == len(high_diffs):
+            return 0
+        if len(low_diffs) > len(high_diffs):
+            _tolerance = self._hvac.hub.sensors.set_temp_indoors.min_tolerance
+            return round(stat.mean(low_diffs)-_tolerance, 2)
+        else:
+            _tolerance = self._hvac.hub.sensors.set_temp_indoors.max_tolerance
+            return round(stat.mean(high_diffs)+_tolerance, 2)
 
     def _get_temp_trend_offset(self) -> float:
         if self._hvac.hub.sensors.temp_trend_indoors.is_clean:

@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging
+
 import homeassistant.helpers.template as template
 from enum import Enum
 from dataclasses import dataclass, field
@@ -47,14 +48,20 @@ class WeatherObject:
 class WeatherPrognosis:
     def __init__(self, hass):
         self._hass = hass
-        self.prognosis_list = list[WeatherObject]
+        self.prognosis_list: list[WeatherObject] = []
+        self._hvac_prognosis_list: list[PrognosisExportModel] = []
+        self._current_temperature = 1000
         self.entity = ""
         self.initialized: bool = False
         self._setup_weather_prognosis()
 
+    @property
+    def prognosis(self) -> list:
+        return self._hvac_prognosis_list
+
     def _setup_weather_prognosis(self):
         try:
-            entities = template.integration_entities(self._hass, 'weather')
+            entities = template.integration_entities(self._hass, 'met')
             if len(entities) < 1:
                 raise Exception("no entities found for weather.")
             _ent = [e for e in entities if e.endswith("_hourly")]
@@ -86,10 +93,13 @@ class WeatherPrognosis:
             else:
                 _LOGGER.error("could not get weather-prognosis.")
 
-    def get_hvac_prognosis(self, current_temperature: float) -> list[PrognosisExportModel]:
+    def get_hvac_prognosis(self, current_temperature: float):
+        if current_temperature == self._current_temperature:
+            return
+        self._current_temperature = float(current_temperature)
         ret = []
         if not self.initialized:
-            return ret
+            return
         corrected_temp_delta = 0
         now = datetime.now()
         thishour = datetime(now.year, now.month, now.day, now.hour, 0, 0)
@@ -97,12 +107,11 @@ class WeatherPrognosis:
         valid_progs = [p for idx, p in enumerate(self.prognosis_list) if p.DT >= thishour]
         if len(valid_progs) == 0:
             _LOGGER.debug("No prognosis available")
-            return []
-
+            return
         for p in valid_progs:
             c = p.DT - thishour
             if c.seconds == 0:
-                corrected_temp_delta = round(current_temperature - p.Temperature, 2)
+                corrected_temp_delta = round(self._current_temperature - p.Temperature, 2)
                 continue
             if 3600 <= c.seconds <= 21600:
                 # correct the temp
@@ -114,12 +123,12 @@ class WeatherPrognosis:
                 prognosis_temp=p.Temperature,
                 corrected_temp=temp,
                 windchill_temp=self._correct_temperature_for_windchill(temp, p.Wind_Speed),
-                delta_temp_from_now=round(temp - current_temperature, 1),
+                delta_temp_from_now=round(temp - self._current_temperature, 1),
                 DT=p.DT,
                 TimeDelta=hourdiff
             )
             ret.append(hour_prognosis)
-        return ret
+        self.hvac_prognosis_list = ret
 
     def _set_prognosis(self, import_list: list):
         ret = []
@@ -150,7 +159,7 @@ class WeatherPrognosis:
 # for ww in w.prognosis_list:
 #     print(ww)
 #
-# prog = w.make_hvac_prognosis(1.6)
+# prog = w.get_hvac_prognosis(1.6)
 #
 # for p in prog:
 #     print(p)

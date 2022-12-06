@@ -11,7 +11,6 @@ class HubSensors:
     away_mode: HubMember
     temp_trend_outdoors: Gradient
     temp_trend_indoors: Gradient
-    # prognosis: str
     set_temp_indoors: TargetTemp
     average_temp_indoors: Average
     average_temp_outdoors: Average

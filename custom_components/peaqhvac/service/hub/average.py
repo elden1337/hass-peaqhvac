@@ -1,4 +1,5 @@
 import logging
+import statistics as stat
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -7,8 +8,10 @@ class Average:
     def __init__(self, entities: list[str]):
         self.listenerentities = entities
         self._value: float = 0.0
+        self._median: float = 0.0
         self._max: float = 0.0
         self._min: float = 0.0
+        self._all_values = []
         self._values = {}
         self._initialized_values = 0
         self._total_sensors = len(self.listenerentities)
@@ -34,6 +37,10 @@ class Average:
         return self._value
 
     @property
+    def median(self) -> float:
+        return self._median
+
+    @property
     def max(self) -> float:
         return self._max
         
@@ -41,21 +48,9 @@ class Average:
     def min(self) -> float:
         return self._min
 
-    @value.setter
-    def value(self, val):
-        try:
-            filteredlist = [i for i in val.values() if i != 999.0]
-            ret = sum(filteredlist) / len(filteredlist)
-            if self.initialized_percentage > 0.2:
-                self._min = min(filteredlist)
-                self._max = max(filteredlist)
-                self._value = ret
-            else:
-                _LOGGER.debug(f"Unable to calculate average. Initialized sensors are: {self.initialized_percentage}")
-                self._value = 0
-        except:
-            self._value = 0
-            _LOGGER.debug("unable to set averagesensor")
+    @property
+    def all_values(self) -> list:
+        return self._all_values
 
     def update_values(self, entity, value):
         try:
@@ -65,6 +60,22 @@ class Average:
                     self._initialized_sensors[entity] = True
                     self._initialized_values += 1
                 self._values[entity] = floatval
-                self.value = self._values
+                self._create_values(self._values)
         except:
             _LOGGER.debug(f"unable to set average-val for {entity}: {value}")
+
+    def _create_values(self, _values: dict):
+        try:
+            filtered_list = [i for i in _values.values() if i != 999.0]
+            if self.initialized_percentage > 0.2:
+                self._min = min(filtered_list)
+                self._max = max(filtered_list)
+                self._value = stat.mean(filtered_list)
+                self._median = stat.median(filtered_list)
+                self._all_values = filtered_list
+            else:
+                _LOGGER.debug(f"Unable to calculate average. Initialized sensors are: {self.initialized_percentage}")
+                self._value = 0
+        except:
+            self._value = 0
+            _LOGGER.debug("unable to set averagesensor")

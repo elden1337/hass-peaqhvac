@@ -8,7 +8,6 @@ USER_SCHEMA = vol.Schema(
     {
         vol.Optional("indoor_tempsensors"): cv.string,
         vol.Optional("outdoor_tempsensors"): cv.string,
-        vol.Optional("hvac_tolerance"): cv.positive_float,
         vol.Optional("systemid"): cv.string
     }
 )

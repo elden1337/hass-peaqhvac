@@ -31,7 +31,6 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
 
     huboptions.indoor_tempsensors = huboptions.set_sensors_from_string(config.data["indoor_tempsensors"])
     huboptions.outdoor_tempsensors = huboptions.set_sensors_from_string(config.data["outdoor_tempsensors"])
-    huboptions.hvac_tolerance = config.data["hvac_tolerance"]
     huboptions.systemid = config.data["systemid"]
     huboptions.hvacbrand = huboptions.set_hvacbrand(HVACBRAND_NIBE) #todo:move to proper dropdown in configflow
     #configinputs["hvacbrand"] = config.data["hvacbrand"]

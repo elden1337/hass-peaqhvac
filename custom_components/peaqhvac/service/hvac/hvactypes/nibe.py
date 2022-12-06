@@ -51,8 +51,8 @@ class Nibe(IHvac):
                 return HvacMode.Heat
             elif ret == "idle":
                 return HvacMode.Idle
-        else:
-            _LOGGER.warning("could not get hvac mode from hvac")
+        # else:
+        #     _LOGGER.warning("could not get hvac mode from hvac")
         return HvacMode.Unknown
 
     async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):

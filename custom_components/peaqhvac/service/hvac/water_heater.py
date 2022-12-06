@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from custom_components.peaqhvac.service.models.hvac_presets import HvacPresets
 
 _LOGGER = logging.getLogger(__name__)
-UPDATE_INTERVAL = 60
+
 DEFAULT_WATER_BOOST = 600
 WAITTIMER_TIMEOUT = 1800
 
@@ -32,7 +32,6 @@ class WaterHeater(IHeater):
         self._hvac = hvac
         super().__init__(hvac=hvac)
         self._current_temp = None
-        self._latest_update = 0
         self._wait_timer = 0
         self._water_temp_trend = Gradient(max_age=3600, max_samples=10, precision=0, ignore=0)
         self.booster_model = WaterBoosterModel()
@@ -68,7 +67,7 @@ class WaterHeater(IHeater):
             if self._current_temp != float(val):
                 self._current_temp = float(val)
                 self._water_temp_trend.add_reading(val=float(val), t=time.time())
-                self._update_water_heater_operation()
+                self._update_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
             self.booster_model.try_heat_water = False
@@ -87,15 +86,15 @@ class WaterHeater(IHeater):
         """Return true if the water is currently being heated"""
         return self.temperature_trend > 0 or self.booster_model.pre_heating is True
 
-    def update_demand(self):
-        """this function will be the most complex in this class. add more as we go"""
-        if time.time() - self._latest_update > UPDATE_INTERVAL:
-            self._latest_update = time.time()
-            self._demand = self._get_deg_demand()
-            if self.control_module:
-                self._update_water_heater_operation()
+    # def update_demand(self):
+    #     """this function will be the most complex in this class. add more as we go"""
+    #     if time.time() - self._latest_update > UPDATE_INTERVAL:
+    #         self._latest_update = time.time()
+    #         self._demand = self._get_deg_demand()
+    #         if self.control_module:
+    #             self._update_operation()
 
-    def _get_deg_demand(self) -> Demand:
+    def _get_demand(self) -> Demand:
         temp = self.current_temperature
         if 0 < temp < 100:
             if temp >= 42:
@@ -122,7 +121,7 @@ class WaterHeater(IHeater):
             _LOGGER.debug("Could not calc peak water hours")
             return False
 
-    def _update_water_heater_operation(self):
+    def _update_operation(self):
         if self.is_initialized:
             if self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Normal:
                 self._set_water_heater_operation_home()

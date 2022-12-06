@@ -63,6 +63,17 @@ class IHvac:
             _LOGGER.exception(f"Error on updating offsets: {e}")
             return False
 
+    # def set_offsets(self) -> None:
+    #     try:
+    #         ret = self.hub.offset.getoffset(
+    #         prices=self.hub.nordpool.prices,
+    #         prices_tomorrow=self.hub.nordpool.prices_tomorrow
+    #         )
+    #         self.current_offset_dict = ret[0]
+    #         self.current_offset_dict_tomorrow = ret[1]
+    #     except Exception as e:
+    #         _LOGGER.exception(f"Error on setting offsets: {e}")
+
     @property
     @abstractmethod
     def delta_return_temp(self):
@@ -182,6 +193,6 @@ class IHvac:
                 return ex.parse_to_type(ret, returntype)
             except Exception as e:
                 _LOGGER.debug(f"Could not parse {sensor.name} from hvac. {e}")
-        else:
-            _LOGGER.warning(f"Could not get {sensor.name} from hvac.")
+        # else:
+        #     _LOGGER.warning(f"Could not get {sensor.name} from hvac.")
         return 0
