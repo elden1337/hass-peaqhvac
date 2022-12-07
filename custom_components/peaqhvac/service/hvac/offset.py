@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import logging
 from statistics import mean
 from typing import Tuple
 import custom_components.peaqhvac.service.hvac.peakfinder as peakfinder
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
-
+from datetime import timedelta, datetime
+from custom_components.peaqhvac.service.hub.weather_prognosis import PrognosisExportModel
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -13,11 +16,38 @@ class Offset:
     max_hour_tomorrow: int = -1
     peaks_today: list[int] = []
     calculated_offsets = {}, {}
+    raw_offsets = {}, {}
     _internal_tolerance = 0
 
     def __init__(self, hub):
         self.hours = Hoursselection()
         self._hub = hub
+
+    def _get_two_hour_prog(self, thishour: datetime) -> PrognosisExportModel | None:
+        for p in self._hub.prognosis.prognosis:
+            c = timedelta.total_seconds(p.DT - thishour)
+            if c == 7200:
+                return p
+        return None
+
+    def _get_weatherprognosis_adjustment(self, offsets) -> Tuple[dict, dict]:
+        # temp fix
+        if len(self._hub.prognosis.prognosis) == 0:
+            _LOGGER.debug("Prognosis length was 0. updating")
+            self._hub.prognosis.update_weather_prognosis()
+            self._hub.prognosis.get_hvac_prognosis(self._hub.sensors.average_temp_outdoors.value)
+        # temp fix
+
+        for k, v in offsets[0].items():
+            now = datetime.now()
+            thishour = datetime(now.year, now.month, now.day, int(k), 0, 0)
+            prog = self._get_two_hour_prog(thishour)
+            if prog is not None:
+                adj = int(round(prog.corrected_temp / 2 / 2.5, 0) * -1)
+                if adj != v:
+                    _LOGGER.debug(f"adjusted {k} from {v} to {adj}")
+                    offsets[0][k] = adj
+        return offsets[0], offsets[1]
 
     def getoffset(
             self,
@@ -37,8 +67,15 @@ class Offset:
             self.hours.prices_tomorrow = prices_tomorrow
             self._internal_tolerance = self._hub.options.hvac_tolerance
             if 23 <= len(prices) <= 25:
-                self.calculated_offsets = self._update_offset()
-        return self.calculated_offsets
+                self.raw_offsets = self._update_offset()
+            else:
+                _LOGGER.error(f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(prices)}")
+            try:
+                self.calculated_offsets = self._get_weatherprognosis_adjustment(self.raw_offsets)
+            except Exception as e:
+                _LOGGER.debug(f"Got to except: {e}")
+                self.calculated_offsets = self.raw_offsets
+            return self.calculated_offsets
 
     def _update_offset(self) -> Tuple[dict, dict]:
         try:
@@ -47,7 +84,7 @@ class Offset:
             tomorrow = {}
             if len(d['tomorrow']) > 0:
                 tomorrow = self._offset_per_day(d['tomorrow'])
-            return Offset._smooth_transitions(today, tomorrow, self._internal_tolerance)
+            return self._smooth_transitions(today, tomorrow, self._internal_tolerance)
         except Exception as e:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
@@ -62,15 +99,14 @@ class Offset:
             ret[k] = int(round((day_values[k] / factor) * -1, 0))
         return ret
 
-    @staticmethod
-    def _smooth_transitions(today: dict, tomorrow: dict, tolerance: int) -> Tuple[dict, dict]:
+    def _smooth_transitions(self, today: dict, tomorrow: dict, tolerance: int) -> Tuple[dict, dict]:
         tolerance = min(tolerance, 4)
         start_list = []
         start_list.extend(today.values())
         start_list.extend(tomorrow.values())
 
         # Find and remove single anomalies.
-        start_list = Offset._find_single_anomalies(start_list)
+        start_list = self._find_single_anomalies(start_list)
 
         # Smooth out transitions upwards so that there is less risk of electrical addon usage.
         for idx, v in enumerate(start_list):
@@ -87,8 +123,7 @@ class Offset:
                 ret[1][hour - 24] = start_list[hour]
         return ret
 
-    @staticmethod
-    def _find_single_anomalies(adj: list) -> list[int]:
+    def _find_single_anomalies(self, adj: list) -> list[int]:
         for idx, p in enumerate(adj):
             if idx <= 1 or idx >= len(adj) - 1:
                 pass

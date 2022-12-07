@@ -18,6 +18,7 @@
     "after_dependencies": [
       "nibe",
       "nordpool",
-      "peaqev"
+      "peaqev",
+      "met"
     ]
   }

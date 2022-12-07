@@ -35,19 +35,17 @@ class OffsetSensor(SensorBase):
         self._tempdiff_offset = self._hub.hvac.house_heater.current_tempdiff
         self._tempextremas_offset = self._hub.hvac.house_heater.current_temp_extremas
         self._temptrend_offset = self._hub.hvac.house_heater.current_temp_trend_offset
-        self._prognosis = self._hub.prognosis.prognosis
 
     def _offset_dict_to_list(self, _input: dict) -> list:
         return [i for i in _input.values()]
 
     @property
     def extra_state_attributes(self) -> dict:
-        attr_dict = {}
-        attr_dict["Current hour offset"] = self._current_offset
-        attr_dict["Tempdiff offset"] = self._tempdiff_offset
-        attr_dict["Temp extremas offset"] = self._tempextremas_offset
-        attr_dict["Temp trend offset"] = self._temptrend_offset
-        attr_dict["Today"] = self._offsets
-        attr_dict["Tomorrow"] = self._offsets_tomorrow
-        attr_dict["Prognosis"] = self._prognosis
-        return attr_dict
+        return {
+            "Current hour offset":  self._current_offset,
+            "Tempdiff offset": self._tempdiff_offset,
+            "Temp extremas offset": self._tempextremas_offset,
+            "Temp trend offset": self._temptrend_offset,
+            "Today": self._offsets,
+            "Tomorrow": self._offsets_tomorrow,
+        }

@@ -49,7 +49,7 @@ class WeatherPrognosis:
     def __init__(self, hass):
         self._hass = hass
         self.prognosis_list: list[WeatherObject] = []
-        self._hvac_prognosis_list: list[PrognosisExportModel] = []
+        self._hvac_prognosis_list: list = []
         self._current_temperature = 1000
         self.entity = ""
         self.initialized: bool = False
@@ -84,7 +84,7 @@ class WeatherPrognosis:
                     if len(ret_attr) > 0:
                         self._set_prognosis(ret_attr)
                     else:
-                        #_LOGGER.error(f"Nordpool returned a faulty length of prices for today ({len(ret_attr)})")
+                        _LOGGER.error(f"Wether prognosis cannot be updated :({len(ret_attr)})")
                         pass
                 except Exception as e:
                     #_LOGGER.exception(f"Could not parse today's prices from Nordpool. Unsolveable error. {e}")
@@ -92,11 +92,17 @@ class WeatherPrognosis:
                     return
             else:
                 _LOGGER.error("could not get weather-prognosis.")
+        else:
+            _LOGGER.debug("Tried to update weather-prognosis but the class is not initialized yet.")
 
     def get_hvac_prognosis(self, current_temperature: float):
-        if current_temperature == self._current_temperature:
+        # if current_temperature == self._current_temperature:
+        #     return
+        try:
+            self._current_temperature = float(current_temperature)
+        except Exception as e:
+            _LOGGER.debug(f"Could not parse temperature as float: {e}")
             return
-        self._current_temperature = float(current_temperature)
         ret = []
         if not self.initialized:
             return
@@ -128,6 +134,7 @@ class WeatherPrognosis:
                 TimeDelta=hourdiff
             )
             ret.append(hour_prognosis)
+        #_LOGGER.debug(f"get hvac prognosis final {ret}")
         self.hvac_prognosis_list = ret
 
     def _set_prognosis(self, import_list: list):

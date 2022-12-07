@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.demand import Demand
 from custom_components.peaqhvac.service.hvac.offset import Offset
@@ -10,6 +12,7 @@ from custom_components.peaqhvac.service.models.hvacmode import HvacMode
 
 _LOGGER = logging.getLogger(__name__)
 HEATBOOST_TIMER = 7200
+
 
 class HouseHeater(IHeater):
     _latest_boost = 0
@@ -83,7 +86,8 @@ class HouseHeater(IHeater):
         if self._temporary_lower():
             desired_offset -= 2
         elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0, self._get_temp_trend_offset() <= 0]):
-            return round(max(-10, sum([self._current_offset, self._get_tempdiff_rounded(), self._get_temp_trend_offset()])),0)
+            return round(
+                max(-10, sum([self._current_offset, self._get_tempdiff_rounded(), self._get_temp_trend_offset()])), 0)
         return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
 
     def _set_calculated_offset(self, offsets: dict) -> int:
@@ -158,9 +162,10 @@ class HouseHeater(IHeater):
             return 0
         if diff > 0:
             _tolerance = self._hvac.hub.sensors.set_temp_indoors.max_tolerance
-            _tolerance = _tolerance + (self._current_offset/10) if self._current_offset > 0 else _tolerance
+            _tolerance = _tolerance + (self._current_offset / 10) if self._current_offset > 0 else _tolerance
         else:
             _tolerance = self._hvac.hub.sensors.set_temp_indoors.min_tolerance
+            _tolerance = _tolerance + (abs(self._current_offset) / 10) if self._current_offset < 0 else _tolerance
         return int(diff / _tolerance) * -1
 
     def _get_tempdiff(self) -> float:
@@ -179,10 +184,10 @@ class HouseHeater(IHeater):
             return 0
         if len(low_diffs) > len(high_diffs):
             _tolerance = self._hvac.hub.sensors.set_temp_indoors.min_tolerance
-            return round(stat.mean(low_diffs)-_tolerance, 2)
+            return round(stat.mean(low_diffs) - _tolerance, 2)
         else:
             _tolerance = self._hvac.hub.sensors.set_temp_indoors.max_tolerance
-            return round(stat.mean(high_diffs)+_tolerance, 2)
+            return round(stat.mean(high_diffs) + _tolerance, 2)
 
     def _get_temp_trend_offset(self) -> float:
         if self._hvac.hub.sensors.temp_trend_indoors.is_clean:

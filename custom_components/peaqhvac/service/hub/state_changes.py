@@ -26,8 +26,9 @@ class StateChanges:
         elif entity in self._hub.options.outdoor_tempsensors:
             self._hub.sensors.average_temp_outdoors.update_values(entity=entity, value=value)
             self._hub.sensors.temp_trend_outdoors.add_reading(val=self._hub.sensors.average_temp_outdoors.value, t=time.time())
-            self._hub.prognosis.get_hvac_prognosis(value)
-        elif entity == self._hub.nordpool.nordpool_entity:
+        self._hub.prognosis.get_hvac_prognosis(self._hub.sensors.average_temp_outdoors.value)
+
+        if entity == self._hub.nordpool.nordpool_entity:
             self._hub.nordpool.update_nordpool()
             self._hub.prognosis.update_weather_prognosis()
 
@@ -38,7 +39,7 @@ class StateChanges:
         elif entity in self._hub.options.outdoor_tempsensors:
             self._hub.sensors.average_temp_outdoors.update_values(entity=entity, value=value)
             self._hub.sensors.temp_trend_outdoors.add_reading(val=self._hub.sensors.average_temp_outdoors.value, t=time.time())
-            self._hub.prognosis.get_hvac_prognosis(value)
+        self._hub.prognosis.get_hvac_prognosis(self._hub.sensors.average_temp_outdoors.value)
 
         if entity == self._hub.nordpool.nordpool_entity or time.time() - self.latest_nordpool_update > 300:
             self._hub.nordpool.update_nordpool()
