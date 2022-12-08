@@ -7,6 +7,7 @@ import custom_components.peaqhvac.service.hvac.peakfinder as peakfinder
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
 from datetime import timedelta, datetime
 from custom_components.peaqhvac.service.hub.weather_prognosis import PrognosisExportModel
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -22,32 +23,6 @@ class Offset:
     def __init__(self, hub):
         self.hours = Hoursselection()
         self._hub = hub
-
-    def _get_two_hour_prog(self, thishour: datetime) -> PrognosisExportModel | None:
-        for p in self._hub.prognosis.prognosis:
-            c = timedelta.total_seconds(p.DT - thishour)
-            if c == 7200:
-                return p
-        return None
-
-    def _get_weatherprognosis_adjustment(self, offsets) -> Tuple[dict, dict]:
-        # temp fix
-        if len(self._hub.prognosis.prognosis) == 0:
-            _LOGGER.debug("Prognosis length was 0. updating")
-            self._hub.prognosis.update_weather_prognosis()
-            self._hub.prognosis.get_hvac_prognosis(self._hub.sensors.average_temp_outdoors.value)
-        # temp fix
-
-        for k, v in offsets[0].items():
-            now = datetime.now()
-            thishour = datetime(now.year, now.month, now.day, int(k), 0, 0)
-            prog = self._get_two_hour_prog(thishour)
-            if prog is not None:
-                adj = int(round(prog.corrected_temp / 2 / 2.5, 0) * -1)
-                if adj != v:
-                    _LOGGER.debug(f"adjusted {k} from {v} to {adj}")
-                    offsets[0][k] = adj
-        return offsets[0], offsets[1]
 
     def getoffset(
             self,
@@ -69,18 +44,23 @@ class Offset:
             if 23 <= len(prices) <= 25:
                 self.raw_offsets = self._update_offset()
             else:
-                _LOGGER.error(f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(prices)}")
+                _LOGGER.error(
+                    f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(prices)}")
             try:
-                self.calculated_offsets = self._get_weatherprognosis_adjustment(self.raw_offsets)
+                _weather_dict = self._get_weatherprognosis_adjustment(self.raw_offsets)
+                self.calculated_offsets = self._update_offset({k: v*-1 for (k,v) in _weather_dict[0]})
             except Exception as e:
                 _LOGGER.debug(f"Got to except: {e}")
                 self.calculated_offsets = self.raw_offsets
-            return self.calculated_offsets
+        return self.calculated_offsets
 
-    def _update_offset(self) -> Tuple[dict, dict]:
+    def _update_offset(
+            self,
+            weather_adjusted_today=None
+    ) -> Tuple[dict, dict]:
         try:
             d = self.hours.offsets
-            today = self._offset_per_day(d['today'])
+            today = self._offset_per_day(d['today']) if weather_adjusted_today is None else weather_adjusted_today
             tomorrow = {}
             if len(d['tomorrow']) > 0:
                 tomorrow = self._offset_per_day(d['tomorrow'])
@@ -89,7 +69,10 @@ class Offset:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
 
-    def _offset_per_day(self, day_values: dict) -> dict:
+    def _offset_per_day(
+            self,
+            day_values: dict
+    ) -> dict:
         ret = {}
         _max_today = max(day_values.values())
         _min_today = min(day_values.values())
@@ -99,7 +82,12 @@ class Offset:
             ret[k] = int(round((day_values[k] / factor) * -1, 0))
         return ret
 
-    def _smooth_transitions(self, today: dict, tomorrow: dict, tolerance: int) -> Tuple[dict, dict]:
+    def _smooth_transitions(
+            self,
+            today: dict,
+            tomorrow: dict,
+            tolerance: int
+    ) -> Tuple[dict, dict]:
         tolerance = min(tolerance, 4)
         start_list = []
         start_list.extend(today.values())
@@ -123,7 +111,10 @@ class Offset:
                 ret[1][hour - 24] = start_list[hour]
         return ret
 
-    def _find_single_anomalies(self, adj: list) -> list[int]:
+    def _find_single_anomalies(
+            self,
+            adj: list
+    ) -> list[int]:
         for idx, p in enumerate(adj):
             if idx <= 1 or idx >= len(adj) - 1:
                 pass
@@ -141,6 +132,42 @@ class Offset:
                         else:
                             adj[idx] -= int(diff / 2)
         return adj
+
+    def _get_two_hour_prog(
+            self,
+            thishour: datetime
+    ) -> PrognosisExportModel | None:
+        for p in self._hub.prognosis.prognosis:
+            c = timedelta.total_seconds(p.DT - thishour)
+            if c == 7200:
+                return p
+        return None
+
+    def _get_weatherprognosis_adjustment(
+            self,
+            offsets
+    ) -> Tuple[dict, dict]:
+        self._hub.prognosis.update_weather_prognosis()
+        ret = {}, offsets[1]
+        for k, v in offsets[0].items():
+            now = datetime.now()
+            _next_prognosis = self._get_two_hour_prog(
+                datetime(now.year, now.month, now.day, int(k), 0, 0)
+            )
+            if _next_prognosis is not None and int(k) >= now.hour:
+                divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
+                adj = int(round((_next_prognosis.delta_temp_from_now / 2.5) * divisor, 0)) * -1
+                if adj != 0:
+                    #_LOGGER.debug(f"updating {k} from {v} to {v+adj}")
+                    if adj < 0:
+                        ret[0][k] = (v + adj)
+                    else:
+                        ret[0][k] = (v + adj) #* -1
+                else:
+                    ret[0][k] = v * -1
+            else:
+                ret[0][k] = v * -1
+        return ret
 
     @staticmethod
     def adjust_to_threshold(adjustment: int, tolerance: int) -> int:

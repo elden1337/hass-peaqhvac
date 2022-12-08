@@ -46,8 +46,9 @@ class WeatherObject:
 
 
 class WeatherPrognosis:
-    def __init__(self, hass):
-        self._hass = hass
+    def __init__(self, hub):
+        self._hub = hub
+        self._hass = hub._hass
         self.prognosis_list: list[WeatherObject] = []
         self._hvac_prognosis_list: list = []
         self._current_temperature = 1000
@@ -57,6 +58,9 @@ class WeatherPrognosis:
 
     @property
     def prognosis(self) -> list:
+        _LOGGER.debug(self._hvac_prognosis_list)
+        if len(self._hvac_prognosis_list) == 0:
+            return self.get_hvac_prognosis(self._hub.sensors.average_temp_outdoors.value)
         return self._hvac_prognosis_list
 
     def _setup_weather_prognosis(self):
@@ -134,8 +138,9 @@ class WeatherPrognosis:
                 TimeDelta=hourdiff
             )
             ret.append(hour_prognosis)
-        #_LOGGER.debug(f"get hvac prognosis final {ret}")
-        self.hvac_prognosis_list = ret
+
+        self._hvac_prognosis_list = ret
+        return ret
 
     def _set_prognosis(self, import_list: list):
         ret = []
