@@ -85,7 +85,7 @@ class HouseHeater(IHeater):
             desired_offset = self._set_calculated_offset(offsets)
         if self._temporary_lower():
             desired_offset -= 2
-        elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0, self._get_temp_trend_offset() <= 0]):
+        elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0, self._get_temp_trend_offset() < 0]):
             return round(
                 max(-10, sum([self._current_offset, self._get_tempdiff_rounded(), self._get_temp_trend_offset()])), 0)
         return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
@@ -202,6 +202,8 @@ class HouseHeater(IHeater):
             if abs(new_temp_diff) >= _tolerance:
                 steps = abs(self._hvac.hub.sensors.temp_trend_indoors.gradient) / _tolerance
                 ret = (int(steps) / 2 * -1)
+                if ret == 0:
+                    return 0
                 ret = round(ret, 2) + 0.01 if ret < 0 else round(ret, 2) - 0.01
                 return ret
         return 0
