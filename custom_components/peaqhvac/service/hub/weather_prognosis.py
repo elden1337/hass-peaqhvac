@@ -58,7 +58,6 @@ class WeatherPrognosis:
 
     @property
     def prognosis(self) -> list:
-        _LOGGER.debug(self._hvac_prognosis_list)
         if len(self._hvac_prognosis_list) == 0:
             return self.get_hvac_prognosis(self._hub.sensors.average_temp_outdoors.value)
         return self._hvac_prognosis_list
