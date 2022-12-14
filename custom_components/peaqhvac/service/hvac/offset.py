@@ -19,6 +19,7 @@ class Offset:
     calculated_offsets = {}, {}
     raw_offsets = {}, {}
     _internal_tolerance = 0
+    prognosis = None
 
     def __init__(self, hub):
         self.hours = Hoursselection()
@@ -35,10 +36,12 @@ class Offset:
                     self.hours.prices != prices,
                     self.hours.prices_tomorrow != prices_tomorrow,
                     self.calculated_offsets == {}, {},
-                    self._hub.options.hvac_tolerance != self._internal_tolerance
+                    self._hub.options.hvac_tolerance != self._internal_tolerance,
+                    self._hub.prognosis.prognosis != self.prognosis
                 ]
         ):
             self.hours.prices = prices
+            self.prognosis = self._hub.prognosis.prognosis
             self.hours.prices_tomorrow = prices_tomorrow
             self._internal_tolerance = self._hub.options.hvac_tolerance
             if 23 <= len(prices) <= 25:
@@ -48,9 +51,10 @@ class Offset:
                     f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(prices)}")
             try:
                 _weather_dict = self._get_weatherprognosis_adjustment(self.raw_offsets)
-                self.calculated_offsets = self._update_offset({k: v*-1 for (k,v) in _weather_dict[0]})
+                _weather_inverted = {k: v*-1 for (k, v) in _weather_dict[0].items()}
+                self.calculated_offsets = self._update_offset(_weather_inverted)
             except Exception as e:
-                _LOGGER.debug(f"Got to except: {e}")
+                _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
                 self.calculated_offsets = self.raw_offsets
         return self.calculated_offsets
 
@@ -158,7 +162,7 @@ class Offset:
                 divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
                 adj = int(round((_next_prognosis.delta_temp_from_now / 2) * divisor, 0)) * -1
                 if adj != 0:
-                    #_LOGGER.debug(f"updating {k} from {v} to {v+adj}")
+                    _LOGGER.debug(f"updating {k} from {v} to {v+adj}. tempdiff from now is {_next_prognosis.delta_temp_from_now}C.")
                     if adj < 0:
                         ret[0][k] = (v + adj)
                     else:
