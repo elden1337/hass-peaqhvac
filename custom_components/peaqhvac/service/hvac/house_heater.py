@@ -201,10 +201,11 @@ class HouseHeater(IHeater):
                 _tolerance = self._hvac.hub.sensors.set_temp_indoors.min_tolerance
             if abs(new_temp_diff) >= _tolerance:
                 steps = abs(self._hvac.hub.sensors.temp_trend_indoors.gradient) / _tolerance
-                ret = (int(steps) / 2 * -1)
+                ret = int(steps)
+                if new_temp_diff > 0:
+                    ret = ret * -1
                 if ret == 0:
                     return 0
-                ret = round(ret, 2) + 0.01 if ret < 0 else round(ret, 2) - 0.01
                 return ret
         return 0
 
