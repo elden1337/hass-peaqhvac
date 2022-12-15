@@ -160,13 +160,13 @@ class Offset:
             )
             if _next_prognosis is not None and int(k) >= now.hour:
                 divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
-                adj = int(round((_next_prognosis.delta_temp_from_now / 2) * divisor, 0)) * -1
+                adj = int(round((_next_prognosis.delta_temp_from_now / 2.5) * divisor, 0)) * -1
                 if adj != 0:
                     _LOGGER.debug(f"updating {k} from {v} to {v+adj}. tempdiff from now is {_next_prognosis.delta_temp_from_now}C.")
-                    if adj < 0:
+                    if (v + adj) <= 0:
                         ret[0][k] = (v + adj)
                     else:
-                        ret[0][k] = (v + adj) #* -1
+                        ret[0][k] = (v + adj) * -1
                 else:
                     ret[0][k] = v * -1
             else:

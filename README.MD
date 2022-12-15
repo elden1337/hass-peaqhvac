@@ -33,5 +33,10 @@ nibe:
         - 47206
 ```
 
-* If you wish to allow peak-shaving you will need to have PeaqEv installed. This will change in future versions.
-* If you wish to adhere to weather prognosis, you must have the Met-integration installed, and allow hourly sensor.
+* Required:
+* Nordpool
+* Nibe
+
+* Optional:
+* Peak-shaving: PeaqEv
+* Weather-prognosis: Met (with hourly sensor active)
