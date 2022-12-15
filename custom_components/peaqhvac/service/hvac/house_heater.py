@@ -40,7 +40,7 @@ class HouseHeater(IHeater):
             ):
                 _LOGGER.debug("Preparing to run ventilation-boost based on hot and current temperature rising.")
                 return True
-            elif self._hvac.hvac_dm <= -700:
+            if self._hvac.hvac_dm <= -700 and self._hvac.hub.sensors.average_temp_outdoors.value >= -12:
                 _LOGGER.debug("Preparing to run ventilation-boost based on low degree minutes.")
                 return True
         return False
