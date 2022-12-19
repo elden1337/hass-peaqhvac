@@ -62,9 +62,10 @@ After this calculation several things do happen, depending on the number of temp
 #### Key functions that do occur occasionally:
 * **High ventilation at sunwarm:** If current temp is > 1C above set, and if both indoor and outdoor trends are rising heavily, the temperature will boost to take the "free" warm air into the system. _This happens down to a minimum of -5C_
 * **High ventilation at low DM:** If the Degree-minutes drop below -700, the ventilation will boost to allow more air to flow into the system and overclock the compressor to its maximum frequency. _This happens down to a minimum of -12C_
-* **Lower at low DM:** If the Degree-minutes drop below -700, the calculated offset will be lowered by 1 step.
-* **Lower at Electrical addon:** If the Electrical addon is in use (for heating), the calculated offest will be lowered by 2 steps.
-* **Lower at peak breach** (requires [PeaqEv](https://github.com/elden1337/hass-peaq))**:** If the projected consumption for the hour is above 100% of the registered max-peak and more than 30 minutes have passed, the calculated offset will be lowered by 1 step.
+* **Lower offset at low DM:** If the Degree-minutes drop below -700, the calculated offset will be lowered by 1 step.
+* **Lower offset at Electrical addon:** If the Electrical addon is in use (for heating), the calculated offset will be lowered by 2 steps.
+* **Lower offset at peak breach** (requires [PeaqEv](https://github.com/elden1337/hass-peaq))**:** If the projected consumption for the hour is above 100% of the registered max-peak and more than 30 minutes have passed, the calculated offset will be lowered by 1 step.
+* **Peak hour turnoff:** If the current hour is the most expensive, and the temperature is more than 1C over set temp, a temporary offset of -10 will be pushed. This means that in most cases the pump will stop producing heat rather quickly. 
 
 ### Water
 
@@ -90,14 +91,14 @@ There are presets available in this sensor that you may set by automations or ma
 * `Away` - Set temperature is lowered by 1C. Heavily reduced tolerance for increased temperatures before lowering offset. Will also reduce temperature by 0.1C per 1.5C if below -5C
 
 ### Sensors
+* * `number.peaqhvac_tolerance` - The number set here determines how well the offsets will align with the daily price-curve. Integers 1-10. **Remember that the higher the number, the higher the risk of electrical addon-usage and/or peak-energy hours.**
 * `sensor.peaqhvac_calculated_hvac_offset` - This sensor will give you information on the currently calculated offset _(which is pushed to the Hvac if control heat is enabled)_. The attributes shows you the different calculation-steps to override a specific hourly offset based on the price. Here you may also retrieve the offsets for today, tomorrow plus the "raw" offsets for today that are without weather prognosis-interference.
-* `sensor.peaqhvac_average_temperature_indoors`| `sensor.peaqhvac_average_temperature_outdoors` - The average temperatures based on the sensors you provide in setup. 
-* `number.peaqhvac_tolerance` - The number set here determines how well the offsets will align with the daily price-curve. Integers 1-10. **Remember that the higher the number, the higher the risk of electrical addon-usage and/or peak-energy hours.**
+* `sensor.peaqhvac_average_temperature_indoors`| `sensor.peaqhvac_average_temperature_outdoors` - The average temperatures based on the sensors you provide in setup.
 * `sensor.peaqhvac_temperature_trend_indoors`| `sensor.peaqhvac_temperature_trend_outdoors` - The current temperature trends registered as C/h. 
 
 ### Switches
 * `switch.peaqhvac_enabled` - This is the main switch to turn PeaqHvac on/off from your system.
-* `switch.peaqhvac_control_heat` - If on, the heating will be controlled as described below
-* `switch.peaqhvac_control_water` - If on, the water supply will be controlled as described below
+* `switch.peaqhvac_control_heat` - If on, the heating will be controlled as described above
+* `switch.peaqhvac_control_water` - If on, the water supply will be controlled as described above
 
 

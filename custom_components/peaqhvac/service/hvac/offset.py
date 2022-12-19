@@ -52,7 +52,7 @@ class Offset:
         self.hours.prices = prices
         self.hours.prices_tomorrow = prices_tomorrow
         self.model.prognosis = self._hub.prognosis.prognosis
-        self.model._internal_tolerance = self._hub.options.hvac_tolerance
+        self.model.tolerance = self._hub.options.hvac_tolerance
 
     def _update_offset(
             self,
@@ -74,12 +74,15 @@ class Offset:
             day_values: dict
     ) -> dict:
         ret = {}
-        _max_today = max(day_values.values())
-        _min_today = min(day_values.values())
-        factor = max(abs(_max_today), abs(_min_today)) / self.model.tolerance
+        try:
+            _max_today = max(day_values.values())
+            _min_today = min(day_values.values())
+            factor = max(abs(_max_today), abs(_min_today)) / self.model.tolerance
 
-        for k, v in day_values.items():
-            ret[k] = int(round((day_values[k] / factor) * -1, 0))
+            for k, v in day_values.items():
+                ret[k] = int(round((day_values[k] / factor) * -1, 0))
+        except Exception as e:
+            _LOGGER.exception(f"Could not calculate per-day offset correctly: {e}")
         return ret
 
     def _get_two_hour_prog(
