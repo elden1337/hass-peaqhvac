@@ -61,6 +61,28 @@ class HouseHeater(IHeater):
     def current_temp_trend_offset(self):
         return self._get_temp_trend_offset()
 
+    @property
+    def dm_lower(self) -> bool:
+        if self._hvac.hub.sensors.peaqev_installed:
+            if self._hvac.hvac_dm <= -700:
+                _LOGGER.debug("Lowering offset low degree minutes.")
+                return True
+        return False
+
+    @property
+    def addon_or_peak_lower(self) -> bool:
+        if self._hvac.hub.sensors.peaqev_installed:
+            if all([
+                30 <= datetime.now().minute < 50,
+                float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100
+            ]):
+                _LOGGER.debug("Lowering offset because of peak about to be breached.")
+                return True
+            elif self._hvac.hvac_electrical_addon > 0:
+                _LOGGER.debug("Lowering offset because electrical addon is on.")
+                return True
+        return False
+
     def _get_demand(self) -> Demand:
         _compressor_start = self._dm_compressor_start if self._dm_compressor_start is not None else -300
         _return_temp = self._hvac.delta_return_temp if self._hvac.delta_return_temp is not None else 1000
@@ -86,9 +108,9 @@ class HouseHeater(IHeater):
         if self._hvac.hub.offset.raw_offsets != self._hvac.hub.offset.calculated_offsets and desired_offset < 0:
             # weather has played it's part, return lower if prognosis tells us to.
             return desired_offset
-        if self._dm_lower():
+        if self.dm_lower:
             desired_offset -= 1
-        if self._addon_or_peak_lower():
+        if self.addon_or_peak_lower:
             desired_offset -= 2
         elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0, self._get_temp_trend_offset() < 0]):
             return round(
@@ -140,25 +162,7 @@ class HouseHeater(IHeater):
                 self._latest_boost = 0
         return preoffset
 
-    def _dm_lower(self) -> bool:
-        if self._hvac.hub.sensors.peaqev_installed:
-            if self._hvac.hvac_dm <= -700:
-                _LOGGER.debug("Lowering offset low degree minutes.")
-                return True
-        return False
 
-    def _addon_or_peak_lower(self) -> bool:
-        if self._hvac.hub.sensors.peaqev_installed:
-            if all([
-                30 <= datetime.now().minute < 50,
-                float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100
-            ]):
-                _LOGGER.debug("Lowering offset because of peak about to be breached.")
-                return True
-            elif self._hvac.hvac_electrical_addon > 0:
-                _LOGGER.debug("Lowering offset because electrical addon is on.")
-                return True
-        return False
 
     def max_price_lower(self) -> bool:
         """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
