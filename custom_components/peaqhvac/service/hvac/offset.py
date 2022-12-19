@@ -25,7 +25,7 @@ class Offset:
         self.hours = Hoursselection()
         self._hub = hub
 
-    def getoffset(
+    def get_offset(
             self,
             prices: list,
             prices_tomorrow: list
@@ -40,15 +40,11 @@ class Offset:
                     self._hub.prognosis.prognosis != self.prognosis
                 ]
         ):
-            self.hours.prices = prices
-            self.prognosis = self._hub.prognosis.prognosis
-            self.hours.prices_tomorrow = prices_tomorrow
-            self._internal_tolerance = self._hub.options.hvac_tolerance
+            self._set_internal_parameters(prices, prices_tomorrow)
             if 23 <= len(prices) <= 25:
                 self.raw_offsets = self._update_offset()
             else:
-                _LOGGER.error(
-                    f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(prices)}")
+                _LOGGER.error(f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(prices)}")
             try:
                 _weather_dict = self._get_weatherprognosis_adjustment(self.raw_offsets)
                 _weather_inverted = {k: v*-1 for (k, v) in _weather_dict[0].items()}
@@ -57,6 +53,12 @@ class Offset:
                 _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
                 self.calculated_offsets = self.raw_offsets
         return self.calculated_offsets
+
+    def _set_internal_parameters(self, prices, prices_tomorrow) -> None:
+        self.hours.prices = prices
+        self.hours.prices_tomorrow = prices_tomorrow
+        self.prognosis = self._hub.prognosis.prognosis
+        self._internal_tolerance = self._hub.options.hvac_tolerance
 
     def _update_offset(
             self,
@@ -68,7 +70,7 @@ class Offset:
             tomorrow = {}
             if len(d['tomorrow']) > 0:
                 tomorrow = self._offset_per_day(d['tomorrow'])
-            return self._smooth_transitions(today, tomorrow, self._internal_tolerance)
+            return Offset._smooth_transitions(today, tomorrow, self._internal_tolerance)
         except Exception as e:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
@@ -85,57 +87,6 @@ class Offset:
         for k, v in day_values.items():
             ret[k] = int(round((day_values[k] / factor) * -1, 0))
         return ret
-
-    def _smooth_transitions(
-            self,
-            today: dict,
-            tomorrow: dict,
-            tolerance: int
-    ) -> Tuple[dict, dict]:
-        tolerance = min(tolerance, 4)
-        start_list = []
-        start_list.extend(today.values())
-        start_list.extend(tomorrow.values())
-
-        # Find and remove single anomalies.
-        start_list = self._find_single_anomalies(start_list)
-
-        # Smooth out transitions upwards so that there is less risk of electrical addon usage.
-        for idx, v in enumerate(start_list):
-            if idx < len(start_list) - 1:
-                if start_list[idx + 1] >= start_list[idx] + tolerance:
-                    start_list[idx] += 1
-
-        # Package it and return
-        ret = {}, {}
-        for hour in range(0, 24):
-            ret[0][hour] = start_list[hour]
-        if len(tomorrow.items()) == 24:
-            for hour in range(24, 48):
-                ret[1][hour - 24] = start_list[hour]
-        return ret
-
-    def _find_single_anomalies(
-            self,
-            adj: list
-    ) -> list[int]:
-        for idx, p in enumerate(adj):
-            if idx <= 1 or idx >= len(adj) - 1:
-                pass
-            else:
-                if all([
-                    adj[idx - 1] == adj[idx + 1],
-                    adj[idx - 1] != adj[idx]
-                ]):
-                    _prev = adj[idx - 1]
-                    _curr = adj[idx]
-                    diff = max(_prev, _curr) - min(_prev, _curr)
-                    if int(diff / 2) > 0:
-                        if _prev > _curr:
-                            adj[idx] += int(diff / 2)
-                        else:
-                            adj[idx] -= int(diff / 2)
-        return adj
 
     def _get_two_hour_prog(
             self,
@@ -162,7 +113,6 @@ class Offset:
                 divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
                 adj = int(round((_next_prognosis.delta_temp_from_now / 2.5) * divisor, 0)) * -1
                 if adj != 0:
-                    #_LOGGER.debug(f"updating {k} from {v} to {v+adj}. tempdiff from now is {_next_prognosis.delta_temp_from_now}C.")
                     if (v + adj) <= 0:
                         ret[0][k] = (v + adj) *-1
                     else:
@@ -198,3 +148,52 @@ class Offset:
             if not isinstance(i, (float, int)):
                 return []
         return inputlist
+
+    @staticmethod
+    def _find_single_anomalies(
+            adj: list
+    ) -> list[int]:
+        for idx, p in enumerate(adj):
+            if idx <= 1 or idx >= len(adj) - 1:
+                pass
+            else:
+                if all([
+                    adj[idx - 1] == adj[idx + 1],
+                    adj[idx - 1] != adj[idx]
+                ]):
+                    _prev = adj[idx - 1]
+                    _curr = adj[idx]
+                    diff = max(_prev, _curr) - min(_prev, _curr)
+                    if int(diff / 2) > 0:
+                        if _prev > _curr:
+                            adj[idx] += int(diff / 2)
+                        else:
+                            adj[idx] -= int(diff / 2)
+        return adj
+
+    @staticmethod
+    def _smooth_transitions(
+            today: dict,
+            tomorrow: dict,
+            tolerance: int
+    ) -> Tuple[dict, dict]:
+        tolerance = min(tolerance, 4)
+        start_list = []
+        start_list.extend(today.values())
+        start_list.extend(tomorrow.values())
+
+        # Find and remove single anomalies.
+        start_list = Offset._find_single_anomalies(start_list)
+        # Smooth out transitions upwards so that there is less risk of electrical addon usage.
+        for idx, v in enumerate(start_list):
+            if idx < len(start_list) - 1:
+                if start_list[idx + 1] >= start_list[idx] + tolerance:
+                    start_list[idx] += 1
+        # Package it and return
+        ret = {}, {}
+        for hour in range(0, 24):
+            ret[0][hour] = start_list[hour]
+        if len(tomorrow.items()) == 24:
+            for hour in range(24, 48):
+                ret[1][hour - 24] = start_list[hour]
+        return ret

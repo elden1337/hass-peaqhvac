@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from custom_components.peaqhvac.service.models.hvac_presets import HvacPresets
 
 
@@ -49,3 +51,16 @@ class TargetTemp:
         _tolerances = HvacPresets.get_tolerances(preset)
         self._min_tolerance = _tolerances[0]
         self._max_tolerance = _tolerances[1]
+
+    def adjusted_set_temp(self, current_temp_indoors: float) -> float:
+        """adjust the set temp slightly if below -5C outside"""
+        ret = self.value
+        _outdoors = current_temp_indoors
+        if _outdoors < -5:
+            ret += round(((int(_outdoors - -5) / 1.5) * 0.1), 1)
+        return max(ret, 17)
+
+    def adjusted_tolerances(self, offset: int) -> Tuple[float, float]:
+        _max_tolerance = self.max_tolerance + (offset / 10) if offset > 0 else self.max_tolerance
+        _min_tolerance = self.min_tolerance + (abs(offset) / 10) if offset < 0 else self.min_tolerance
+        return max(_min_tolerance, 0), max(_max_tolerance, 0)

@@ -46,7 +46,7 @@ class IHvac:
     @property
     def update_offset(self) -> bool:
         try:
-            ret = self.hub.offset.getoffset(
+            ret = self.hub.offset.get_offset(
             prices=self.hub.nordpool.prices,
             prices_tomorrow=self.hub.nordpool.prices_tomorrow
             )
@@ -62,17 +62,6 @@ class IHvac:
         except Exception as e:
             _LOGGER.exception(f"Error on updating offsets: {e}")
             return False
-
-    # def set_offsets(self) -> None:
-    #     try:
-    #         ret = self.hub.offset.getoffset(
-    #         prices=self.hub.nordpool.prices,
-    #         prices_tomorrow=self.hub.nordpool.prices_tomorrow
-    #         )
-    #         self.current_offset_dict = ret[0]
-    #         self.current_offset_dict_tomorrow = ret[1]
-    #     except Exception as e:
-    #         _LOGGER.exception(f"Error on setting offsets: {e}")
 
     @property
     @abstractmethod

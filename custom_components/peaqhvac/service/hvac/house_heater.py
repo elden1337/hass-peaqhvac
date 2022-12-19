@@ -83,7 +83,12 @@ class HouseHeater(IHeater):
             return -10
         else:
             desired_offset = self._set_calculated_offset(offsets)
-        if self._temporary_lower():
+        if self._hvac.hub.offset.raw_offsets != self._hvac.hub.offset.calculated_offsets and desired_offset < 0:
+            # weather has played it's part, return lower if prognosis tells us to.
+            return desired_offset
+        if self._dm_lower():
+            desired_offset -= 1
+        if self._addon_or_peak_lower():
             desired_offset -= 2
         elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0, self._get_temp_trend_offset() < 0]):
             return round(
@@ -135,7 +140,14 @@ class HouseHeater(IHeater):
                 self._latest_boost = 0
         return preoffset
 
-    def _temporary_lower(self) -> bool:
+    def _dm_lower(self) -> bool:
+        if self._hvac.hub.sensors.peaqev_installed:
+            if self._hvac.hvac_dm <= -700:
+                _LOGGER.debug("Lowering offset low degree minutes.")
+                return True
+        return False
+
+    def _addon_or_peak_lower(self) -> bool:
         if self._hvac.hub.sensors.peaqev_installed:
             if all([
                 30 <= datetime.now().minute < 50,
@@ -157,36 +169,30 @@ class HouseHeater(IHeater):
     def _get_tempdiff_rounded(self) -> int:
         """+/- 0.3 C is accepted"""
         diff = self._get_tempdiff()
-        _tolerance = 0
         if diff == 0:
             return 0
-        if diff > 0:
-            _tolerance = self._hvac.hub.sensors.set_temp_indoors.max_tolerance
-            _tolerance = _tolerance + (self._current_offset / 10) if self._current_offset > 0 else _tolerance
-        else:
-            _tolerance = self._hvac.hub.sensors.set_temp_indoors.min_tolerance
-            _tolerance = _tolerance + (abs(self._current_offset) / 10) if self._current_offset < 0 else _tolerance
+        _tolerance = self._determine_tolerance(self._current_offset)
         return int(diff / _tolerance) * -1
 
     def _get_tempdiff(self) -> float:
-        return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.value
+        return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(self._hvac.hub.sensors.average_temp_indoors.value)
 
     def _get_temp_extremas(self) -> float:
         low_diffs = []
         high_diffs = []
+        set_temp = self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(self._hvac.hub.sensors.average_temp_indoors.value)
         for t in self._hvac.hub.sensors.average_temp_indoors.all_values:
-            _diff = self._hvac.hub.sensors.set_temp_indoors.value - t
+            _diff = set_temp - t
             if _diff > 0:
                 low_diffs.append(_diff)
             elif _diff < 0:
                 high_diffs.append(_diff)
         if len(low_diffs) == len(high_diffs):
             return 0
+        _tolerance = self._determine_tolerance(len(low_diffs) > len(high_diffs))
         if len(low_diffs) > len(high_diffs):
-            _tolerance = self._hvac.hub.sensors.set_temp_indoors.min_tolerance
             return round(stat.mean(low_diffs) - _tolerance, 2)
         else:
-            _tolerance = self._hvac.hub.sensors.set_temp_indoors.max_tolerance
             return round(stat.mean(high_diffs) + _tolerance, 2)
 
     def _get_temp_trend_offset(self) -> float:
@@ -194,11 +200,8 @@ class HouseHeater(IHeater):
             if self._hvac.hub.sensors.temp_trend_indoors.gradient == 0:
                 return 0
             predicted_temp = self._hvac.hub.sensors.average_temp_indoors.value + self._hvac.hub.sensors.temp_trend_indoors.gradient
-            new_temp_diff = predicted_temp - self._hvac.hub.sensors.set_temp_indoors.value
-            if new_temp_diff > 0:
-                _tolerance = self._hvac.hub.sensors.set_temp_indoors.max_tolerance
-            else:
-                _tolerance = self._hvac.hub.sensors.set_temp_indoors.min_tolerance
+            new_temp_diff = predicted_temp - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(self._hvac.hub.sensors.average_temp_indoors.value)
+            _tolerance = self._determine_tolerance(new_temp_diff)
             if abs(new_temp_diff) >= _tolerance:
                 steps = abs(self._hvac.hub.sensors.temp_trend_indoors.gradient) / _tolerance
                 ret = int(steps)
@@ -209,5 +212,9 @@ class HouseHeater(IHeater):
                 return ret
         return 0
 
+    def _determine_tolerance(self, determinator) -> float:
+        tolerances = self._hvac.hub.sensors.set_temp_indoors.adjusted_tolerances(self._current_offset)
+        return tolerances[1] if (determinator > 0 or determinator is True) else tolerances[0]
+
     # def compare to water demand
-    # def calc with prognosis
+

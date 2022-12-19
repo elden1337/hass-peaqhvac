@@ -137,7 +137,7 @@ class WaterHeater(IHeater):
             self.booster_model.boost = True
             self._toggle_boost(timer_timeout=3600)
         try:
-            offsets = self._hvac.hub.offset.getoffset(
+            offsets = self._hvac.hub.offset.get_offset(
             prices=self._hvac.hub.nordpool.prices,
             prices_tomorrow=self._hvac.hub.nordpool.prices_tomorrow
             )

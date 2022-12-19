@@ -47,12 +47,16 @@ class Hub:
                 _LOGGER.exception(f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}")
 
     def get_peaqev(self):
-        ret = self._hass.states.get("sensor.peaqev_threshold")
-        if ret is not None:
-            _LOGGER.debug("Discovered Peaqev-entities, will adhere to peak-shaving.")
-            return True
-        _LOGGER.debug("Unable to discover Peaqev-entities, will not adhere to peak-shaving.")
-        return False
+        try:
+            ret = self._hass.states.get("sensor.peaqev_threshold")
+            if ret is not None:
+                _LOGGER.debug("Discovered Peaqev-entities, will adhere to peak-shaving.")
+                return True
+            _LOGGER.debug("Unable to discover Peaqev-entities, will not adhere to peak-shaving.")
+            return False
+        except:
+            _LOGGER.debug("Unable to discover Peaqev-entities, will not adhere to peak-shaving.")
+            return False
 
     async def call_enable_peaq(self):
         self.sensors.peaq_enabled.value = True
