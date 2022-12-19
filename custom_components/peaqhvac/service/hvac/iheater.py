@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from custom_components.peaqhvac.service.models.demand import Demand
+from custom_components.peaqhvac.service.models.enums.demand import Demand
 from peaqevcore.models.hub.hubmember import HubMember
 import logging
 import time

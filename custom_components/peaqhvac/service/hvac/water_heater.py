@@ -6,10 +6,10 @@ import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.service.hub.trend import Gradient
 #from custom_components.peaqhvac.service.hvac import peakfinder
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
-from custom_components.peaqhvac.service.models.demand import Demand
+from custom_components.peaqhvac.service.models.enums.demand import Demand
 from dataclasses import dataclass
 
-from custom_components.peaqhvac.service.models.hvac_presets import HvacPresets
+from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -1,4 +1,4 @@
-from custom_components.peaqhvac.service.models.hvacbrands import HvacBrand
+from custom_components.peaqhvac.service.models.enums.hvacbrands import HvacBrand
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.hvac.ihvac import IHvac
 from custom_components.peaqhvac.service.hvac.hvactypes.ivt import IVT

@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from custom_components.peaqhvac.service.models.hvac_presets import HvacPresets
+from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
 
 class TargetTemp:

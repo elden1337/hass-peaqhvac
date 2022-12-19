@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
-from custom_components.peaqhvac.service.models.demand import Demand
+from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.hvac.offset import Offset
 from datetime import datetime
 import logging
 import statistics as stat
 import time
 
-from custom_components.peaqhvac.service.models.hvacmode import HvacMode
+from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 
 _LOGGER = logging.getLogger(__name__)
 HEATBOOST_TIMER = 7200

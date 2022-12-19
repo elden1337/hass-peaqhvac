@@ -17,7 +17,7 @@ from homeassistant.const import (
     TEMP_CELSIUS,
     ATTR_TEMPERATURE
 )
-from custom_components.peaqhvac.service.models.hvacmode import HvacMode as HvacModeInternal
+from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode as HvacModeInternal
 import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.const import DOMAIN, CLIMATE_SENSOR
 from homeassistant.helpers.restore_state import RestoreEntity

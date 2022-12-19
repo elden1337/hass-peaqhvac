@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List
 from custom_components.peaqhvac.const import HVACBRAND_NIBE, HVACBRAND_THERMIA, HVACBRAND_IVT
-from custom_components.peaqhvac.service.models.hvacbrands import HvacBrand
+from custom_components.peaqhvac.service.models.enums.hvacbrands import HvacBrand
 
 @dataclass
 class MiscOptions:

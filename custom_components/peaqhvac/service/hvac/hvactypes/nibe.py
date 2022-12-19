@@ -2,9 +2,9 @@ import logging
 from typing import Tuple
 
 from custom_components.peaqhvac.service.hvac.ihvac import IHvac
-from custom_components.peaqhvac.service.models.hvacmode import HvacMode
-from custom_components.peaqhvac.service.models.hvacoperations import HvacOperations
-from custom_components.peaqhvac.service.models.sensortypes import SensorType
+from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
+from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
+from custom_components.peaqhvac.service.models.enums.sensortypes import SensorType
 
 _LOGGER = logging.getLogger(__name__)
 

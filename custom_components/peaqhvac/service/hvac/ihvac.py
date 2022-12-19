@@ -10,9 +10,10 @@ from homeassistant.core import (
     HomeAssistant
 )
 from custom_components.peaqhvac.service.hvac.water_heater import WaterHeater
-from custom_components.peaqhvac.service.models.hvacmode import HvacMode
-from custom_components.peaqhvac.service.models.hvacoperations import HvacOperations
-from custom_components.peaqhvac.service.models.sensortypes import SensorType
+from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
+from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
+from custom_components.peaqhvac.service.models.ihvac_model import IHvacModel
+from custom_components.peaqhvac.service.models.enums.sensortypes import SensorType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,13 +25,7 @@ UPDATE_INTERVALS = {
 
 
 class IHvac:
-    current_offset: int = 0
-    current_offset_dict: dict = {}
-    current_offset_dict_tomorrow: dict = {}
-    periodic_update_list: list = []
-    listenerentities = []
-    current_water_boost_state: int = 0
-    current_vent_boost_state: int = 0
+    current_offset: int = 0 #todo: remove either from here or from house_heater
 
     def __init__(self, hass: HomeAssistant, hub):
         self.hub = hub
@@ -42,6 +37,7 @@ class IHvac:
             HvacOperations.WaterBoost: 0,
             HvacOperations.VentBoost:  0
         }
+        self.model = IHvacModel()
 
     @property
     def update_offset(self) -> bool:
@@ -50,8 +46,8 @@ class IHvac:
             prices=self.hub.nordpool.prices,
             prices_tomorrow=self.hub.nordpool.prices_tomorrow
             )
-            self.current_offset_dict = ret[0]
-            self.current_offset_dict_tomorrow = ret[1]
+            self.model.current_offset_dict = ret[0]
+            self.model.current_offset_dict_tomorrow = ret[1]
             _hvac_offset = self.hvac_offset
             new_offset = self.house_heater.get_current_offset(ret[0])
             if new_offset != self.current_offset:
@@ -130,25 +126,25 @@ class IHvac:
         if self.hub.hvac.water_heater.control_module:
             if self.water_heater.try_heat_water or self.water_heater.water_heating:
                 if await self._ready_to_update(HvacOperations.WaterBoost):
-                    if self.current_water_boost_state != int(self.water_heater.try_heat_water):
-                        self.periodic_update_list.append((HvacOperations.WaterBoost, int(self.water_heater.try_heat_water)))
-                        self.current_water_boost_state = int(self.water_heater.try_heat_water)
+                    if self.model.current_water_boost_state != int(self.water_heater.try_heat_water):
+                        self.model.periodic_update_list.append((HvacOperations.WaterBoost, int(self.water_heater.try_heat_water)))
+                        self.model.current_water_boost_state = int(self.water_heater.try_heat_water)
         if self.hub.hvac.house_heater.control_module:
-            if int(self.house_heater.vent_boost) != self.current_vent_boost_state:
+            if int(self.house_heater.vent_boost) != self.model.current_vent_boost_state:
                 if await self._ready_to_update(HvacOperations.VentBoost):
-                    self.periodic_update_list.append((HvacOperations.VentBoost, int(self.house_heater.vent_boost)))
-                    self.current_vent_boost_state = int(self.house_heater.vent_boost)
+                    self.model.periodic_update_list.append((HvacOperations.VentBoost, int(self.house_heater.vent_boost)))
+                    self.model.current_vent_boost_state = int(self.house_heater.vent_boost)
             if self.update_offset:
                 if await self._ready_to_update(HvacOperations.Offset):
-                    self.periodic_update_list.append((HvacOperations.Offset, self.current_offset))
+                    self.model.periodic_update_list.append((HvacOperations.Offset, self.current_offset))
         return await self._do_periodic_updates()
 
     async def _do_periodic_updates(self) -> None:
-        if len(self.periodic_update_list) > 0:
-            for u in self.periodic_update_list:
+        if len(self.model.periodic_update_list) > 0:
+            for u in self.model.periodic_update_list:
                 await self.update_system(operation=u[0], set_val=u[1])
                 self.periodic_update_timers[u[0]] = time.time()
-            self.periodic_update_list = []
+            self.model.periodic_update_list = []
 
     def _handle_sensor(self, sensor: str):
         sensorobj = sensor.split('|')
@@ -171,7 +167,7 @@ class IHvac:
         for t in types:
             item = types[t]
             ret.append(item.split('|')[0])
-        self.listenerentities = ret
+        self.model.listenerentities = ret
         return ret
 
     async def update_system(self, operation: HvacOperations, set_val: any = None):
