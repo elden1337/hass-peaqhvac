@@ -17,7 +17,7 @@ class HvacPresets(Enum):
         types = {
             PRESET_NONE: HvacPresets.Normal,
             PRESET_AWAY: HvacPresets.Away,
-            PRESET_ECO: HvacPresets.Eco
+            PRESET_ECO:  HvacPresets.Eco
         }
         return types[ha_preset]
 
@@ -25,7 +25,7 @@ class HvacPresets(Enum):
     def get_tolerances(preset):
         types = {
             HvacPresets.Normal:       (0.2, 0.3),
-            HvacPresets.Eco:            (0.2, 0.2),
+            HvacPresets.Eco:          (0.2, 0.2),
             HvacPresets.Away:         (0.5, 0),
             HvacPresets.ExtendedAway: (0.7, 0)
         }
@@ -35,7 +35,7 @@ class HvacPresets(Enum):
     def get_tempdiff(preset) -> int:
         types = {
             HvacPresets.Normal:       0,
-            HvacPresets.Eco:           0,
+            HvacPresets.Eco:          0,
             HvacPresets.Away:         -1,
             HvacPresets.ExtendedAway: -2
         }

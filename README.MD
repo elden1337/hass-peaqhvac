@@ -10,18 +10,19 @@
 
 <img src="https://raw.githubusercontent.com/elden1337/hass-peaq/main/assets/icon.png" width="125">
 
-### INTROTEXT
-Peaqev is developed without static funding. If you lack your locale/charger type or have wishes for other specific features that you would like to see prioritized, please consider becoming a [Github sponsor](https://github.com/sponsors/elden1337) to bump your desired changes in my backlog.
-- In order to flag a ticket, either create a new one or comment on an existing one after you've started your sponsorship. I will then flag the ticket with `sponsored-change` and try to prioritize this going forward
-- Becoming a sponsor is not a guarantee that a wish will be created, or a guarantee for a specified resolution time. Peaqev is being developed in my spare time and every feature has to be considered by me before taking it into development
-- I may need to reach out for testing, especially if your wish includes implementing new charger types
-- Critical bugs discovered of course always triages higher than features
+Welcome to PeaqHvac.
 
-:love_letter:
+Because of the slow response from the Nibe Uplink-api, calls are made somewhat prematurely to try and correct for this lag. 
+If peakshaving is active _(requires PeaqEv as of 0.1.1)_ this means that peaks sometimes cannot be avoided completely, but rather lessened in their emphasis.
 
 ---
 
-For Nibe it is required to have at least this setup in your `configuration.yaml`:
+## Preparations
+
+### Nibe 
+_Nibe clients will need to have an uplink premium subscription in order to be able to manipulate the Hvac remotely._
+
+It is required to have at least this setup in your `configuration.yaml`:
 
 ```yaml
 nibe:
@@ -33,10 +34,70 @@ nibe:
         - 47206
 ```
 
-* Required:
-* Nordpool
-* Nibe
+It is recommended that you set a heat-curve on your system that corresponds well to your desired level of heating at offset 0. Offsets is what PeaqHvac will manipulate.
 
-* Optional:
-* Peak-shaving: PeaqEv
+### Integrations used
+
+#### Required:
+* [Nordpool](https://github.com/custom-components/nordpool)
+* [Nibe](https://github.com/elupus/hass_nibe)
+
+#### Optional:
+* Peak-shaving: [PeaqEv](https://github.com/elden1337/hass-peaq)
 * Weather-prognosis: Met (with hourly sensor active)
+
+---
+
+## Functions
+
+### Heating
+PeaqHvac works with the common peaqevcore-library which is also used by PeaqEv to calculate good and bad hours of operation. What comes out of that is a set of offsets for today (and tomorrow if available) that are used to tune your hvac up/down accordingly.
+After this calculation several things do happen, depending on the number of temperature-sensors used, if you want peak-shaving or not and if you have set up weather integration.
+
+1. **Weather:** If peaqhvac detects an anomaly of more than 2.5C in the coming three hours from now, it will adjust the offset to pre-heat/pre-cold and make the curve more lean
+2. **Temp diff:** Depending on your mode of operation, PeaqHvac is more or less forgiving towards temperature-changes. Normal operation for instance has a tolerance of -0.2C and +0.4C. These tolerances may also change depending on the base-offset. If the current indoor-temp breaches these thresholds, temp-diff will add/remove steps from the offset.
+3. **Temp trend:** If the current trend of temperatures indoors tells the system that within an hour, it will breach the tolerances descired above, this function will add/remove steps.
+4. **Temp extremas:** _If you have more than one indoor-tempsensor only_ This will add/deduct small fractions of steps based on how much of an extreme the very lowest/highest temps are compared to the mean. This function will rarely hit a full step-change, but gives an indication of how flat or jumpy your indoors temps are.
+
+#### Key functions that do occur occasionally:
+* **High ventilation at sunwarm:** If current temp is > 1C above set, and if both indoor and outdoor trends are rising heavily, the temperature will boost to take the "free" warm air into the system. _This happens down to a minimum of -5C_
+* **High ventilation at low DM:** If the Degree-minutes drop below -700, the ventilation will boost to allow more air to flow into the system and overclock the compressor to its maximum frequency. _This happens down to a minimum of -12C_
+* **Lower at low DM:** If the Degree-minutes drop below -700, the calculated offset will be lowered by 1 step.
+* **Lower at Electrical addon:** If the Electrical addon is in use (for heating), the calculated offest will be lowered by 2 steps.
+* **Lower at peak breach** (requires [PeaqEv](https://github.com/elden1337/hass-peaq))**:** If the projected consumption for the hour is above 100% of the registered max-peak and more than 30 minutes have passed, the calculated offset will be lowered by 1 step.
+
+### Water
+
+If control water is enabled a brief hot-waterboost will run (for ten minutes) when:
+1. If current offset is > 0 (relatively cheap hour) and watertemp is below 42C at approx 10 min past the hour
+2. If current offset is <= 0 (relatively expensive hour) and watertemp is below 30C at approx 10 min past the hour
+
+Furthermore, when the cheapest hour in the known span occurs, a real boost (up to the set boost-temp) will happen. This will often include a small amount of electrical addon.
+
+_In future versions the hot water will get more love, for instance a secondary threshold to run boost or not (if cheap is not cheap enough) and to divert from certain hours alltogether despite the temp being too low._
+
+
+
+## Included sensors
+
+### Climate
+`climate.peaqhvac_climate_control`
+
+Set your desired temperature with this climate-control, in steps of half-degrees from 15-27C.
+There are presets available in this sensor that you may set by automations or manually. They have different characteristics:
+* `None` - Normal operation
+* `Eco` - Reduced tolerance for increased temperatures before lowering offset. Will also reduce temperature by 0.1C per 1.5C if below -5C
+* `Away` - Set temperature is lowered by 1C. Heavily reduced tolerance for increased temperatures before lowering offset. Will also reduce temperature by 0.1C per 1.5C if below -5C
+
+### Sensors
+* `sensor.peaqhvac_calculated_hvac_offset` - This sensor will give you information on the currently calculated offset _(which is pushed to the Hvac if control heat is enabled)_. The attributes shows you the different calculation-steps to override a specific hourly offset based on the price. Here you may also retrieve the offsets for today, tomorrow plus the "raw" offsets for today that are without weather prognosis-interference.
+* `sensor.peaqhvac_average_temperature_indoors`| `sensor.peaqhvac_average_temperature_outdoors` - The average temperatures based on the sensors you provide in setup. 
+* `number.peaqhvac_tolerance` - The number set here determines how well the offsets will align with the daily price-curve. Integers 1-10. **Remember that the higher the number, the higher the risk of electrical addon-usage and/or peak-energy hours.**
+* `sensor.peaqhvac_temperature_trend_indoors`| `sensor.peaqhvac_temperature_trend_outdoors` - The current temperature trends registered as C/h. 
+
+### Switches
+* `switch.peaqhvac_enabled` - This is the main switch to turn PeaqHvac on/off from your system.
+* `switch.peaqhvac_control_heat` - If on, the heating will be controlled as described below
+* `switch.peaqhvac_control_water` - If on, the water supply will be controlled as described below
+
+

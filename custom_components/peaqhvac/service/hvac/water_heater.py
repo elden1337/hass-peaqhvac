@@ -7,25 +7,15 @@ from custom_components.peaqhvac.service.hub.trend import Gradient
 #from custom_components.peaqhvac.service.hvac import peakfinder
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
-from dataclasses import dataclass
+from custom_components.peaqhvac.service.models.waterbooster_model import WaterBoosterModel
 
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_WATER_BOOST = 600
 WAITTIMER_TIMEOUT = 1800
-
-
-@dataclass
-class WaterBoosterModel:
-    try_heat_water: bool = False
-    heat_water_timer: int = 0
-    heat_water_timer_timeout = DEFAULT_WATER_BOOST
-    pre_heating: bool = False
-    boost: bool = False
-    water_is_heating: bool = False
-
+LOWTEMP_THRESHOLD = 30
+HIGHTEMP_THRESHOLD = 42
 
 class WaterHeater(IHeater):
     def __init__(self, hvac):
@@ -123,7 +113,7 @@ class WaterHeater(IHeater):
 
     def _update_operation(self):
         if self.is_initialized:
-            if self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Normal:
+            if self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
                 self._set_water_heater_operation_home()
             elif self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
                 self._set_water_heater_operation_away()
@@ -144,11 +134,11 @@ class WaterHeater(IHeater):
             current_offset = offsets[0][datetime.now().hour]
 
             if current_offset <= 0 and datetime.now().minute > 10:
-                if 0 < self.current_temperature <= 30:
+                if 0 < self.current_temperature <= LOWTEMP_THRESHOLD:
                     self.booster_model.pre_heating = True
                     self._toggle_boost(timer_timeout=None)
             elif current_offset > 0 and datetime.now().minute > 10:
-                if 0 < self.current_temperature <= 42:
+                if 0 < self.current_temperature <= HIGHTEMP_THRESHOLD:
                     self.booster_model.pre_heating = True
                     self._toggle_boost(timer_timeout=None)
         except Exception as e:
@@ -160,7 +150,7 @@ class WaterHeater(IHeater):
                 return
         try:
             if datetime.now().minute > 10:
-                if 0 < self.current_temperature <= 30:
+                if 0 < self.current_temperature <= LOWTEMP_THRESHOLD:
                     self.booster_model.pre_heating = True
                     self._toggle_boost(timer_timeout=None)
         except Exception as e:
@@ -175,4 +165,5 @@ class WaterHeater(IHeater):
         elif (self.booster_model.pre_heating or self.booster_model.boost) and time.time() - self._wait_timer > WAITTIMER_TIMEOUT:
             self.booster_model.try_heat_water = True
             self.booster_model.heat_water_timer = time.time()
-            self.booster_model.heat_water_timer_timeout = timer_timeout if timer_timeout is not None else DEFAULT_WATER_BOOST
+            if timer_timeout is not None:
+                self.booster_model.heat_water_timer_timeout = timer_timeout

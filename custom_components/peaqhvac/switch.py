@@ -24,10 +24,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
             "entity": "_enabled"
         },
         {
-            "name": AWAYMODE,
-            "entity": "_away_mode"
-        },
-        {
             "name":CONTROL_WATER,
             "entity": "control_water"
         },
@@ -61,8 +57,6 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
     def is_on(self) -> bool:
         if self._switch['name'] == ENABLED:
             return self._hub.sensors.peaq_enabled.value
-        elif self._switch['name'] == AWAYMODE:
-            return self._hub.sensors.away_mode.value
         elif self._switch['name'] == CONTROL_WATER:
             return self._hub.hvac.water_heater.control_module
         elif self._switch['name'] == CONTROL_HEAT:
@@ -79,8 +73,6 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
     def turn_on(self):
         if self._switch['name'] == ENABLED:
             self._hub.sensors.peaq_enabled.value = True
-        elif self._switch['name'] == AWAYMODE:
-            self._hub.sensors.away_mode.value = True
         elif self._switch['name'] == CONTROL_WATER:
             self._hub.hvac.water_heater.control_module = True
         elif self._switch['name'] == CONTROL_HEAT:
@@ -89,8 +81,6 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
     def turn_off(self):
         if self._switch['name'] == ENABLED:
             self._hub.sensors.peaq_enabled.value = False
-        elif self._switch['name'] == AWAYMODE:
-            self._hub.sensors.away_mode.value = False
         elif self._switch['name'] == CONTROL_WATER:
             self._hub.hvac.water_heater.control_module = False
         elif self._switch['name'] == CONTROL_HEAT:
@@ -100,8 +90,6 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
         new_state = None
         if self._switch['name'] == ENABLED:
             new_state = self._hub.sensors.peaq_enabled.value
-        elif self._switch['name'] == AWAYMODE:
-            new_state = self._hub.sensors.away_mode.value
         elif self._switch['name'] == CONTROL_WATER:
             new_state = self._hub.hvac.water_heater.control_module
         elif self._switch['name'] == CONTROL_HEAT:
@@ -114,8 +102,6 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
             self.state = state.state
             if self._switch['name'] == ENABLED:
                 self._hub.sensors.peaq_enabled.value = state.state
-            elif self._switch['name'] == AWAYMODE:
-                self._hub.sensors.away_mode.value = state.state
             elif self._switch['name'] == CONTROL_WATER:
                 self._hub.hvac.water_heater.control_module = state.state
             elif self._switch['name'] == CONTROL_HEAT:

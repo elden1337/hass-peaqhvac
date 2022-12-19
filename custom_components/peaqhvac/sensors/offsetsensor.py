@@ -36,7 +36,7 @@ class OffsetSensor(SensorBase):
         self._tempdiff_offset = self._hub.hvac.house_heater.current_tempdiff
         self._tempextremas_offset = self._hub.hvac.house_heater.current_temp_extremas
         self._temptrend_offset = self._hub.hvac.house_heater.current_temp_trend_offset
-        self._raw_offsets = self._offset_dict_to_list(self._hub.offset.raw_offsets[0])
+        self._raw_offsets = self._offset_dict_to_list(self._hub.offset.model.raw_offsets[0])
 
     def _offset_dict_to_list(self, _input: dict) -> list:
         return [i for i in _input.values()]

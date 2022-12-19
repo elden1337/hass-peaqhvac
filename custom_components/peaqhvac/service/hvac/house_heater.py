@@ -35,7 +35,8 @@ class HouseHeater(IHeater):
                     [
                         self._get_tempdiff() > 1,
                         self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
-                        self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0
+                        self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
+                        self._hvac.hub.sensors.average_temp_outdoors.value >= -5
                     ]
             ):
                 _LOGGER.debug("Preparing to run ventilation-boost based on hot and current temperature rising.")
@@ -105,7 +106,7 @@ class HouseHeater(IHeater):
             return -10
         else:
             desired_offset = self._set_calculated_offset(offsets)
-        if self._hvac.hub.offset.raw_offsets != self._hvac.hub.offset.calculated_offsets and desired_offset < 0:
+        if self._hvac.hub.offset.model.raw_offsets != self._hvac.hub.offset.model.calculated_offsets and desired_offset < 0:
             # weather has played it's part, return lower if prognosis tells us to.
             return desired_offset
         if self.dm_lower:
@@ -162,12 +163,10 @@ class HouseHeater(IHeater):
                 self._latest_boost = 0
         return preoffset
 
-
-
     def max_price_lower(self) -> bool:
         """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
         if self._get_tempdiff() >= 0.5:
-            return datetime.now().hour in Offset.peaks_today
+            return datetime.now().hour in self._hvac.hub.offset.model.peaks_today
         return False
 
     def _get_tempdiff_rounded(self) -> int:

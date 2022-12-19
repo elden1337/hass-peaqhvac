@@ -11,6 +11,7 @@ from homeassistant.components.climate.const import (
     HVACAction,
     PRESET_NONE,
     PRESET_AWAY,
+    PRESET_ECO,
     SUPPORT_PRESET_MODE
 )
 from homeassistant.const import (
@@ -105,7 +106,7 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
 
     @property
     def preset_modes(self):
-        return [PRESET_NONE, PRESET_AWAY]
+        return [PRESET_NONE, PRESET_AWAY, PRESET_ECO]
 
     @property
     def min_temp(self):
@@ -149,10 +150,10 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
             self._hub.sensors.peaq_enabled.value = True
 
     def set_preset_mode(self, preset_mode):
-        if self._preset_mode == PRESET_AWAY and preset_mode != self._preset_mode:
-            self._hub.sensors.set_temp_indoors.preset = PRESET_NONE
-        elif self._preset_mode != PRESET_AWAY and preset_mode == PRESET_AWAY:
-            self._hub.sensors.set_temp_indoors.preset = PRESET_AWAY
+        # if self._preset_mode == PRESET_AWAY and preset_mode != self._preset_mode:
+        #     self._hub.sensors.set_temp_indoors.preset = PRESET_NONE
+        # elif self._preset_mode != PRESET_AWAY and preset_mode == PRESET_AWAY:
+        self._hub.sensors.set_temp_indoors.preset = preset_mode
         self._preset_mode = preset_mode
 
     def update(self, event_time=None):

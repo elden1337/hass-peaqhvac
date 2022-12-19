@@ -147,13 +147,13 @@ class IHvac:
             self.model.periodic_update_list = []
 
     def _handle_sensor(self, sensor: str):
-        sensorobj = sensor.split('|')
-        if 0 < len(sensorobj) <= 2:
-            ret = self._hass.states.get(sensorobj[0])
+        sensor_obj = sensor.split('|')
+        if 0 < len(sensor_obj) <= 2:
+            ret = self._hass.states.get(sensor_obj[0])
             if ret is not None:
-                if len(sensorobj) == 2:
+                if len(sensor_obj) == 2:
                     try:
-                        ret_attr = ret.attributes.get(sensorobj[1])
+                        ret_attr = ret.attributes.get(sensor_obj[1])
                         return ret_attr
                     except Exception as e:
                         _LOGGER.exception(e)
@@ -184,12 +184,12 @@ class IHvac:
                     params
                 )
 
-    def get_value(self, sensor: SensorType, returntype):
+    def get_value(self, sensor: SensorType, return_type):
         _sensor = self.get_sensor(sensor)
         ret = self._handle_sensor(_sensor)
         if ret is not None:
             try:
-                return ex.parse_to_type(ret, returntype)
+                return ex.parse_to_type(ret, return_type)
             except Exception as e:
                 _LOGGER.debug(f"Could not parse {sensor.name} from hvac. {e}")
         # else:

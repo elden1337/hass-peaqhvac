@@ -8,7 +8,6 @@ from custom_components.peaqhvac.service.peaqev_facade import PeaqevFacade
 
 class HubSensors:
     peaq_enabled: HubMember
-    away_mode: HubMember
     temp_trend_outdoors: Gradient
     temp_trend_indoors: Gradient
     set_temp_indoors: TargetTemp
@@ -20,7 +19,6 @@ class HubSensors:
 
     def __init__(self, options: ConfigModel, hass, peaqev_discovered: bool = False):
         self.peaq_enabled = HubMember(initval=options.misc_options.enabled_on_boot, data_type=bool)
-        self.away_mode = HubMember(initval=False, data_type=bool)
         self.hvac_tolerance = options.hvac_tolerance
         self.average_temp_indoors = Average(entities=options.indoor_tempsensors)
         self.average_temp_outdoors = Average(entities=options.outdoor_tempsensors)

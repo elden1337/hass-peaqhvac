@@ -7,23 +7,17 @@ import custom_components.peaqhvac.service.hvac.peakfinder as peakfinder
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
 from datetime import timedelta, datetime
 from custom_components.peaqhvac.service.hub.weather_prognosis import PrognosisExportModel
+from custom_components.peaqhvac.service.models.offset_model import OffsetModel
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class Offset:
     """The class that provides the offsets for the hvac"""
-    max_hour_today: int = -1
-    max_hour_tomorrow: int = -1
-    peaks_today: list[int] = []
-    calculated_offsets = {}, {}
-    raw_offsets = {}, {}
-    _internal_tolerance = 0
-    prognosis = None
-
     def __init__(self, hub):
         self.hours = Hoursselection()
         self._hub = hub
+        self.model = OffsetModel()
 
     def get_offset(
             self,
@@ -35,30 +29,30 @@ class Offset:
                 [
                     self.hours.prices != prices,
                     self.hours.prices_tomorrow != prices_tomorrow,
-                    self.calculated_offsets == {}, {},
-                    self._hub.options.hvac_tolerance != self._internal_tolerance,
-                    self._hub.prognosis.prognosis != self.prognosis
+                    self.model.calculated_offsets == {}, {},
+                    self._hub.options.hvac_tolerance != self.model.tolerance,
+                    self._hub.prognosis.prognosis != self.model.prognosis
                 ]
         ):
             self._set_internal_parameters(prices, prices_tomorrow)
             if 23 <= len(prices) <= 25:
-                self.raw_offsets = self._update_offset()
+                self.model.raw_offsets = self._update_offset()
             else:
                 _LOGGER.error(f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(prices)}")
             try:
-                _weather_dict = self._get_weatherprognosis_adjustment(self.raw_offsets)
+                _weather_dict = self._get_weatherprognosis_adjustment(self.model.raw_offsets)
                 _weather_inverted = {k: v*-1 for (k, v) in _weather_dict[0].items()}
-                self.calculated_offsets = self._update_offset(_weather_inverted)
+                self.model.calculated_offsets = self._update_offset(_weather_inverted)
             except Exception as e:
                 _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
-                self.calculated_offsets = self.raw_offsets
-        return self.calculated_offsets
+                self.model.calculated_offsets = self.model.raw_offsets
+        return self.model.calculated_offsets
 
     def _set_internal_parameters(self, prices, prices_tomorrow) -> None:
         self.hours.prices = prices
         self.hours.prices_tomorrow = prices_tomorrow
-        self.prognosis = self._hub.prognosis.prognosis
-        self._internal_tolerance = self._hub.options.hvac_tolerance
+        self.model.prognosis = self._hub.prognosis.prognosis
+        self.model._internal_tolerance = self._hub.options.hvac_tolerance
 
     def _update_offset(
             self,
@@ -70,7 +64,7 @@ class Offset:
             tomorrow = {}
             if len(d['tomorrow']) > 0:
                 tomorrow = self._offset_per_day(d['tomorrow'])
-            return Offset._smooth_transitions(today, tomorrow, self._internal_tolerance)
+            return Offset._smooth_transitions(today, tomorrow, self.model.tolerance)
         except Exception as e:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
@@ -82,7 +76,7 @@ class Offset:
         ret = {}
         _max_today = max(day_values.values())
         _min_today = min(day_values.values())
-        factor = max(abs(_max_today), abs(_min_today)) / self._internal_tolerance
+        factor = max(abs(_max_today), abs(_min_today)) / self.model.tolerance
 
         for k, v in day_values.items():
             ret[k] = int(round((day_values[k] / factor) * -1, 0))
@@ -127,11 +121,10 @@ class Offset:
     def adjust_to_threshold(adjustment: int, tolerance: int) -> int:
         return int(round(min(adjustment, tolerance) if adjustment >= 0 else max(adjustment, tolerance * -1), 0))
 
-    @staticmethod
-    def _getaverage(prices: list, prices_tomorrow: list = None) -> float:
+    def _getaverage(self, prices: list, prices_tomorrow: list = None) -> float:
         try:
             total = prices
-            Offset.peaks_today = peakfinder.identify_peaks(prices)
+            self.model.peaks_today = peakfinder.identify_peaks(prices)
             prices_tomorrow_cleaned = Offset._sanitize_pricelists(prices_tomorrow)
             if len(prices_tomorrow_cleaned) == 24:
                 total.extend(prices_tomorrow_cleaned)
