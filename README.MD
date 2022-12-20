@@ -103,7 +103,7 @@ There are presets available in this sensor that you may set by automations or ma
 * `Away` - Set temperature is lowered by 1C. Heavily reduced tolerance for increased temperatures before lowering offset. Will also reduce temperature by 0.1C per 1.5C if below -5C
 
 ### Sensors
-* * `number.peaqhvac_tolerance` - The number set here determines how well the offsets will align with the daily price-curve. Integers 1-10. **Remember that the higher the number, the higher the risk of electrical addon-usage and/or peak-energy hours.**
+* `number.peaqhvac_tolerance` - The number set here determines how well the offsets will align with the daily price-curve. Integers 1-10. **Remember that the higher the number, the higher the risk of electrical addon-usage and/or peak-energy hours.**
 * `sensor.peaqhvac_calculated_hvac_offset` - This sensor will give you information on the currently calculated offset _(which is pushed to the Hvac if control heat is enabled)_. The attributes shows you the different calculation-steps to override a specific hourly offset based on the price. Here you may also retrieve the offsets for today, tomorrow plus the "raw" offsets for today that are without weather prognosis-interference.
 * `sensor.peaqhvac_average_temperature_indoors`| `sensor.peaqhvac_average_temperature_outdoors` - The average temperatures based on the sensors you provide in setup.
 * `sensor.peaqhvac_temperature_trend_indoors`| `sensor.peaqhvac_temperature_trend_outdoors` - The current temperature trends registered as C/h. 
