@@ -112,7 +112,7 @@ class WaterHeater(IHeater):
             return False
 
     def _update_operation(self):
-        if self.is_initialized:
+        if self.is_initialized and self.control_module:
             if self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
                 self._set_water_heater_operation_home()
             elif self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
