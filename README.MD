@@ -85,7 +85,7 @@ If control water is enabled a brief hot-waterboost will run (for ten minutes) wh
 1. If current offset is > 0 (relatively cheap hour) and watertemp is below 42C at approx 10 min past the hour
 2. If current offset is <= 0 (relatively expensive hour) and watertemp is below 30C at approx 10 min past the hour
 
-Furthermore, when the cheapest hour in the known span occurs, a real boost (up to the set boost-temp) will happen. This will often include a small amount of electrical addon.
+Furthermore, when the cheapest hour in the known span occurs a real boost (up to the set boost-temp) will happen. This will often include a small amount of electrical addon.
 
 _In future versions the hot water will get more love, for instance a secondary threshold to run boost or not (if cheap is not cheap enough) and to divert from certain hours alltogether despite the temp being too low._
 
