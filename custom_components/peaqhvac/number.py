@@ -53,7 +53,7 @@ class PeaqNumber(NumberEntity, RestoreEntity):
 
     @property
     def mode(self) -> str:
-        return "box"
+        return "slider"
 
     def set_native_value(self, value: float) -> None:
         self._state = value

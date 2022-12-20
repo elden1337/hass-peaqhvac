@@ -10,7 +10,8 @@
 
 <img src="https://raw.githubusercontent.com/elden1337/hass-peaq/main/assets/icon.png" width="125">
 
-Welcome to PeaqHvac.
+PeaqHvac is a custom component for Nibe F-series users. As of 2022-12-20 the tested versions are exhaust-air pumps F730 and F750, but it probably works fine with other similar ones as well.
+In future releases other brands might be added.
 
 Because of the slow response from the Nibe Uplink-api, calls are made somewhat prematurely to try and correct for this lag. 
 If peakshaving is active _(requires PeaqEv as of 0.1.1)_ this means that peaks sometimes cannot be avoided completely, but rather lessened in their emphasis.
@@ -33,7 +34,9 @@ nibe:
         - 47206
 ```
 
-It is recommended that you set a heat-curve on your system that corresponds well to your desired level of heating at offset 0. Offsets is what PeaqHvac will manipulate.
+* Set a heat-curve on your system that corresponds well to your desired level of heating at offset 0. Offsets is what PeaqHvac will manipulate
+* Turn off indoor climate control on the heat pump as PeaqHvac now takes that role
+* Turn off Nibe Smart Price Adaption if activated
 
 ### Integrations used
 
