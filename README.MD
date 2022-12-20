@@ -15,7 +15,6 @@ Welcome to PeaqHvac.
 Because of the slow response from the Nibe Uplink-api, calls are made somewhat prematurely to try and correct for this lag. 
 If peakshaving is active _(requires PeaqEv as of 0.1.1)_ this means that peaks sometimes cannot be avoided completely, but rather lessened in their emphasis.
 
----
 
 ## Preparations
 
@@ -46,7 +45,17 @@ It is recommended that you set a heat-curve on your system that corresponds well
 * Peak-shaving: [PeaqEv](https://github.com/elden1337/hass-peaq)
 * Weather-prognosis: Met (with hourly sensor active)
 
----
+## Installation
+*Required to install is Home Assistant version 2022.10.5 or higher.*
+
+Preferred if you have HACS installed is to search for Peaqhvac there.
+
+Otherwise you may:
+- Copy `custom_components/peaqhvac` folder to `<config_dir>/custom_components/peaqhvac/`
+- Restart Home assistant
+- Go to Configuration > Devices & Services > Add integration
+
+
 
 ## Functions
 
