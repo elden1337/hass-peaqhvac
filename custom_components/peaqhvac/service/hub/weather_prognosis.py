@@ -1,48 +1,13 @@
-from datetime import datetime
+from __future__ import annotations
 import logging
-
+from typing import Tuple
 import homeassistant.helpers.template as template
-from enum import Enum
-from dataclasses import dataclass, field
-from time import mktime, strptime
+from datetime import timedelta, datetime
+
+from custom_components.peaqhvac.service.models.prognosis_export_model import PrognosisExportModel
+from custom_components.peaqhvac.service.models.weather_object import WeatherObject
 
 _LOGGER = logging.getLogger(__name__)
-
-
-class WeatherType(Enum):
-    Sunny = "sunny"
-    Cloudy = "cloudy"
-    PartlyCloudy = "partlycloudy"
-    Snowy = "snowy"
-
-
-@dataclass
-class PrognosisExportModel:
-    prognosis_temp: float
-    corrected_temp: float
-    windchill_temp: float
-    delta_temp_from_now: float
-    DT: datetime
-    TimeDelta: int
-
-
-@dataclass
-class WeatherObject:
-    _DTstr: str
-    WeatherCondition: WeatherType
-    Temperature: float
-    Wind_Speed: float
-    Wind_Bearing: float
-    Precipitation_Probability: float
-    Precipitation: float
-    DT: datetime = field(init=False)
-
-    def __post_init__(self):
-        self.DT = self._parse_datetime()
-
-    def _parse_datetime(self) -> datetime:
-        time_obj = strptime(self._DTstr, "%Y-%m-%dT%H:%M:%S+00:00")
-        return datetime.fromtimestamp(mktime(time_obj))
 
 
 class WeatherPrognosis:
@@ -90,7 +55,7 @@ class WeatherPrognosis:
                         _LOGGER.error(f"Wether prognosis cannot be updated :({len(ret_attr)})")
                         pass
                 except Exception as e:
-                    #_LOGGER.exception(f"Could not parse today's prices from Nordpool. Unsolveable error. {e}")
+                    # _LOGGER.exception(f"Could not parse today's prices from Nordpool. Unsolveable error. {e}")
                     pass
                     return
             else:
@@ -141,6 +106,35 @@ class WeatherPrognosis:
         self._hvac_prognosis_list = ret
         return ret
 
+    def get_weatherprognosis_adjustment(
+            self,
+            offsets
+    ) -> Tuple[dict, dict]:
+        self._hub.prognosis.update_weather_prognosis()
+        ret = {}, offsets[1]
+        now = datetime.now()
+        for k, v in offsets[0].items():
+            ret[0][k] = self._get_weatherprognosis_hourly_adjustment(k, v)
+        return ret
+
+    def _get_weatherprognosis_hourly_adjustment(self, k, v):
+        now = datetime.now()
+        _next_prognosis = self._get_two_hour_prog(
+            datetime(now.year, now.month, now.day, int(k), 0, 0)
+        )
+        if _next_prognosis is not None and int(k) >= now.hour:
+            divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
+            adj = int(round((_next_prognosis.delta_temp_from_now / 2.5) * divisor, 0)) * -1
+            if adj != 0:
+                if (v + adj) <= 0:
+                    return (v + adj) * -1
+                else:
+                    return (v + adj) * -1
+            else:
+                return v * -1
+        else:
+            return v * -1
+
     def _set_prognosis(self, import_list: list):
         ret = []
         for i in import_list:
@@ -159,27 +153,15 @@ class WeatherPrognosis:
     def _correct_temperature_for_windchill(self, temp: float, windspeed: float) -> float:
         windspeed_corrected = windspeed
         ret = 13.12 + (0.6215 * temp) - (11.37 * windspeed_corrected ** 0.16) + (
-                    0.3965 * temp * windspeed_corrected ** 0.16)
+                0.3965 * temp * windspeed_corrected ** 0.16)
         return round(ret, 1)
 
-#
-#
-# w = WeatherPrognosis()
-# w.set_prognosis(test_input)
-#
-# for ww in w.prognosis_list:
-#     print(ww)
-#
-# prog = w.get_hvac_prognosis(1.6)
-#
-# for p in prog:
-#     print(p)
-#
-#
-
-
-
-
-
-
-
+    def _get_two_hour_prog(
+            self,
+            thishour: datetime
+    ) -> PrognosisExportModel | None:
+        for p in self._hub.prognosis.prognosis:
+            c = timedelta.total_seconds(p.DT - thishour)
+            if c == 10800:
+                return p
+        return None

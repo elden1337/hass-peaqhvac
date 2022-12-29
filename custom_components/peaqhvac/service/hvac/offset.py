@@ -5,8 +5,7 @@ from statistics import mean
 from typing import Tuple
 import custom_components.peaqhvac.service.hvac.peakfinder as peakfinder
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
-from datetime import timedelta, datetime
-from custom_components.peaqhvac.service.hub.weather_prognosis import PrognosisExportModel
+
 from custom_components.peaqhvac.service.models.offset_model import OffsetModel
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
@@ -27,7 +26,24 @@ class Offset:
             prices_tomorrow: list
     ) -> Tuple[dict, dict]:
         """External entrypoint to the class"""
-        if any(
+        if self._should_update(prices, prices_tomorrow):
+            self.internal_preset = self._hub.sensors.set_temp_indoors.preset
+            self._set_internal_parameters(prices, prices_tomorrow)
+            if 23 <= len(prices) <= 25:
+                self.model.raw_offsets = self._update_offset()
+            else:
+                _LOGGER.error(f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(prices)}")
+            try:
+                _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
+                _weather_inverted = {k: v*-1 for (k, v) in _weather_dict[0].items()}
+                self.model.calculated_offsets = self._update_offset(_weather_inverted)
+            except Exception as e:
+                _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
+                self.model.calculated_offsets = self.model.raw_offsets
+        return self.model.calculated_offsets
+
+    def _should_update(self, prices:list, prices_tomorrow:list) -> bool:
+        return any(
                 [
                     self.hours.prices != prices,
                     self.hours.prices_tomorrow != prices_tomorrow,
@@ -36,21 +52,7 @@ class Offset:
                     self._hub.prognosis.prognosis != self.model.prognosis,
                     self._hub.sensors.set_temp_indoors.preset != self.internal_preset
                 ]
-        ):
-            self.internal_preset = self._hub.sensors.set_temp_indoors.preset
-            self._set_internal_parameters(prices, prices_tomorrow)
-            if 23 <= len(prices) <= 25:
-                self.model.raw_offsets = self._update_offset()
-            else:
-                _LOGGER.error(f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(prices)}")
-            try:
-                _weather_dict = self._get_weatherprognosis_adjustment(self.model.raw_offsets)
-                _weather_inverted = {k: v*-1 for (k, v) in _weather_dict[0].items()}
-                self.model.calculated_offsets = self._update_offset(_weather_inverted)
-            except Exception as e:
-                _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
-                self.model.calculated_offsets = self.model.raw_offsets
-        return self.model.calculated_offsets
+        )
 
     def _set_internal_parameters(self, prices, prices_tomorrow) -> None:
         self.hours.prices = prices
@@ -88,40 +90,40 @@ class Offset:
                 ret[k] -= 1
         return ret
 
-    def _get_two_hour_prog(
-            self,
-            thishour: datetime
-    ) -> PrognosisExportModel | None:
-        for p in self._hub.prognosis.prognosis:
-            c = timedelta.total_seconds(p.DT - thishour)
-            if c == 10800:
-                return p
-        return None
-
-    def _get_weatherprognosis_adjustment(
-            self,
-            offsets
-    ) -> Tuple[dict, dict]:
-        self._hub.prognosis.update_weather_prognosis()
-        ret = {}, offsets[1]
-        for k, v in offsets[0].items():
-            now = datetime.now()
-            _next_prognosis = self._get_two_hour_prog(
-                datetime(now.year, now.month, now.day, int(k), 0, 0)
-            )
-            if _next_prognosis is not None and int(k) >= now.hour:
-                divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
-                adj = int(round((_next_prognosis.delta_temp_from_now / 2.5) * divisor, 0)) * -1
-                if adj != 0:
-                    if (v + adj) <= 0:
-                        ret[0][k] = (v + adj) *-1
-                    else:
-                        ret[0][k] = (v + adj) * -1
-                else:
-                    ret[0][k] = v * -1
-            else:
-                ret[0][k] = v * -1
-        return ret
+    # def _get_two_hour_prog(
+    #         self,
+    #         thishour: datetime
+    # ) -> PrognosisExportModel | None:
+    #     for p in self._hub.prognosis.prognosis:
+    #         c = timedelta.total_seconds(p.DT - thishour)
+    #         if c == 10800:
+    #             return p
+    #     return None
+    #
+    # def _get_weatherprognosis_adjustment(
+    #         self,
+    #         offsets
+    # ) -> Tuple[dict, dict]:
+    #     self._hub.prognosis.update_weather_prognosis()
+    #     ret = {}, offsets[1]
+    #     for k, v in offsets[0].items():
+    #         now = datetime.now()
+    #         _next_prognosis = self._get_two_hour_prog(
+    #             datetime(now.year, now.month, now.day, int(k), 0, 0)
+    #         )
+    #         if _next_prognosis is not None and int(k) >= now.hour:
+    #             divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
+    #             adj = int(round((_next_prognosis.delta_temp_from_now / 2.5) * divisor, 0)) * -1
+    #             if adj != 0:
+    #                 if (v + adj) <= 0:
+    #                     ret[0][k] = (v + adj) *-1
+    #                 else:
+    #                     ret[0][k] = (v + adj) * -1
+    #             else:
+    #                 ret[0][k] = v * -1
+    #         else:
+    #             ret[0][k] = v * -1
+    #     return ret
 
     @staticmethod
     def adjust_to_threshold(adjustment: int, tolerance: int) -> int:
