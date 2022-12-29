@@ -26,7 +26,7 @@ class HvacPresets(Enum):
         types = {
             HvacPresets.Normal:       (0.2, 0.3),
             HvacPresets.Eco:          (0.2, 0.2),
-            HvacPresets.Away:         (0.5, 0),
+            HvacPresets.Away:         (0.5, 0.2),
             HvacPresets.ExtendedAway: (0.7, 0)
         }
         return types[preset]
