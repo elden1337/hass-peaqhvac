@@ -150,9 +150,6 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
             self._hub.sensors.peaq_enabled.value = True
 
     def set_preset_mode(self, preset_mode):
-        # if self._preset_mode == PRESET_AWAY and preset_mode != self._preset_mode:
-        #     self._hub.sensors.set_temp_indoors.preset = PRESET_NONE
-        # elif self._preset_mode != PRESET_AWAY and preset_mode == PRESET_AWAY:
         self._hub.sensors.set_temp_indoors.preset = preset_mode
         self._preset_mode = preset_mode
 
@@ -175,7 +172,6 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
     async def async_added_to_hass(self):
         state = await super().async_get_last_state()
         if state:
-            #_LOGGER.debug(f"Found old state for climate. {state.state}, {state}")
+            self.set_preset_mode(str(state.attributes.get('preset_mode', 50)))
             self._current_temperature = state.attributes.get('temperature', 50)
             self._hub.sensors.set_temp_indoors.value = self._current_temperature
-            #state.attributes.get('preset_mode', 50)
