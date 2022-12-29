@@ -8,6 +8,7 @@ from peaqevcore.services.hourselection.hoursselection import Hoursselection
 from datetime import timedelta, datetime
 from custom_components.peaqhvac.service.hub.weather_prognosis import PrognosisExportModel
 from custom_components.peaqhvac.service.models.offset_model import OffsetModel
+from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +19,8 @@ class Offset:
         self.hours = Hoursselection()
         self._hub = hub
         self.model = OffsetModel()
-
+        self.internal_preset = None
+        
     def get_offset(
             self,
             prices: list,
@@ -31,9 +33,11 @@ class Offset:
                     self.hours.prices_tomorrow != prices_tomorrow,
                     self.model.calculated_offsets == {}, {},
                     self._hub.options.hvac_tolerance != self.model.tolerance,
-                    self._hub.prognosis.prognosis != self.model.prognosis
+                    self._hub.prognosis.prognosis != self.model.prognosis,
+                    self._hub.sensors.set_temp_indoors.preset != self.internal_preset
                 ]
         ):
+            self.internal_preset = self._hub.sensors.set_temp_indoors.preset
             self._set_internal_parameters(prices, prices_tomorrow)
             if 23 <= len(prices) <= 25:
                 self.model.raw_offsets = self._update_offset()
@@ -74,15 +78,14 @@ class Offset:
             day_values: dict
     ) -> dict:
         ret = {}
-        try:
-            _max_today = max(day_values.values())
-            _min_today = min(day_values.values())
-            factor = max(abs(_max_today), abs(_min_today)) / self.model.tolerance
+        _max_today = max(day_values.values())
+        _min_today = min(day_values.values())
+        factor = max(abs(_max_today), abs(_min_today)) / self.model.tolerance
 
-            for k, v in day_values.items():
-                ret[k] = int(round((day_values[k] / factor) * -1, 0))
-        except Exception as e:
-            _LOGGER.exception(f"Could not calculate per-day offset correctly: {e}")
+        for k, v in day_values.items():
+            ret[k] = int(round((day_values[k] / factor) * -1, 0))
+            if self._hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
+                ret[k] -= 1
         return ret
 
     def _get_two_hour_prog(
