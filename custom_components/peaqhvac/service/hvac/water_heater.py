@@ -4,7 +4,6 @@ import time
 from datetime import datetime
 import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.service.hub.trend import Gradient
-#from custom_components.peaqhvac.service.hvac import peakfinder
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.waterbooster_model import WaterBoosterModel
@@ -76,14 +75,6 @@ class WaterHeater(IHeater):
         """Return true if the water is currently being heated"""
         return self.temperature_trend > 0 or self.booster_model.pre_heating is True
 
-    # def update_demand(self):
-    #     """this function will be the most complex in this class. add more as we go"""
-    #     if time.time() - self._latest_update > UPDATE_INTERVAL:
-    #         self._latest_update = time.time()
-    #         self._demand = self._get_deg_demand()
-    #         if self.control_module:
-    #             self._update_operation()
-
     def _get_demand(self) -> Demand:
         temp = self.current_temperature
         if 0 < temp < 100:
@@ -112,7 +103,7 @@ class WaterHeater(IHeater):
             return False
 
     def _update_operation(self):
-        if self.is_initialized and self.control_module:
+        if self.is_initialized:
             if self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
                 self._set_water_heater_operation_home()
             elif self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
