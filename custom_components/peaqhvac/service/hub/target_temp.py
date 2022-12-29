@@ -65,7 +65,7 @@ class TargetTemp:
     def adjusted_tolerances(self, offset: int) -> Tuple[float, float]:
         _max_tolerance = self.max_tolerance + (offset / 10) if offset > 0 else self.max_tolerance
         _min_tolerance = self.min_tolerance + (abs(offset) / 10) if offset < 0 else self.min_tolerance
-        return max(_min_tolerance, 0), max(_max_tolerance, 0)
+        return max(_min_tolerance, 0.1), max(_max_tolerance, 0.1)
 
     def _minmax(self, desired_temp) -> float:
         if desired_temp < MINTEMP:
