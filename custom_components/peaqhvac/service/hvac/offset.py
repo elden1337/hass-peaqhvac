@@ -27,7 +27,6 @@ class Offset:
     ) -> Tuple[dict, dict]:
         """External entrypoint to the class"""
         if self._should_update(prices, prices_tomorrow):
-            self.internal_preset = self._hub.sensors.set_temp_indoors.preset
             self._set_internal_parameters(prices, prices_tomorrow)
             if 23 <= len(prices) <= 25:
                 self.model.raw_offsets = self._update_offset()
@@ -59,6 +58,7 @@ class Offset:
         self.hours.prices_tomorrow = prices_tomorrow
         self.model.prognosis = self._hub.prognosis.prognosis
         self.model.tolerance = self._hub.options.hvac_tolerance
+        self.internal_preset = self._hub.sensors.set_temp_indoors.preset
 
     def _update_offset(
             self,
@@ -89,41 +89,6 @@ class Offset:
             if self._hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
                 ret[k] -= 1
         return ret
-
-    # def _get_two_hour_prog(
-    #         self,
-    #         thishour: datetime
-    # ) -> PrognosisExportModel | None:
-    #     for p in self._hub.prognosis.prognosis:
-    #         c = timedelta.total_seconds(p.DT - thishour)
-    #         if c == 10800:
-    #             return p
-    #     return None
-    #
-    # def _get_weatherprognosis_adjustment(
-    #         self,
-    #         offsets
-    # ) -> Tuple[dict, dict]:
-    #     self._hub.prognosis.update_weather_prognosis()
-    #     ret = {}, offsets[1]
-    #     for k, v in offsets[0].items():
-    #         now = datetime.now()
-    #         _next_prognosis = self._get_two_hour_prog(
-    #             datetime(now.year, now.month, now.day, int(k), 0, 0)
-    #         )
-    #         if _next_prognosis is not None and int(k) >= now.hour:
-    #             divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
-    #             adj = int(round((_next_prognosis.delta_temp_from_now / 2.5) * divisor, 0)) * -1
-    #             if adj != 0:
-    #                 if (v + adj) <= 0:
-    #                     ret[0][k] = (v + adj) *-1
-    #                 else:
-    #                     ret[0][k] = (v + adj) * -1
-    #             else:
-    #                 ret[0][k] = v * -1
-    #         else:
-    #             ret[0][k] = v * -1
-    #     return ret
 
     @staticmethod
     def adjust_to_threshold(adjustment: int, tolerance: int) -> int:
