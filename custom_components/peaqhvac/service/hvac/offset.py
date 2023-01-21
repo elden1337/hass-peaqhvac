@@ -14,12 +14,13 @@ _LOGGER = logging.getLogger(__name__)
 
 class Offset:
     """The class that provides the offsets for the hvac"""
+
     def __init__(self, hub):
         self.hours = Hoursselection()
         self._hub = hub
         self.model = OffsetModel()
         self.internal_preset = None
-        
+
     def get_offset(
             self,
             prices: list,
@@ -31,26 +32,27 @@ class Offset:
             if 23 <= len(prices) <= 25:
                 self.model.raw_offsets = self._update_offset()
             else:
-                _LOGGER.error(f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(prices)}")
+                _LOGGER.error(
+                    f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(prices)}")
             try:
                 _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
-                _weather_inverted = {k: v*-1 for (k, v) in _weather_dict[0].items()}
+                _weather_inverted = {k: v * -1 for (k, v) in _weather_dict[0].items()}
                 self.model.calculated_offsets = self._update_offset(_weather_inverted)
             except Exception as e:
                 _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
                 self.model.calculated_offsets = self.model.raw_offsets
         return self.model.calculated_offsets
 
-    def _should_update(self, prices:list, prices_tomorrow:list) -> bool:
+    def _should_update(self, prices: list, prices_tomorrow: list) -> bool:
         return any(
-                [
-                    self.hours.prices != prices,
-                    self.hours.prices_tomorrow != prices_tomorrow,
-                    self.model.calculated_offsets == {}, {},
-                    self._hub.options.hvac_tolerance != self.model.tolerance,
-                    self._hub.prognosis.prognosis != self.model.prognosis,
-                    self._hub.sensors.set_temp_indoors.preset != self.internal_preset
-                ]
+            [
+                self.hours.prices != prices,
+                self.hours.prices_tomorrow != prices_tomorrow,
+                self.model.calculated_offsets == {}, {},
+                self._hub.options.hvac_tolerance != self.model.tolerance,
+                self._hub.prognosis.prognosis != self.model.prognosis,
+                self._hub.sensors.set_temp_indoors.preset != self.internal_preset
+            ]
         )
 
     def _set_internal_parameters(self, prices, prices_tomorrow) -> None:
@@ -143,7 +145,7 @@ class Offset:
             tomorrow: dict,
             tolerance: int
     ) -> Tuple[dict, dict]:
-        tolerance = min(tolerance, 4)
+        tolerance = min(tolerance, 3)
         start_list = []
         start_list.extend(today.values())
         start_list.extend(tomorrow.values())
@@ -159,7 +161,7 @@ class Offset:
         ret = {}, {}
         for hour in range(0, 24):
             ret[0][hour] = start_list[hour]
-        if len(tomorrow.items()) == 24:
-            for hour in range(24, 48):
+        if 23 <= len(tomorrow.items()) <= 25:
+            for hour in range(24, min(len(tomorrow.items()) + 24, 48)):
                 ret[1][hour - 24] = start_list[hour]
         return ret
