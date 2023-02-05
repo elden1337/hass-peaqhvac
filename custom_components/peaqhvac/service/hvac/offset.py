@@ -94,7 +94,9 @@ class Offset:
 
     @staticmethod
     def adjust_to_threshold(adjustment: int, tolerance: int) -> int:
-        return int(round(min(adjustment, tolerance) if adjustment >= 0 else max(adjustment, tolerance * -1), 0))
+        ret = int(round(min(adjustment, tolerance) if adjustment >= 0 else max(adjustment, tolerance * -1), 0))
+        #_LOGGER.debug(f"adjust to threshold gives current offset as: {ret}")
+        return ret
 
     def _getaverage(self, prices: list, prices_tomorrow: list = None) -> float:
         try:
