@@ -10,6 +10,9 @@ class Entities(Enum):
     Threshold = 0
     Prediction = 1
     TotalEnergyAccumulated = 2
+    Offsets = 3
+    Prices = 4
+    PricesTomorrow = 5
 
 ENTITIES = {
     Entities.Threshold: {
@@ -23,12 +26,45 @@ ENTITIES = {
     Entities.TotalEnergyAccumulated: {
         "entity": "sensor.peaqev_energy_including_car_hourly",
         "attributes": []
+    },
+    Entities.Offsets: {
+        "entity": "sensor.peaqev_hour_controller",
+        "attributes": ["offsets"]
+    },
+    Entities.Prices: {
+        "entity": "sensor.peaqev_hour_controller",
+        "attributes": ["prices"]
+    },
+    Entities.PricesTomorrow: {
+        "entity": "sensor.peaqev_hour_controller",
+        "attributes": ["prices_tomorrow"]
     }
 }
 
 class PeaqevFacade:
     def __init__(self, hass: HomeAssistant):
         self._hass = hass
+
+    @property
+    def prices(self) -> list:
+        data = self._get_state(ENTITIES[Entities.Prices])
+        if data is not None:
+            return data["prices"]
+        return []
+
+    @property
+    def prices_tomorrow(self) -> list:
+        data = self._get_state(ENTITIES[Entities.Prices])
+        if data is not None:
+            return data["prices_tomorrow"]
+        return []
+
+    @property
+    def offsets(self) -> dict:
+        data = self._get_state(ENTITIES[Entities.Prices])
+        if data is not None:
+            return data["offsets"]
+        return {}
 
     @property
     def exact_threshold(self) -> float:

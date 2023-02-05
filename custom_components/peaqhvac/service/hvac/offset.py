@@ -16,10 +16,33 @@ class Offset:
     """The class that provides the offsets for the hvac"""
 
     def __init__(self, hub):
-        self.hours = Hoursselection()
         self._hub = hub
         self.model = OffsetModel()
         self.internal_preset = None
+        if not self._hub.sensors.peaqev_installed:
+            self.hours = Hoursselection()
+        else:
+            self.hours = None
+            self._prices = None
+            self._prices_tomorrow = None
+
+    @property
+    def prices(self) -> list:
+        if not self._hub.sensors.peaqev_installed:
+            return self.hours.prices
+        return self._prices
+
+    @property
+    def prices_tomorrow(self) -> list:
+        if not self._hub.sensors.peaqev_installed:
+            return self.hours.prices_tomorrow
+        return self._prices_tomorrow
+
+    @property
+    def offsets(self) -> dict:
+        if not self._hub.sensors.peaqev_installed:
+            return self.hours.offsets
+        return self._hub.sensors.peaqev_facade.offsets
 
     def get_offset(
             self,
@@ -46,8 +69,8 @@ class Offset:
     def _should_update(self, prices: list, prices_tomorrow: list) -> bool:
         return any(
             [
-                self.hours.prices != prices,
-                self.hours.prices_tomorrow != prices_tomorrow,
+                self.prices != prices,
+                self.prices_tomorrow != prices_tomorrow,
                 self.model.calculated_offsets == {}, {},
                 self._hub.options.hvac_tolerance != self.model.tolerance,
                 self._hub.prognosis.prognosis != self.model.prognosis,
@@ -56,8 +79,12 @@ class Offset:
         )
 
     def _set_internal_parameters(self, prices, prices_tomorrow) -> None:
-        self.hours.prices = prices
-        self.hours.prices_tomorrow = prices_tomorrow
+        if not self._hub.sensors.peaqev_installed:
+            self.hours.prices = prices
+            self.hours.prices_tomorrow = prices_tomorrow
+        else:
+            self._prices = prices
+            self._prices_tomorrow = prices_tomorrow
         self.model.prognosis = self._hub.prognosis.prognosis
         self.model.tolerance = self._hub.options.hvac_tolerance
         self.internal_preset = self._hub.sensors.set_temp_indoors.preset
@@ -67,7 +94,7 @@ class Offset:
             weather_adjusted_today=None
     ) -> Tuple[dict, dict]:
         try:
-            d = self.hours.offsets
+            d = self.offsets
             today = self._offset_per_day(d['today']) if weather_adjusted_today is None else weather_adjusted_today
             tomorrow = {}
             if len(d['tomorrow']) > 0:

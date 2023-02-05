@@ -1,9 +1,11 @@
 from typing import Tuple
-
+import logging
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
 MINTEMP = 15
 MAXTEMP = 27
+_LOGGER = logging.getLogger(__name__)
+
 
 class TargetTemp:
     def __init__(self, initval=19):
@@ -28,9 +30,13 @@ class TargetTemp:
 
     @value.setter
     def value(self, val) -> None:
-        self._value = val
-        self._internal_set_temp = val - HvacPresets.get_tempdiff(self.preset)
-        self._set_temperature_and_tolerances()
+        try:
+            if val is not None:
+                self._value = val
+            self._internal_set_temp = self._value - HvacPresets.get_tempdiff(self.preset)
+            self._set_temperature_and_tolerances()
+        except:
+            _LOGGER.error(f"Unable to set the targettemp value. The incoming val is {val}")
 
     @property
     def preset(self) -> HvacPresets:
