@@ -12,17 +12,22 @@ from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 
 _LOGGER = logging.getLogger(__name__)
 HEATBOOST_TIMER = 7200
-
+WAITTIMER_TIMEOUT = 300
 
 class HouseHeater(IHeater):
-    _latest_boost = 0
-    _degree_minutes = 0
-    _current_offset = 0
 
     def __init__(self, hvac):
         self._hvac = hvac
         self._dm_compressor_start = hvac.hvac_compressor_start
+        self._latest_boost = 0
+        self._degree_minutes = 0
+        self._current_offset = 0
+        self._wait_timer = 0
         super().__init__(hvac=hvac)
+
+    @property
+    def is_initialized(self) -> bool:
+        return self._current_temp is not None
 
     @IHeater.demand.setter
     def demand(self, val):
@@ -30,25 +35,35 @@ class HouseHeater(IHeater):
 
     @property
     def vent_boost(self) -> bool:
-        if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
+        if self._hvac.hub.sensors.temp_trend_indoors.is_clean and time.time() - self._wait_timer > WAITTIMER_TIMEOUT:
             if all(
                     [
                         self._get_tempdiff() > 1,
                         self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
                         self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
-                        self._hvac.hub.sensors.average_temp_outdoors.value >= -5
+                        self._hvac.hub.sensors.average_temp_outdoors.value >= -5,
                     ]
             ):
                 _LOGGER.debug("Preparing to run ventilation-boost based on hot and current temperature rising.")
+                self._wait_timer = time.time()
                 return True
-            if self._hvac.hvac_dm <= -700 and self._hvac.hub.sensors.average_temp_outdoors.value >= -12:
+            if all([
+                self._hvac.hvac_dm <= -700,
+                self._hvac.hub.sensors.average_temp_outdoors.value >= -12
+            ]):
                 _LOGGER.debug("Preparing to run ventilation-boost based on low degree minutes.")
+                self._wait_timer = time.time()
                 return True
         return False
 
     @property
     def current_offset(self) -> int:
         return self._current_offset
+
+    @current_offset.setter
+    def current_offset(self, val) -> None:
+        if isinstance(val, (float,int)):
+            self._current_offset = val
 
     @property
     def current_tempdiff(self):
@@ -128,40 +143,40 @@ class HouseHeater(IHeater):
             _LOGGER.warning("No Price-offsets have been calculated. Setting base-offset to 0.")
             _offset = 0
 
-        self._current_offset = _offset
+        self.current_offset = _offset
         _tempdiff = self._get_tempdiff_rounded()
         _tempextremas = self._get_temp_extremas()
         _temptrend = self._get_temp_trend_offset()
 
         ret = sum(
             [
-                _offset,
+                self.current_offset,
                 _tempdiff,
                 _tempextremas,
                 _temptrend
             ]
         )
 
-        # ret = self._add_temp_boost(ret)
         return int(round(ret, 0))
 
-    def _add_temp_boost(self, preoffset: int) -> int:
+    def _add_temp_boost(self, pre_offset: int) -> int:
         if time.time() - self._latest_boost > HEATBOOST_TIMER:
-            if self._hvac.hvac_mode == HvacMode.Idle:
-                if self._get_tempdiff() < 0:
-                    if self._hvac.hub.sensors.temp_trend_indoors.gradient <= 0.3:
-                        """boost +1 since there is no sunwarming and no heating atm"""
-                        _LOGGER.debug(
-                            "adding additional heating since there is no sunwarming happening and house is too cold.")
-                        preoffset += 1
-                        self._latest_boost = time.time()
+            if all([
+                self._hvac.hvac_mode == HvacMode.Idle,
+                self._get_tempdiff() < 0,
+                self._hvac.hub.sensors.temp_trend_indoors.gradient <= 0.3
+            ]):
+                """boost +1 since there is no sunwarming and no heating atm"""
+                _LOGGER.debug("adding additional heating since there is no sunwarming happening and house is too cold.")
+                pre_offset += 1
+                self._latest_boost = time.time()
         else:
-            preoffset += 1
+            pre_offset += 1
             if self._get_tempdiff() > 1:
                 """Turn off the boost prematurely"""
-                preoffset -= 1
+                pre_offset -= 1
                 self._latest_boost = 0
-        return preoffset
+        return pre_offset
 
     def max_price_lower(self) -> bool:
         """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
@@ -170,7 +185,6 @@ class HouseHeater(IHeater):
         return False
 
     def _get_tempdiff_rounded(self) -> int:
-        """+/- 0.3 C is accepted"""
         diff = self._get_tempdiff()
         if diff == 0:
             return 0
