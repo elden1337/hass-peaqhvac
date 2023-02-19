@@ -80,7 +80,12 @@ class Offset:
                     self._hub.sensors.set_temp_indoors.preset != self.internal_preset
                 ]
             )
-        return self._offsets != self._hub.sensors.peaqev_facade.offsets
+        return any([
+            self._offsets != self._hub.sensors.peaqev_facade.offsets,
+            self._hub.options.hvac_tolerance != self.model.tolerance,
+            self._hub.prognosis.prognosis != self.model.prognosis,
+            self._hub.sensors.set_temp_indoors.preset != self.internal_preset
+        ])
 
     def _set_internal_parameters(self, prices, prices_tomorrow) -> None:
         if not self._hub.sensors.peaqev_installed:
