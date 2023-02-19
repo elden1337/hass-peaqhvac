@@ -3,7 +3,6 @@ import logging
 from typing import Tuple
 import homeassistant.helpers.template as template
 from datetime import timedelta, datetime
-
 from custom_components.peaqhvac.service.models.prognosis_export_model import PrognosisExportModel
 from custom_components.peaqhvac.service.models.weather_object import WeatherObject
 
@@ -136,6 +135,7 @@ class WeatherPrognosis:
             return v * -1
 
     def _set_prognosis(self, import_list: list):
+        old_prognosis = self.prognosis_list
         ret = []
         for i in import_list:
             ret.append(
@@ -149,6 +149,8 @@ class WeatherPrognosis:
                     Precipitation=i["precipitation"])
             )
         self.prognosis_list = ret
+        if self.prognosis_list != old_prognosis:
+            self._hub.observer.broadcast("prognosis changed")
 
     def _correct_temperature_for_windchill(self, temp: float, windspeed: float) -> float:
         windspeed_corrected = windspeed

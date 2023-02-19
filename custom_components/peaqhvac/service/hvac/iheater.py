@@ -45,14 +45,14 @@ class IHeater(ABC):
             self._latest_update = time.time()
             self._demand = self._get_demand()
             if self.control_module:
-                self._update_operation()
+                self.update_operation()
 
     @abstractmethod
     def _get_demand(self):
         pass
 
     @abstractmethod
-    def _update_operation(self):
+    def update_operation(self):
         pass
 
     # def compare to heating demand

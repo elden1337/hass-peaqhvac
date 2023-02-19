@@ -1,11 +1,12 @@
 import logging
 import statistics as stat
+from custom_components.peaqhvac.service.observer import Observer
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class Average:
-    def __init__(self, entities: list[str]):
+    def __init__(self, entities: list[str], observer: str = None, hub = None):
         self.listenerentities = entities
         self._value: float = 0.0
         self._median: float = 0.0
@@ -16,6 +17,8 @@ class Average:
         self._initialized_values = 0
         self._total_sensors = len(self.listenerentities)
         self._initialized_sensors = {}
+        self._observer_message = observer
+        self.hub = hub
 
         for i in self.listenerentities:
             self._values[i] = 999.0
@@ -35,6 +38,11 @@ class Average:
     @property
     def value(self) -> float:
         return self._value
+
+    @value.setter
+    def value(self, val) -> None:
+        self._value = val
+        self._broadcast_changes()
 
     @property
     def median(self) -> float:
@@ -70,12 +78,17 @@ class Average:
             if self.initialized_percentage > 0.2:
                 self._min = min(filtered_list)
                 self._max = max(filtered_list)
-                self._value = stat.mean(filtered_list)
+                self.value = stat.mean(filtered_list)
                 self._median = stat.median(filtered_list)
                 self._all_values = filtered_list
+
             else:
                 _LOGGER.debug(f"Unable to calculate average. Initialized sensors are: {self.initialized_percentage}")
-                self._value = 0
+                self.value = 0
         except:
-            self._value = 0
+            self.value = 0
             _LOGGER.debug("unable to set averagesensor")
+
+    def _broadcast_changes(self):
+        if self._observer_message is not None:
+            self.hub.observer.broadcast(self._observer_message)

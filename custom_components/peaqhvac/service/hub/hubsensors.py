@@ -17,14 +17,14 @@ class HubSensors:
     peaqev_installed: bool
     peaqev_facade: PeaqevFacade
 
-    def __init__(self, options: ConfigModel, hass, peaqev_discovered: bool = False):
+    def __init__(self, hub, options: ConfigModel, hass, peaqev_discovered: bool = False):
         self.peaq_enabled = HubMember(initval=options.misc_options.enabled_on_boot, data_type=bool)
         self.hvac_tolerance = options.hvac_tolerance
         self.average_temp_indoors = Average(entities=options.indoor_tempsensors)
-        self.average_temp_outdoors = Average(entities=options.outdoor_tempsensors)
+        self.average_temp_outdoors = Average(entities=options.outdoor_tempsensors, observer="temperature outdoors changed", hub=hub)
         self.temp_trend_indoors = Gradient(max_samples=20, max_age=7200, precision=1)
         self.temp_trend_outdoors = Gradient(max_samples=20, max_age=7200, precision=1)
-        self.set_temp_indoors = TargetTemp()
+        self.set_temp_indoors = TargetTemp(hub=hub)
 
         if peaqev_discovered:
             self.peaqev_installed = True

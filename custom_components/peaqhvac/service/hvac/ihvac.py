@@ -38,18 +38,15 @@ class IHvac:
             HvacOperations.VentBoost:  0
         }
         self.model = IHvacModel()
+        self.hub.observer.add("offset recalculation", self.get_offsets)
 
     @property
     def update_offset(self) -> bool:
         try:
-            ret = self.hub.offset.get_offset(
-            prices=self.hub.nordpool.prices,
-            prices_tomorrow=self.hub.nordpool.prices_tomorrow
-            )
-            self.model.current_offset_dict = ret[0]
-            self.model.current_offset_dict_tomorrow = ret[1]
+            if self.model.current_offset_dict == {}:
+                self.get_offsets()
             _hvac_offset = self.hvac_offset
-            new_offset = self.house_heater.get_current_offset(ret[0])
+            new_offset = self.house_heater.get_current_offset(self.model.current_offset_dict)
             if new_offset != self.current_offset:
                 self.current_offset = new_offset
             if self.current_offset != _hvac_offset:
@@ -58,6 +55,11 @@ class IHvac:
         except Exception as e:
             _LOGGER.exception(f"Error on updating offsets: {e}")
             return False
+
+    def get_offsets(self) -> None:
+        ret = self.hub.offset.get_offset()
+        self.model.current_offset_dict = ret[0]
+        self.model.current_offset_dict_tomorrow = ret[1]
 
     @property
     @abstractmethod

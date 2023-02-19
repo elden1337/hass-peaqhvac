@@ -12,10 +12,19 @@ class NordPoolUpdater:
         self.currency: str = ""
         self._prices: list = []
         self._prices_tomorrow: list = []
-        self.state: float = 0
+        self._state: float = 0
         self.nordpool_entity: str = ""
-
         self._setup_nordpool()
+
+    @property
+    def state(self) -> float:
+        return self._state
+
+    @state.setter
+    def state(self, val) -> None:
+        if self._state != val:
+            self._hub.observer.broadcast("prices changed")
+        self._state = val
 
     @property
     def prices(self) -> list:
@@ -50,21 +59,20 @@ class NordPoolUpdater:
             ret_attr_currency = str(ret.attributes.get("currency"))
             self.currency = ret_attr_currency
             self.state = ret.state
-            #self._hub.hours.prices = self.prices
-            #self._hub.hours.prices_tomorrow = self.prices_tomorrow
         else:
             _LOGGER.error("could not get nordpool-prices")
 
     def _setup_nordpool(self):
         try:
             entities = template.integration_entities(self._hass, NORDPOOL)
-            if len(entities) < 1:
+            if len(list(entities)) < 1:
                 raise Exception("no entities found for Nordpool.")
-            if len(entities) == 1:
-                self.nordpool_entity = entities[0]
+            if len(list(entities)) == 1:
+                self.nordpool_entity = list(entities)[0]
+                _LOGGER.debug(f"Nordpool has been set up and is ready to be used with {self.nordpool_entity}")
                 self.update_nordpool()
             else:
                 raise Exception("more than one Nordpool entity found. Cannot continue.")
         except Exception as e:
-            msg = f"Peaqev was unable to get a Nordpool-entity. Disabling Priceawareness: {e}"
+            msg = f"Peaqhvac was unable to get a Nordpool-entity. Disabling Priceawareness: {e}"
             _LOGGER.error(msg)

@@ -7,7 +7,7 @@ from datetime import datetime
 import logging
 import statistics as stat
 import time
-
+from custom_components.peaqhvac.service.observer import Observer
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 
 _LOGGER = logging.getLogger(__name__)
@@ -231,6 +231,9 @@ class HouseHeater(IHeater):
     def _determine_tolerance(self, determinator) -> float:
         tolerances = self._hvac.hub.sensors.set_temp_indoors.adjusted_tolerances(self._current_offset)
         return tolerances[1] if (determinator > 0 or determinator is True) else tolerances[0]
+
+    def update_operation(self):
+        pass
 
     # def compare to water demand
 

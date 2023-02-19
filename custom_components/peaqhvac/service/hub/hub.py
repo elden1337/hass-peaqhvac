@@ -13,6 +13,8 @@ from homeassistant.core import (
     callback
 )
 
+from custom_components.peaqhvac.service.observer import Observer
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -23,7 +25,8 @@ class Hub:
     def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
         self._hass = hass
         self.options = hub_options
-        self.sensors = HubSensors(hub_options, self._hass, self.get_peaqev())
+        self.observer = Observer()
+        self.sensors = HubSensors(self, hub_options, self._hass, self.get_peaqev())
         self.states = StateChanges(self, self._hass)
         self.hvac = HvacFactory.create(self._hass, self.options, self)
         self.nordpool = NordPoolUpdater(self._hass, self)
@@ -34,7 +37,6 @@ class Hub:
         self.trackerentities.extend(self.options.indoor_tempsensors)
         self.trackerentities.extend(self.options.outdoor_tempsensors)
         self.states.initialize_values()
-
         async_track_state_change(hass, self.trackerentities, self.state_changed)
 
     @callback

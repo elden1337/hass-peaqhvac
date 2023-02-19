@@ -8,7 +8,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class TargetTemp:
-    def __init__(self, initval=19):
+    def __init__(self, initval=19, hub = None):
+        self.hub = hub
         self._value = initval
         self._min_tolerance = None
         self._max_tolerance = None
@@ -44,7 +45,10 @@ class TargetTemp:
 
     @preset.setter
     def preset(self, val):
+        old_preset = self._preset
         self._preset = HvacPresets.get_type(val)
+        if old_preset != self._preset:
+            self.hub.observer.broadcast("hvac preset changed")
         self._set_temperature_and_tolerances()
 
     def _set_temperature_and_tolerances(self):

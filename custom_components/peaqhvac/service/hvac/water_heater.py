@@ -16,6 +16,7 @@ WAITTIMER_TIMEOUT = 1800
 LOWTEMP_THRESHOLD = 30
 HIGHTEMP_THRESHOLD = 42
 
+
 class WaterHeater(IHeater):
     def __init__(self, hvac):
         self._hvac = hvac
@@ -24,6 +25,7 @@ class WaterHeater(IHeater):
         self._wait_timer = 0
         self._water_temp_trend = Gradient(max_age=3600, max_samples=10, precision=0, ignore=0)
         self.booster_model = WaterBoosterModel()
+        self._hvac.hub.observer.add("offset recalculation", self.update_operation)
 
     @property
     def is_initialized(self) -> bool:
@@ -56,7 +58,7 @@ class WaterHeater(IHeater):
             if self._current_temp != float(val):
                 self._current_temp = float(val)
                 self._water_temp_trend.add_reading(val=float(val), t=time.time())
-            self._update_operation()
+            self.update_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
             self.booster_model.try_heat_water = False
@@ -95,14 +97,16 @@ class WaterHeater(IHeater):
             if self._hvac.hub.nordpool.prices_tomorrow is not None:
                 _prices.extend([p for p in self._hvac.hub.nordpool.prices_tomorrow if isinstance(p, (float, int))])
             return all([
-                (_prices[hour] == min(_prices) and datetime.now().minute > 20) or (_prices[hour+1] == min(_prices) and _prices[hour+1]/_prices[hour] >= 0.7 and datetime.now().minute >= 30),
-                _prices[hour] < stat.mean(_prices)/2
-                        ])
+                (_prices[hour] == min(_prices) and datetime.now().minute > 20) or (
+                            _prices[hour + 1] == min(_prices) and _prices[hour + 1] / _prices[
+                        hour] >= 0.7 and datetime.now().minute >= 30),
+                _prices[hour] < stat.mean(_prices) / 2
+            ])
         except:
             _LOGGER.debug("Could not calc peak water hours")
             return False
 
-    def _update_operation(self):
+    def update_operation(self):
         if self.is_initialized:
             if self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
                 self._set_water_heater_operation_home()
@@ -118,11 +122,11 @@ class WaterHeater(IHeater):
             self.booster_model.boost = True
             self._toggle_boost(timer_timeout=3600)
         try:
-            offsets = self._hvac.hub.offset.get_offset(
-            prices=self._hvac.hub.nordpool.prices,
-            prices_tomorrow=self._hvac.hub.nordpool.prices_tomorrow
-            )
+            offsets = self._hvac.hub.offset.get_offset()
             current_offset = offsets[0][datetime.now().hour]
+        except Exception as e:
+            current_offset = 0
+            _LOGGER.debug(f"Can't read offsets for water-heating: {e}")
 
             if current_offset <= 0 and datetime.now().minute > 10:
                 if 0 < self.current_temperature <= LOWTEMP_THRESHOLD:
@@ -132,8 +136,7 @@ class WaterHeater(IHeater):
                 if 0 < self.current_temperature <= HIGHTEMP_THRESHOLD:
                     self.booster_model.pre_heating = True
                     self._toggle_boost(timer_timeout=None)
-        except Exception as e:
-            _LOGGER.debug(f"Can't read offsets for water-heating: {e}")
+
 
     def _set_water_heater_operation_away(self):
         if self._hvac.hub.sensors.peaqev_installed:
@@ -153,7 +156,8 @@ class WaterHeater(IHeater):
                 if time.time() - self.booster_model.heat_water_timer > self.booster_model.heat_water_timer_timeout:
                     self.booster_model.try_heat_water = False
                     self._wait_timer = time.time()
-        elif (self.booster_model.pre_heating or self.booster_model.boost) and time.time() - self._wait_timer > WAITTIMER_TIMEOUT:
+        elif (
+                self.booster_model.pre_heating or self.booster_model.boost) and time.time() - self._wait_timer > WAITTIMER_TIMEOUT:
             self.booster_model.try_heat_water = True
             self.booster_model.heat_water_timer = time.time()
             if timer_timeout is not None:

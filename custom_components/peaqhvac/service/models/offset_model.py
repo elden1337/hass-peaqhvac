@@ -1,4 +1,8 @@
 from dataclasses import dataclass, field
+import logging
+
+_LOGGER = logging.getLogger(__name__)
+
 
 @dataclass
 class OffsetModel:
@@ -8,6 +12,7 @@ class OffsetModel:
     _tolerance = 0
     tolerance_raw = 0
     prognosis = None
+    hub = None
 
     @property
     def tolerance(self) -> int:
@@ -15,6 +20,9 @@ class OffsetModel:
 
     @tolerance.setter
     def tolerance(self, val):
+        old_tolerance = self._tolerance
+        old_raw = self.tolerance_raw
+
         try:
             _val, temp = val
             self.tolerance_raw = _val
@@ -25,6 +33,9 @@ class OffsetModel:
         except:
             self.tolerance_raw = val
             self._tolerance = val
+        _LOGGER.debug(f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw}")
+        if any([old_raw != self.tolerance_raw]):
+            self.hub.observer.broadcast("tolerance changed")
 
     @staticmethod
     def get_tolerance_difference(current_temp) -> int:
@@ -44,4 +55,4 @@ class OffsetModel:
 
     @staticmethod
     def get_boundrary(adjustment, set_tolerance) -> int:
-        return max(-10, min(10, set_tolerance + adjustment))
+        return max(0, min(10, set_tolerance + adjustment))
