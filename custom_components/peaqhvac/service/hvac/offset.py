@@ -25,6 +25,7 @@ class Offset:
             self.hours = None
             self._prices = None
             self._prices_tomorrow = None
+            self._offsets = None
 
     @property
     def prices(self) -> list:
@@ -42,7 +43,8 @@ class Offset:
     def offsets(self) -> dict:
         if not self._hub.sensors.peaqev_installed:
             return self.hours.offsets
-        return self._hub.sensors.peaqev_facade.offsets
+        self._offsets = self._hub.sensors.peaqev_facade.offsets
+        return self._offsets
 
     def get_offset(
             self,
@@ -67,16 +69,18 @@ class Offset:
         return self.model.calculated_offsets
 
     def _should_update(self, prices: list, prices_tomorrow: list) -> bool:
-        return any(
-            [
-                self.prices != prices,
-                self.prices_tomorrow != prices_tomorrow,
-                self.model.calculated_offsets == {}, {},
-                self._hub.options.hvac_tolerance != self.model.tolerance,
-                self._hub.prognosis.prognosis != self.model.prognosis,
-                self._hub.sensors.set_temp_indoors.preset != self.internal_preset
-            ]
-        )
+        if not self._hub.sensors.peaqev_installed:
+            return any(
+                [
+                    self.prices != prices,
+                    self.prices_tomorrow != prices_tomorrow,
+                    self.model.calculated_offsets == {}, {},
+                    self._hub.options.hvac_tolerance != self.model.tolerance,
+                    self._hub.prognosis.prognosis != self.model.prognosis,
+                    self._hub.sensors.set_temp_indoors.preset != self.internal_preset
+                ]
+            )
+        return self._offsets != self._hub.sensors.peaqev_facade.offsets
 
     def _set_internal_parameters(self, prices, prices_tomorrow) -> None:
         if not self._hub.sensors.peaqev_installed:
