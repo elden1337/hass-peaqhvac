@@ -56,7 +56,7 @@ class WaterHeater(IHeater):
             if self._current_temp != float(val):
                 self._current_temp = float(val)
                 self._water_temp_trend.add_reading(val=float(val), t=time.time())
-                self._update_operation()
+            self._update_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
             self.booster_model.try_heat_water = False

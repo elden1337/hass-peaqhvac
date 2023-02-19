@@ -165,7 +165,7 @@ class HouseHeater(IHeater):
 
     def max_price_lower(self) -> bool:
         """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
-        if self._get_tempdiff() >= 0.5:
+        if self._get_tempdiff() >= 0:
             return datetime.now().hour in self._hvac.hub.offset.model.peaks_today
         return False
 
