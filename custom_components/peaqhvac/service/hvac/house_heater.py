@@ -27,7 +27,7 @@ class HouseHeater(IHeater):
 
     @property
     def is_initialized(self) -> bool:
-        return self._current_temp is not None
+        return True
 
     @IHeater.demand.setter
     def demand(self, val):
