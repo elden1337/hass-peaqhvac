@@ -75,14 +75,14 @@ class Offset:
                     self.prices != prices,
                     self.prices_tomorrow != prices_tomorrow,
                     self.model.calculated_offsets == {}, {},
-                    self._hub.options.hvac_tolerance != self.model.tolerance,
+                    self._hub.options.hvac_tolerance != self.model.tolerance_raw,
                     self._hub.prognosis.prognosis != self.model.prognosis,
                     self._hub.sensors.set_temp_indoors.preset != self.internal_preset
                 ]
             )
         return any([
             self._offsets != self._hub.sensors.peaqev_facade.offsets,
-            self._hub.options.hvac_tolerance != self.model.tolerance,
+            self._hub.options.hvac_tolerance != self.model.tolerance_raw,
             self._hub.prognosis.prognosis != self.model.prognosis,
             self._hub.sensors.set_temp_indoors.preset != self.internal_preset
         ])
@@ -95,7 +95,7 @@ class Offset:
             self._prices = prices
             self._prices_tomorrow = prices_tomorrow
         self.model.prognosis = self._hub.prognosis.prognosis
-        self.model.tolerance = self._hub.options.hvac_tolerance
+        self.model.tolerance = self._hub.options.hvac_tolerance, self._hub.sensors.average_temp_indoors.value
         self.internal_preset = self._hub.sensors.set_temp_indoors.preset
 
     def _update_offset(

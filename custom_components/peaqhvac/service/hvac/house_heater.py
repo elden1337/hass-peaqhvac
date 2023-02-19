@@ -122,7 +122,6 @@ class HouseHeater(IHeater):
         else:
             desired_offset = self._set_calculated_offset(offsets)
         if self._hvac.hub.offset.model.raw_offsets != self._hvac.hub.offset.model.calculated_offsets and desired_offset < 0:
-            # weather has played it's part, return lower if prognosis tells us to.
             return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
         if self.dm_lower:
             desired_offset -= 1
