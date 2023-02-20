@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from homeassistant.components.number import NumberEntity, NumberEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -32,7 +34,7 @@ class PeaqNumber(NumberEntity, RestoreEntity):
         self._number = number
         self._attr_name = f"{hub.hubname} {self._number['name']}"
         self._hub = hub
-        self._attr_device_class = "none"
+        self._attr_device_class = None
         self._state = None
 
     @property
@@ -63,6 +65,6 @@ class PeaqNumber(NumberEntity, RestoreEntity):
     async def async_added_to_hass(self):
         state = await super().async_get_last_state()
         if state:
-            self.set_native_value(state.state)
+            self.set_native_value(float(state.state))
         else:
             self.set_native_value(3)

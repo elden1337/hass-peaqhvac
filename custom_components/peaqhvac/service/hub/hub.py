@@ -23,20 +23,23 @@ class Hub:
     hubname = "PeaqHvac"
 
     def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
+        self.is_initialized = False
         self._hass = hass
+        self.observer = Observer(self)
         self.options = hub_options
-        self.observer = Observer()
         self.sensors = HubSensors(self, hub_options, self._hass, self.get_peaqev())
         self.states = StateChanges(self, self._hass)
         self.hvac = HvacFactory.create(self._hass, self.options, self)
         self.nordpool = NordPoolUpdater(self._hass, self)
         self.offset = Offset(self)
         self.prognosis = WeatherPrognosis(self)
+        self.options.hub = self
         self.trackerentities = []
         self.trackerentities.append(self.nordpool.nordpool_entity)
         self.trackerentities.extend(self.options.indoor_tempsensors)
         self.trackerentities.extend(self.options.outdoor_tempsensors)
         self.states.initialize_values()
+        self.is_initialized = True
         async_track_state_change(hass, self.trackerentities, self.state_changed)
 
     @callback

@@ -125,7 +125,7 @@ class HouseHeater(IHeater):
         else:
             desired_offset = self._set_calculated_offset(offsets)
         if self._hvac.hub.offset.model.raw_offsets != self._hvac.hub.offset.model.calculated_offsets and desired_offset < 0:
-            return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
+            return self._hvac.hub.offset.adjust_to_threshold(desired_offset)
         if self.dm_lower:
             desired_offset -= 1
         if self.addon_or_peak_lower:
@@ -133,7 +133,7 @@ class HouseHeater(IHeater):
         elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0]):
             return round(
                 max(-5, sum([self._current_offset, self._get_tempdiff_rounded(), self._get_temp_trend_offset()])), 0)
-        return Offset.adjust_to_threshold(desired_offset, self._hvac.hub.options.hvac_tolerance)
+        return self._hvac.hub.offset.adjust_to_threshold(desired_offset)
 
     def _set_calculated_offset(self, offsets: dict) -> int:
         hour = datetime.now().hour

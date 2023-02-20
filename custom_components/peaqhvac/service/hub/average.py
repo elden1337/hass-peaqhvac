@@ -6,7 +6,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Average:
-    def __init__(self, entities: list[str], observer: str = None, hub = None):
+    def __init__(self, entities: list[str], observer: str = None, hub=None):
         self.listenerentities = entities
         self._value: float = 0.0
         self._median: float = 0.0
@@ -51,7 +51,7 @@ class Average:
     @property
     def max(self) -> float:
         return self._max
-        
+
     @property
     def min(self) -> float:
         return self._min
@@ -63,7 +63,7 @@ class Average:
     def update_values(self, entity, value):
         try:
             floatval = float(value)
-            if isinstance(floatval, (float,int)):
+            if isinstance(floatval, (float, int)):
                 if not self._initialized_sensors[entity]:
                     self._initialized_sensors[entity] = True
                     self._initialized_values += 1

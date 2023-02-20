@@ -2,19 +2,36 @@ from dataclasses import dataclass, field
 from typing import List
 from custom_components.peaqhvac.const import HVACBRAND_NIBE, HVACBRAND_THERMIA, HVACBRAND_IVT
 from custom_components.peaqhvac.service.models.enums.hvacbrands import HvacBrand
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class MiscOptions:
     enabled_on_boot: bool = True
 
-@dataclass
+
 class ConfigModel:
     misc_options: MiscOptions = MiscOptions()
     indoor_tempsensors: List = field(default_factory=lambda: [])
     outdoor_tempsensors: List = field(default_factory=lambda: [])
     hvacbrand: HvacBrand = field(init=False)
     systemid:str = field(init=False)
-    hvac_tolerance: int = 0
+    _hvac_tolerance: int = None
+    hub = None
+
+    @property
+    def hvac_tolerance(self) -> int:
+        return self._hvac_tolerance
+
+    @hvac_tolerance.setter
+    def hvac_tolerance(self, val) -> None:
+        if self._hvac_tolerance != val:
+            self._hvac_tolerance = val
+            if self.hub is not None:
+                self.hub.observer.broadcast("hvac tolerance changed")
+            else:
+                _LOGGER.warning("tried to broadcast an update from hvac-tolerance but referenced hub was None.")
 
     def set_hvacbrand(self, configstring: str) -> HvacBrand:
         branddict = {

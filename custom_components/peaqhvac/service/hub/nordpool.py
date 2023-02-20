@@ -23,6 +23,7 @@ class NordPoolUpdater:
     @state.setter
     def state(self, val) -> None:
         if self._state != val:
+            pass
             self._hub.observer.broadcast("prices changed")
         self._state = val
 
@@ -30,9 +31,23 @@ class NordPoolUpdater:
     def prices(self) -> list:
         return self._prices
 
+    @prices.setter
+    def prices(self, val) -> None:
+        if val != self._prices:
+            pass
+            self._hub.observer.broadcast("prices changed")
+        self._prices = val
+
     @property
     def prices_tomorrow(self) -> list:
         return self._prices_tomorrow
+
+    @prices_tomorrow.setter
+    def prices_tomorrow(self, val) -> None:
+        if val != self._prices_tomorrow:
+            self._hub.observer.broadcast("prices changed")
+            pass
+        self._prices_tomorrow = val
 
     def update_nordpool(self):
         ret = self._hass.states.get(self.nordpool_entity)
@@ -40,7 +55,7 @@ class NordPoolUpdater:
             try:
                 ret_attr = list(ret.attributes.get("today"))
                 if 23 <= len(ret_attr) <= 25:
-                    self._prices = ret_attr
+                    self.prices = ret_attr
                 else:
                     _LOGGER.error(f"Nordpool returned a faulty length of prices for today ({len(ret_attr)})")
             except Exception as e:
@@ -49,12 +64,12 @@ class NordPoolUpdater:
             try:
                 ret_attr_tomorrow = list(ret.attributes.get("tomorrow"))
                 if (23 <= len(ret_attr_tomorrow) <= 25) or len(ret_attr_tomorrow) == 0:
-                    self._prices_tomorrow = ret_attr_tomorrow
+                    self.prices_tomorrow = ret_attr_tomorrow
                 else:
                     _LOGGER.error(f"Nordpool returned a faulty length of prices for tomorrow ({len(ret_attr_tomorrow)})")
             except Exception as e:
                 _LOGGER.warning(f"Couldn't parse tomorrow's prices from Nordpool. Array will be empty. {e}")
-                self._prices_tomorrow = []
+                self.prices_tomorrow = []
 
             ret_attr_currency = str(ret.attributes.get("currency"))
             self.currency = ret_attr_currency

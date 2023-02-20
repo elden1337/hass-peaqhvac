@@ -16,8 +16,7 @@ class Offset:
 
     def __init__(self, hub):
         self._hub = hub
-        self.model = OffsetModel()
-        self.model.hub = hub
+        self.model = OffsetModel(hub)
         self.internal_preset = None
         if not self._hub.sensors.peaqev_installed:
             self.hours = Hoursselection()
@@ -26,8 +25,6 @@ class Offset:
             self._prices = None
             self._prices_tomorrow = None
             self._offsets = None
-        self._hub.observer.add("tolerance changed", self.update_tolerance)
-        self._hub.observer.add("temperature outdoors changed", self.update_tolerance)
         self._hub.observer.add("prices changed", self.update_prices)
         self._hub.observer.add("prognosis changed", self.update_prognosis)
         self._hub.observer.add("hvac preset changed", self.update_preset)
@@ -53,38 +50,20 @@ class Offset:
 
     def get_offset(self) -> Tuple[dict, dict]:
         """External entrypoint to the class"""
-        if 23 <= len(self.prices) <= 25:
-            self.model.raw_offsets = self._update_offset()
-        else:
-            _LOGGER.error(
-                f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(self.prices)}")
-        try:
-            _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
-            _weather_inverted = {k: v * -1 for (k, v) in _weather_dict[0].items()}
-            self.model.calculated_offsets = self._update_offset(_weather_inverted)
-        except Exception as e:
-            _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
-            self.model.calculated_offsets = self.model.raw_offsets
-        return self.model.calculated_offsets
-
-    # def _should_update(self, prices: list, prices_tomorrow: list) -> bool:
-    #     if not self._hub.sensors.peaqev_installed:
-    #         return any(
-    #             [
-    #                 self.prices != prices,
-    #                 self.prices_tomorrow != prices_tomorrow,
-    #                 self.model.calculated_offsets == {}, {},
-    #                 self._hub.options.hvac_tolerance != self.model.tolerance_raw,
-    #                 self._hub.prognosis.prognosis != self.model.prognosis,
-    #                 self._hub.sensors.set_temp_indoors.preset != self.internal_preset
-    #             ]
-    #         )
-    #     return any([
-    #         self._offsets != self._hub.sensors.peaqev_facade.offsets,
-    #         self._hub.options.hvac_tolerance != self.model.tolerance_raw,
-    #         self._hub.prognosis.prognosis != self.model.prognosis,
-    #         self._hub.sensors.set_temp_indoors.preset != self.internal_preset
-    #     ])
+        if self.prices is not None:
+            if 23 <= len(self.prices) <= 25:
+                self.model.raw_offsets = self._update_offset()
+            else:
+                _LOGGER.error(
+                    f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(self.prices)}")
+            try:
+                _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
+                _weather_inverted = {k: v * -1 for (k, v) in _weather_dict[0].items()}
+                self.model.calculated_offsets = self._update_offset(_weather_inverted)
+            except Exception as e:
+                _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
+                self.model.calculated_offsets = self.model.raw_offsets
+            return self.model.calculated_offsets
 
     def update_prognosis(self) -> None:
         self.model.prognosis = self._hub.prognosis.prognosis
@@ -103,48 +82,38 @@ class Offset:
         self.internal_preset = self._hub.sensors.set_temp_indoors.preset
         self._hub.observer.broadcast("offset recalculation")
 
-    def update_tolerance(self) -> None:
-        old_tolerance = self.model.tolerance_raw
-        self.model.tolerance = self._hub.options.hvac_tolerance, self._hub.sensors.average_temp_indoors.value
-        self._hub.observer.broadcast("offset recalculation")
-
-    def _update_offset(
-            self,
-            weather_adjusted_today=None
-    ) -> Tuple[dict, dict]:
+    def _update_offset(self,weather_adjusted_today=None) -> Tuple[dict, dict]:
         try:
             d = self.offsets
             today = self._offset_per_day(d['today']) if weather_adjusted_today is None else weather_adjusted_today
             tomorrow = {}
-            if len(d['tomorrow']) > 0:
+            if len(d['tomorrow']):
                 tomorrow = self._offset_per_day(d['tomorrow'])
             return Offset._smooth_transitions(today, tomorrow, self.model.tolerance)
         except Exception as e:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
 
-    def _offset_per_day(
-            self,
-            day_values: dict
-    ) -> dict:
+    def _offset_per_day(self, day_values: dict) -> dict:
         ret = {}
         _max_today = max(day_values.values())
         _min_today = min(day_values.values())
-        try:
-            factor = max(abs(_max_today), abs(_min_today)) / self.model.tolerance
-        except ZeroDivisionError as z:
-            _LOGGER.error(f"Error on calculating offsets. max_today is: {_max_today}, min_today is: {_min_today}, tolerance is: {self.model.tolerance}")
-            factor = 1
-        for k, v in day_values.items():
-            ret[k] = int(round((day_values[k] / factor) * -1, 0))
-            if self._hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
-                ret[k] -= 1
+        _tolerance = self.model.tolerance
+        if _tolerance is not None:
+            try:
+                factor = max(abs(_max_today), abs(_min_today)) / _tolerance
+                #_LOGGER.debug(f"Calculating offsets. max_today is: {_max_today}, min_today is: {_min_today}, tolerance is: {_tolerance}")
+            except ZeroDivisionError as z:
+                _LOGGER.info(f"Offset calculation not finalized due to missing tolerance. Will change shortly...")
+                factor = 1
+            for k, v in day_values.items():
+                ret[k] = int(round((day_values[k] / factor) * -1, 0))
+                if self._hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
+                    ret[k] -= 1
         return ret
 
-    @staticmethod
-    def adjust_to_threshold(adjustment: int, tolerance: int) -> int:
-        ret = int(round(min(adjustment, tolerance) if adjustment >= 0 else max(adjustment, tolerance * -1), 0))
-        #_LOGGER.debug(f"adjust to threshold gives current offset as: {ret}")
+    def adjust_to_threshold(self, adjustment: int) -> int:
+        ret = int(round(min(adjustment, self.model.tolerance) if adjustment >= 0 else max(adjustment, self.model.tolerance * -1), 0))
         return ret
 
     def _getaverage(self, prices: list, prices_tomorrow: list = None) -> float:
