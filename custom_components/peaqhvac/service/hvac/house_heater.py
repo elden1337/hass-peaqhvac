@@ -7,12 +7,11 @@ from datetime import datetime
 import logging
 import statistics as stat
 import time
-from custom_components.peaqhvac.service.observer import Observer
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 
 _LOGGER = logging.getLogger(__name__)
 HEATBOOST_TIMER = 7200
-WAITTIMER_TIMEOUT = 300
+WAITTIMER_TIMEOUT = 240
 
 class HouseHeater(IHeater):
 
@@ -22,7 +21,8 @@ class HouseHeater(IHeater):
         self._latest_boost = 0
         self._degree_minutes = 0
         self._current_offset = 0
-        self._wait_timer = 0
+        self._wait_timer_boost = 0
+        self._wait_timer_breach = 0
         super().__init__(hvac=hvac)
 
     @property
@@ -35,7 +35,7 @@ class HouseHeater(IHeater):
 
     @property
     def vent_boost(self) -> bool:
-        if self._hvac.hub.sensors.temp_trend_indoors.is_clean and time.time() - self._wait_timer > WAITTIMER_TIMEOUT:
+        if self._hvac.hub.sensors.temp_trend_indoors.is_clean and time.time() - self._wait_timer_boost > WAITTIMER_TIMEOUT:
             if all(
                     [
                         self._get_tempdiff() > 1,
@@ -45,14 +45,14 @@ class HouseHeater(IHeater):
                     ]
             ):
                 _LOGGER.debug("Preparing to run ventilation-boost based on hot and current temperature rising.")
-                self._wait_timer = time.time()
+                self._wait_timer_boost = time.time()
                 return True
             if all([
                 self._hvac.hvac_dm <= -700,
                 self._hvac.hub.sensors.average_temp_outdoors.value >= -12
             ]):
                 _LOGGER.debug("Preparing to run ventilation-boost based on low degree minutes.")
-                self._wait_timer = time.time()
+                self._wait_timer_boost = time.time()
                 return True
         return False
 
@@ -87,15 +87,18 @@ class HouseHeater(IHeater):
 
     @property
     def addon_or_peak_lower(self) -> bool:
-        if self._hvac.hub.sensors.peaqev_installed:
+        if time.time() - self._wait_timer_breach > WAITTIMER_TIMEOUT:
             if all([
+                self._hvac.hub.sensors.peaqev_installed,
                 30 <= datetime.now().minute < 58,
                 float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100
             ]):
                 _LOGGER.debug("Lowering offset because of peak about to be breached.")
+                self._wait_timer_breach = time.time()
                 return True
             elif self._hvac.hvac_electrical_addon > 0:
                 _LOGGER.debug("Lowering offset because electrical addon is on.")
+                self._wait_timer_breach = time.time()
                 return True
         return False
 
