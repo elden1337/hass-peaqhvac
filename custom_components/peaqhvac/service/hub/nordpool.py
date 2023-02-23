@@ -22,10 +22,8 @@ class NordPoolUpdater:
 
     @state.setter
     def state(self, val) -> None:
-        if self._state != val:
-            pass
-            self._hub.observer.broadcast("prices changed")
-        self._state = val
+        if val != self._state:
+            self._state = val
 
     @property
     def prices(self) -> list:
@@ -34,9 +32,7 @@ class NordPoolUpdater:
     @prices.setter
     def prices(self, val) -> None:
         if val != self._prices:
-            pass
-            self._hub.observer.broadcast("prices changed")
-        self._prices = val
+            self._prices = val
 
     @property
     def prices_tomorrow(self) -> list:
@@ -45,17 +41,28 @@ class NordPoolUpdater:
     @prices_tomorrow.setter
     def prices_tomorrow(self, val) -> None:
         if val != self._prices_tomorrow:
-            self._hub.observer.broadcast("prices changed")
-            pass
-        self._prices_tomorrow = val
+            self._prices_tomorrow = val
+
+    def _update_prices(self, _today, _tomorrow) -> bool:
+        ret = False
+        if any([
+            self.prices != _today,
+            self.prices_tomorrow != _tomorrow 
+        ]):
+            ret = True
+        self.prices = _today
+        self.prices_tomorrow = _tomorrow
+        return ret
 
     def update_nordpool(self):
         ret = self._hass.states.get(self.nordpool_entity)
         if ret is not None:
+            _today = []
+            _tomorrow = []
             try:
                 ret_attr = list(ret.attributes.get("today"))
                 if 23 <= len(ret_attr) <= 25:
-                    self.prices = ret_attr
+                    _today = ret_attr
                 else:
                     _LOGGER.error(f"Nordpool returned a faulty length of prices for today ({len(ret_attr)})")
             except Exception as e:
@@ -64,16 +71,18 @@ class NordPoolUpdater:
             try:
                 ret_attr_tomorrow = list(ret.attributes.get("tomorrow"))
                 if (23 <= len(ret_attr_tomorrow) <= 25) or len(ret_attr_tomorrow) == 0:
-                    self.prices_tomorrow = ret_attr_tomorrow
+                    _tomorrow = ret_attr_tomorrow
                 else:
                     _LOGGER.error(f"Nordpool returned a faulty length of prices for tomorrow ({len(ret_attr_tomorrow)})")
             except Exception as e:
                 _LOGGER.warning(f"Couldn't parse tomorrow's prices from Nordpool. Array will be empty. {e}")
-                self.prices_tomorrow = []
+                _tomorrow = []
 
             ret_attr_currency = str(ret.attributes.get("currency"))
             self.currency = ret_attr_currency
             self.state = ret.state
+            if self._update_prices(_today, _tomorrow):
+                self._hub.observer.broadcast("prices changed")
         else:
             _LOGGER.error("could not get nordpool-prices")
 
