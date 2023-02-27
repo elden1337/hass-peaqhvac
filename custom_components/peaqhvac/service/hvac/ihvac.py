@@ -132,10 +132,11 @@ class IHvac:
                         self.model.periodic_update_list.append((HvacOperations.WaterBoost, int(self.water_heater.try_heat_water)))
                         self.model.current_water_boost_state = int(self.water_heater.try_heat_water)
         if self.hub.hvac.house_heater.control_module:
-            if int(self.house_heater.vent_boost) != self.model.current_vent_boost_state:
+            _vent_state = int(self.house_heater.vent_boost)
+            if _vent_state != self.model.current_vent_boost_state:
                 if await self._ready_to_update(HvacOperations.VentBoost):
-                    self.model.periodic_update_list.append((HvacOperations.VentBoost, int(self.house_heater.vent_boost)))
-                    self.model.current_vent_boost_state = int(self.house_heater.vent_boost)
+                    self.model.periodic_update_list.append((HvacOperations.VentBoost, _vent_state))
+                    self.model.current_vent_boost_state = _vent_state
             if self.update_offset:
                 if await self._ready_to_update(HvacOperations.Offset):
                     self.model.periodic_update_list.append((HvacOperations.Offset, self.current_offset))

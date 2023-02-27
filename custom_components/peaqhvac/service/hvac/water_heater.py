@@ -141,29 +141,32 @@ class WaterHeater(IHeater):
             _LOGGER.debug("Current hour is identified as a good hour to boost water")
             self.booster_model.boost = True
             self._toggle_boost(timer_timeout=3600)
+        current_offset = self._get_current_offset()
+        if current_offset <= 0 and datetime.now().minute > 10:
+            if 0 < self.current_temperature <= LOWTEMP_THRESHOLD:
+                #self.booster_model.pre_heating = True
+                #self._toggle_boost(timer_timeout=None)
+                pass
+        elif current_offset > 0 and datetime.now().minute > 10:
+            if 0 < self.current_temperature <= HIGHTEMP_THRESHOLD:
+                self.booster_model.pre_heating = True
+                self._toggle_boost(timer_timeout=None)
+
+    def _get_current_offset(self) -> int:
         try:
             offsets = self._hvac.hub.offset.get_offset()
             current_offset = offsets[0][datetime.now().hour]
         except Exception as e:
             current_offset = 0
             _LOGGER.debug(f"Can't read offsets for water-heating: {e}")
-
-        if current_offset <= 0 and datetime.now().minute > 10:
-            if 0 < self.current_temperature <= LOWTEMP_THRESHOLD:
-                self.booster_model.pre_heating = True
-                self._toggle_boost(timer_timeout=None)
-        elif current_offset > 0 and datetime.now().minute > 10:
-            if 0 < self.current_temperature <= HIGHTEMP_THRESHOLD:
-                self.booster_model.pre_heating = True
-                self._toggle_boost(timer_timeout=None)
-
+        return current_offset
 
     def _set_water_heater_operation_away(self):
         if self._hvac.hub.sensors.peaqev_installed:
             if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100:
                 return
         try:
-            if datetime.now().minute > 10:
+            if self._get_current_offset() >= 0 and datetime.now().minute > 10:
                 if 0 < self.current_temperature <= LOWTEMP_THRESHOLD:
                     self.booster_model.pre_heating = True
                     self._toggle_boost(timer_timeout=None)
@@ -176,8 +179,7 @@ class WaterHeater(IHeater):
                 if time.time() - self.booster_model.heat_water_timer > self.booster_model.heat_water_timer_timeout:
                     self.booster_model.try_heat_water = False
                     self._wait_timer = time.time()
-        elif (
-                self.booster_model.pre_heating or self.booster_model.boost) and time.time() - self._wait_timer > WAITTIMER_TIMEOUT:
+        elif (self.booster_model.pre_heating or self.booster_model.boost) and time.time() - self._wait_timer > WAITTIMER_TIMEOUT:
             self.booster_model.try_heat_water = True
             self.booster_model.heat_water_timer = time.time()
             if timer_timeout is not None:

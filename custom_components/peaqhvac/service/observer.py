@@ -41,7 +41,7 @@ class Observer:
         return False
 
     def _dequeue_and_broadcast(self, command: Tuple[str, int | None]):
-        _LOGGER.debug(f"ready to broadcast: {command[0]}")
+        #_LOGGER.debug(f"ready to broadcast: {command[0]}")
         if command[1] is None or command[1] > time.time():
             if self._ok_to_broadcast(command[0]):
                 for func in self._subscribers[command[0]]:
