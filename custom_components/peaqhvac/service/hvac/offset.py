@@ -54,8 +54,7 @@ class Offset:
             if 23 <= len(self.prices) <= 25:
                 self.model.raw_offsets = self._update_offset()
             else:
-                _LOGGER.error(
-                    f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(self.prices)}")
+                _LOGGER.error(f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(self.prices)}")
             try:
                 _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
                 _weather_inverted = {k: v * -1 for (k, v) in _weather_dict[0].items()}
@@ -98,17 +97,15 @@ class Offset:
         ret = {}
         _max_today = max(day_values.values())
         _min_today = min(day_values.values())
-        _tolerance = self.model.tolerance
-        if _tolerance is not None:
+        if self.model.tolerance is not None:
             try:
-                factor = max(abs(_max_today), abs(_min_today)) / _tolerance
-                #_LOGGER.debug(f"Calculating offsets. max_today is: {_max_today}, min_today is: {_min_today}, tolerance is: {_tolerance}")
+                factor = max(abs(_max_today), abs(_min_today)) / self.model.tolerance
             except ZeroDivisionError as z:
                 _LOGGER.info(f"Offset calculation not finalized due to missing tolerance. Will change shortly...")
                 factor = 1
             for k, v in day_values.items():
                 ret[k] = int(round((day_values[k] / factor) * -1, 0))
-                if self._hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
+                if self._hub.sensors.set_temp_indoors.preset is HvacPresets.Away:
                     ret[k] -= 1
         return ret
 
@@ -119,7 +116,7 @@ class Offset:
     def _getaverage(self, prices: list, prices_tomorrow: list = None) -> float:
         try:
             total = prices
-            self.model.peaks_today = peakfinder.identify_peaks(prices)
+            self.model.peaks_today = peakfinder.identify_peaks(prices) #refactor
             prices_tomorrow_cleaned = Offset._sanitize_pricelists(prices_tomorrow)
             if len(prices_tomorrow_cleaned) == 24:
                 total.extend(prices_tomorrow_cleaned)

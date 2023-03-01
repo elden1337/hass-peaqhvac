@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
-from custom_components.peaqhvac.service.hvac.offset import Offset
 from datetime import datetime
 import logging
 import statistics as stat
@@ -35,26 +34,7 @@ class HouseHeater(IHeater):
 
     @property
     def vent_boost(self) -> bool:
-        if self._hvac.hub.sensors.temp_trend_indoors.is_clean and time.time() - self._wait_timer_boost > WAITTIMER_TIMEOUT:
-            if all(
-                    [
-                        self._get_tempdiff() > 1,
-                        self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
-                        self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
-                        self._hvac.hub.sensors.average_temp_outdoors.value >= -5,
-                    ]
-            ):
-                _LOGGER.debug("Preparing to run ventilation-boost based on hot and current temperature rising.")
-                self._wait_timer_boost = time.time()
-                return True
-            if all([
-                self._hvac.hvac_dm <= -700,
-                self._hvac.hub.sensors.average_temp_outdoors.value >= -12
-            ]):
-                _LOGGER.debug("Preparing to run ventilation-boost based on low degree minutes.")
-                self._wait_timer_boost = time.time()
-                return True
-        return False
+        return self._should_vent_boost()
 
     @property
     def current_offset(self) -> int:
@@ -87,6 +67,9 @@ class HouseHeater(IHeater):
 
     @property
     def addon_or_peak_lower(self) -> bool:
+        return self._temporarily_lower_offset()    
+
+    def _temporarily_lower_offset(self) -> bool:
         if time.time() - self._wait_timer_breach > WAITTIMER_TIMEOUT:
             if all([
                 self._hvac.hub.sensors.peaqev_installed,
@@ -101,7 +84,7 @@ class HouseHeater(IHeater):
                 self._wait_timer_breach = time.time()
                 return True
         return False
-
+    
     def _get_demand(self) -> Demand:
         _compressor_start = self._dm_compressor_start if self._dm_compressor_start is not None else -300
         _return_temp = self._hvac.delta_return_temp if self._hvac.delta_return_temp is not None else 1000
@@ -218,8 +201,7 @@ class HouseHeater(IHeater):
         if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
             if -0.1 < self._hvac.hub.sensors.temp_trend_indoors.gradient < 0.1:
                 return 0
-            predicted_temp = self._hvac.hub.sensors.average_temp_indoors.value + self._hvac.hub.sensors.temp_trend_indoors.gradient
-            new_temp_diff = predicted_temp - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(self._hvac.hub.sensors.average_temp_indoors.value)
+            new_temp_diff = self._predicted_temp() - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(self._hvac.hub.sensors.average_temp_indoors.value)
             _tolerance = self._determine_tolerance(new_temp_diff)
             if abs(new_temp_diff) >= _tolerance:
                 steps = abs(self._hvac.hub.sensors.temp_trend_indoors.gradient) / _tolerance
@@ -231,12 +213,39 @@ class HouseHeater(IHeater):
                 return ret
         return 0
 
+    def _predicted_temp(self) -> float:
+        return self._hvac.hub.sensors.average_temp_indoors.value + self._hvac.hub.sensors.temp_trend_indoors.gradient
+    
     def _determine_tolerance(self, determinator) -> float:
         tolerances = self._hvac.hub.sensors.set_temp_indoors.adjusted_tolerances(self._current_offset)
         return tolerances[1] if (determinator > 0 or determinator is True) else tolerances[0]
 
     def update_operation(self):
         pass
+
+    def _should_vent_boost(self) -> bool:
+        if all([
+            self._hvac.hub.sensors.temp_trend_indoors.is_clean,
+            time.time() - self._wait_timer_boost > WAITTIMER_TIMEOUT
+            ]):
+            ret = True
+            if any([
+                all([
+                    self._get_tempdiff() > 1,
+                    self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
+                    self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
+                    self._hvac.hub.sensors.average_temp_outdoors.value >= -5,
+                ]),
+                all([
+                    self._hvac.hvac_dm <= -700,
+                    self._hvac.hub.sensors.average_temp_outdoors.value >= -12
+                ])
+            ]):
+                self._wait_timer_boost = time.time()
+            else:
+                ret = False
+            return ret
+        return False
 
     # def compare to water demand
 

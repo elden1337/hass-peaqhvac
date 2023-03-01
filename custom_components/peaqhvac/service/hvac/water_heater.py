@@ -94,17 +94,23 @@ class WaterHeater(IHeater):
 
     def _get_water_peak(self, hour: int) -> bool:
         def __condition1() -> bool:
-            return all([
+            try:
+                return all([
                 _prices[hour] == min(_prices),
                 datetime.now().minute > 20
             ])
+            except Exception as e:
+                _LOGGER.debug(f"Condition1 failed: {e}")
 
         def __condition2() -> bool:
-            return all([
-                _prices[hour + 1] == min(_prices),
-                _prices[hour + 1] / _prices[hour] >= 0.7,
-                datetime.now().minute >= 30
-            ])
+            try:
+                return all([
+                    _prices[hour + 1] == min(_prices),
+                    _prices[hour + 1] / _prices[hour] >= 0.7,
+                    datetime.now().minute >= 30
+                ])
+            except Exception as e:
+                _LOGGER.debug(f"Condition2 failed: {e}")
 
         if time.time() - self._wait_timer_peak > WAITTIMER_TIMEOUT:
             try:
@@ -120,11 +126,11 @@ class WaterHeater(IHeater):
                     self._wait_timer_peak = time.time()
                 return ret
             except Exception as e:
-                _LOGGER.debug(f"Could not calc peak water hours, {e}")
+                _LOGGER.debug(f"Could not calc peak water hours for hour {hour}. pricelist is {len(_prices)} long, {e}")
             return False
 
     def _get_pricelist_combined(self) -> list:
-        _prices = [self._hvac.hub.nordpool.prices]
+        _prices = self._hvac.hub.nordpool.prices
         if self._hvac.hub.nordpool.prices_tomorrow is not None:
             _prices.extend([p for p in self._hvac.hub.nordpool.prices_tomorrow if isinstance(p, (float, int))])
         return _prices
@@ -144,10 +150,10 @@ class WaterHeater(IHeater):
             _LOGGER.debug("Current hour is identified as a good hour to boost water")
             self.booster_model.boost = True
             self._toggle_boost(timer_timeout=3600)
-        current_offset = self._get_current_offset()
-        if current_offset <= 0:
+
+        if self._get_current_offset() <= 0:
             self._toggle_hotwater_boost(LOWTEMP_THRESHOLD)
-        elif current_offset > 0:
+        elif self._get_current_offset() > 0:
             self._toggle_hotwater_boost(HIGHTEMP_THRESHOLD)
 
     def _toggle_hotwater_boost(self, temp_threshold):
@@ -185,8 +191,13 @@ class WaterHeater(IHeater):
                 if time.time() - self.booster_model.heat_water_timer > self.booster_model.heat_water_timer_timeout:
                     self.booster_model.try_heat_water = False
                     self._wait_timer = time.time()
-        elif (
-                self.booster_model.pre_heating or self.booster_model.boost) and time.time() - self._wait_timer > WAITTIMER_TIMEOUT:
+        elif all([
+            any([
+                self.booster_model.pre_heating,
+                self.booster_model.boost
+                ]),
+            time.time() - self._wait_timer > WAITTIMER_TIMEOUT
+        ]):
             self.booster_model.try_heat_water = True
             self.booster_model.heat_water_timer = time.time()
             if timer_timeout is not None:
