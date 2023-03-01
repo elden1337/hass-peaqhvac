@@ -85,10 +85,10 @@ class Offset:
     def _update_offset(self,weather_adjusted_today=None) -> Tuple[dict, dict]:
         try:
             d = self.offsets
-            today = self._offset_per_day(d['today']) if weather_adjusted_today is None else weather_adjusted_today
+            today = self._offset_per_day(d.get('today')) if weather_adjusted_today is None else weather_adjusted_today
             tomorrow = {}
-            if len(d['tomorrow']):
-                tomorrow = self._offset_per_day(d['tomorrow'])
+            if len(d.get('tomorrow')):
+                tomorrow = self._offset_per_day(d.get('tomorrow'))
             return Offset._smooth_transitions(today, tomorrow, self.model.tolerance)
         except Exception as e:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
