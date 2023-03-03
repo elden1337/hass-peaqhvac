@@ -13,7 +13,6 @@ HEATBOOST_TIMER = 7200
 WAITTIMER_TIMEOUT = 240
 
 class HouseHeater(IHeater):
-
     def __init__(self, hvac):
         self._hvac = hvac
         self._dm_compressor_start = hvac.hvac_compressor_start
@@ -107,16 +106,30 @@ class HouseHeater(IHeater):
             return -10
         else:
             desired_offset = self._set_calculated_offset(offsets)
+
+        if all([
+            desired_offset <= 0, 
+            self._get_tempdiff_rounded() >= 0
+            ]):
+            return self._set_lower_offset_strong(
+                current_offset=self._current_offset,
+                temp_diff=self._get_tempdiff_rounded(), 
+                temp_trend=self._get_temp_trend_offset()
+                )
+        
         if self._hvac.hub.offset.model.raw_offsets != self._hvac.hub.offset.model.calculated_offsets and desired_offset < 0:
             return self._hvac.hub.offset.adjust_to_threshold(desired_offset)
         if self.dm_lower:
             desired_offset -= 1
         if self.addon_or_peak_lower:
             desired_offset -= 2
-        elif all([self._current_offset < 0, self._get_tempdiff_rounded() < 0]):
-            return round(
-                max(-5, sum([self._current_offset, self._get_tempdiff_rounded(), self._get_temp_trend_offset()])), 0)
         return self._hvac.hub.offset.adjust_to_threshold(desired_offset)
+
+    @staticmethod
+    def _set_lower_offset_strong(current_offset, temp_diff, temp_trend) -> int:
+        calc = sum([current_offset, temp_diff*-1, temp_trend])
+        ret = max(-5, calc)
+        return round(ret,0)
 
     def _set_calculated_offset(self, offsets: dict) -> int:
         hour = datetime.now().hour
@@ -129,16 +142,13 @@ class HouseHeater(IHeater):
             _offset = 0
 
         self.current_offset = _offset
-        _tempdiff = self._get_tempdiff_rounded()
-        _tempextremas = self._get_temp_extremas()
-        _temptrend = self._get_temp_trend_offset()
 
         ret = sum(
             [
                 self.current_offset,
-                _tempdiff,
-                _tempextremas,
-                _temptrend
+                self._get_tempdiff_rounded()*-1,
+                self._get_temp_extremas(),
+                self._get_temp_trend_offset()
             ]
         )
 
@@ -174,7 +184,7 @@ class HouseHeater(IHeater):
         if diff == 0:
             return 0
         _tolerance = self._determine_tolerance(diff)
-        return int(diff / _tolerance) * -1
+        return int(diff / _tolerance)
 
     def _get_tempdiff(self) -> float:
         return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(self._hvac.hub.sensors.average_temp_indoors.value)
