@@ -151,9 +151,9 @@ class WaterHeater(IHeater):
             self.booster_model.boost = True
             self._toggle_boost(timer_timeout=3600)
 
-        if self._get_current_offset() <= 0:
-            self._toggle_hotwater_boost(LOWTEMP_THRESHOLD)
-        elif self._get_current_offset() > 0:
+        # if self._get_current_offset() <= 0:
+        #     self._toggle_hotwater_boost(LOWTEMP_THRESHOLD)
+        if self._get_current_offset() > 0:
             self._toggle_hotwater_boost(HIGHTEMP_THRESHOLD)
 
     def _toggle_hotwater_boost(self, temp_threshold):
@@ -165,13 +165,8 @@ class WaterHeater(IHeater):
             self._toggle_boost(timer_timeout=None)
 
     def _get_current_offset(self) -> int:
-        try:
-            offsets = self._hvac.hub.offset.get_offset()
-            current_offset = offsets[0][datetime.now().hour]
-        except Exception as e:
-            current_offset = 0
-            _LOGGER.debug(f"Can't read offsets for water-heating: {e}")
-        return current_offset
+        offsets = self._hvac.hub.offset.get_offset()
+        return offsets[0].get(datetime.now().hour, 0)
 
     def _set_water_heater_operation_away(self):
         if self._hvac.hub.sensors.peaqev_installed:

@@ -19,8 +19,10 @@ class Offset:
         self.model = OffsetModel(hub)
         self.internal_preset = None
         if not self._hub.sensors.peaqev_installed:
+            _LOGGER.debug("initializing an hourselection-instance")
             self.hours = Hoursselection()
         else:
+            _LOGGER.debug("found peaqev and will not init hourelection")
             self.hours = None
             self._prices = None
             self._prices_tomorrow = None
@@ -50,38 +52,32 @@ class Offset:
 
     def get_offset(self) -> Tuple[dict, dict]:
         """External entrypoint to the class"""
-        if self.prices is not None:
-            if 23 <= len(self.prices) <= 25:
-                self.model.raw_offsets = self._update_offset()
-            else:
-                _LOGGER.error(f"The pricelist for today was not between 23 and 25 hours long. Cannot calculate offsets. length: {len(self.prices)}")
-            try:
-                _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
-                _weather_inverted = {k: v * -1 for (k, v) in _weather_dict[0].items()}
-                self.model.calculated_offsets = self._update_offset(_weather_inverted)
-            except Exception as e:
-                _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
-                self.model.calculated_offsets = self.model.raw_offsets
-            return self.model.calculated_offsets
+        if len(self.model.calculated_offsets[0]) == 0:
+            _LOGGER.debug("no offsets available. recalculating")
+            self._set_offset()
+        return self.model.calculated_offsets
 
     def update_prognosis(self) -> None:
         self.model.prognosis = self._hub.prognosis.prognosis
-        self._hub.observer.broadcast("offset recalculation")
+        self._set_offset()
 
-    def update_prices(self) -> None:
+    def update_prices(self):
+        return self._update_prices_internal()
+    
+    def _update_prices_internal(self) -> None:
         if not self._hub.sensors.peaqev_installed:
             self.hours.prices = self._hub.nordpool.prices
             self.hours.prices_tomorrow = self._hub.nordpool.prices_tomorrow
         else:
-            if self._hub.nordpool.prices != self._prices:
-                self._prices = self._hub.nordpool.prices
-            if self._hub.nordpool.prices_tomorrow != self._prices_tomorrow:
-                self._prices_tomorrow = self._hub.nordpool.prices_tomorrow
-        self._hub.observer.broadcast("offset recalculation")
+            self._prices = self._hub.nordpool.prices
+            self._prices_tomorrow = self._hub.nordpool.prices_tomorrow
+            if len(self._hub.nordpool.prices) > 24:
+                _LOGGER.debug(f"nordpool prices being updated are {len(self._hub.nordpool.prices)} long.")
+        self._set_offset()
 
     def update_preset(self) -> None:
         self.internal_preset = self._hub.sensors.set_temp_indoors.preset
-        self._hub.observer.broadcast("offset recalculation")
+        self._set_offset()
 
     def _update_offset(self,weather_adjusted_today=None) -> Tuple[dict, dict]:
         try:
@@ -94,6 +90,26 @@ class Offset:
         except Exception as e:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
+
+    def _set_offset(self) -> None:
+        if all([
+            self.prices is not None,
+            self.model.prognosis is not None
+        ]):
+            if 23 <= len(self.prices) <= 25:
+                self.model.raw_offsets = self._update_offset()
+            else:
+                _LOGGER.debug(f"Prices are not ok. length is {len(self.prices)}")
+            try:
+                _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
+                _weather_inverted = {k: v * -1 for (k, v) in _weather_dict[0].items()}
+                self.model.calculated_offsets = self._update_offset(_weather_inverted)
+            except Exception as e:
+                _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
+                self.model.calculated_offsets = self.model.raw_offsets
+            self._hub.observer.broadcast("offset recalculation")
+        else:
+            _LOGGER.debug("not possible to calculate offset.")
 
     def _offset_per_day(self, day_values: dict) -> dict:
         ret = {}

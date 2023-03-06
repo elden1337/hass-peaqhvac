@@ -12,6 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 HEATBOOST_TIMER = 7200
 WAITTIMER_TIMEOUT = 240
 
+
 class HouseHeater(IHeater):
     def __init__(self, hvac):
         self._hvac = hvac
@@ -41,7 +42,7 @@ class HouseHeater(IHeater):
 
     @current_offset.setter
     def current_offset(self, val) -> None:
-        if isinstance(val, (float,int)):
+        if isinstance(val, (float, int)):
             self._current_offset = val
 
     @property
@@ -66,11 +67,20 @@ class HouseHeater(IHeater):
 
     @property
     def addon_or_peak_lower(self) -> bool:
-        return self._temporarily_lower_offset()    
+        return self._temporarily_lower_offset()
+
+    def _temporarily_lower_offset(self) -> bool:
+        if time.time() - self._wait_timer_breach > WAITTIMER_TIMEOUT:
+            if any([
+                self._temp_lower_offset_threshold(),
+                self._temp_lower_offset_addon()
+            ]):
+                return True
+        return False
 
     def max_price_lower(self) -> bool:
         """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
-        if self._get_tempdiff() >= 0:
+        if self._get_tempdiff() <= 0:
             return datetime.now().hour in self._hvac.hub.offset.model.peaks_today
         return False
 
@@ -81,14 +91,15 @@ class HouseHeater(IHeater):
             desired_offset = self._set_calculated_offset(offsets)
 
         if all([
-            desired_offset <= 0, 
+            desired_offset <= 0,
             self.current_tempdiff <= 0
-            ]):
+        ]):
             return self._set_lower_offset_strong(
                 current_offset=self._current_offset,
-                temp_diff=self.current_tempdiff, 
+                temp_diff=self.current_tempdiff,
                 temp_trend=self._get_temp_trend_offset()
-                )
+            )
+
         if self._hvac.hub.offset.model.raw_offsets != self._hvac.hub.offset.model.calculated_offsets and desired_offset < 0:
             return self._hvac.hub.offset.adjust_to_threshold(desired_offset)
         if self.dm_lower:
@@ -106,24 +117,14 @@ class HouseHeater(IHeater):
 
     def _temp_lower_offset_threshold(self) -> bool:
         if all([
-                self._hvac.hub.sensors.peaqev_installed,
-                30 <= datetime.now().minute < 58,
-                float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100
-            ]):
-                _LOGGER.debug("Lowering offset because of peak about to be breached.")
-                self._wait_timer_breach = time.time()
-                return True
+            self._hvac.hub.sensors.peaqev_installed,
+            30 <= datetime.now().minute < 58,
+            float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100
+        ]):
+            _LOGGER.debug("Lowering offset because of peak about to be breached.")
+            self._wait_timer_breach = time.time()
+            return True
         return False
-    
-    def _temporarily_lower_offset(self) -> bool:
-        if time.time() - self._wait_timer_breach > WAITTIMER_TIMEOUT:
-            if any([
-                self._temp_lower_offset_threshold(),
-                self._temp_lower_offset_addon()
-            ]):
-                return True
-        return False
-    
 
     def _get_demand(self) -> Demand:
         _compressor_start = self._dm_compressor_start if self._dm_compressor_start is not None else -300
@@ -142,19 +143,17 @@ class HouseHeater(IHeater):
                 f"Compressor_start: {_compressor_start}, delta-return: {self._hvac.delta_return_temp} and pushed DM: {dm}. Could not calculate demand.")
             return Demand.NoDemand
 
-    
-
     def _set_calculated_offset(self, offsets: dict) -> int:
         self._update_current_offset(offsets=offsets)
         ret = sum([
-                self.current_offset,
-                self.current_tempdiff,
-                self._get_temp_extremas(),
-                self._get_temp_trend_offset()
-            ])
+            self.current_offset,
+            self.current_tempdiff,
+            self._get_temp_extremas(),
+            self._get_temp_trend_offset()
+        ])
         return int(round(ret, 0))
 
-    def _update_current_offset(self, offsets:dict) -> None:
+    def _update_current_offset(self, offsets: dict) -> None:
         hour = datetime.now().hour
         if datetime.now().hour < 23 and datetime.now().minute >= 50:
             hour = datetime.now().hour + 1
@@ -184,22 +183,22 @@ class HouseHeater(IHeater):
                 self._latest_boost = 0
         return pre_offset
 
-    
-
     def _get_tempdiff_inverted(self) -> int:
         diff = self._get_tempdiff()
         if diff == 0:
             return 0
         _tolerance = self._determine_tolerance(diff)
-        return int(diff / _tolerance)*-1
+        return int(diff / _tolerance) * -1
 
     def _get_tempdiff(self) -> float:
-        return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(self._hvac.hub.sensors.average_temp_indoors.value)
+        return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(
+            self._hvac.hub.sensors.average_temp_indoors.value)
 
     def _get_temp_extremas(self) -> float:
         low_diffs = []
         high_diffs = []
-        set_temp = self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(self._hvac.hub.sensors.average_temp_indoors.value)
+        set_temp = self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(
+            self._hvac.hub.sensors.average_temp_indoors.value)
         for t in self._hvac.hub.sensors.average_temp_indoors.all_values:
             _diff = set_temp - t
             if _diff > 0:
@@ -213,13 +212,14 @@ class HouseHeater(IHeater):
             ret = stat.mean(low_diffs) - _tolerance
         else:
             ret = stat.mean(high_diffs) + _tolerance
-        return round(ret,2)
+        return round(ret, 2)
 
     def _get_temp_trend_offset(self) -> float:
         if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
             if -0.1 < self._hvac.hub.sensors.temp_trend_indoors.gradient < 0.1:
                 return 0
-            new_temp_diff = self._predicted_temp() - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(self._hvac.hub.sensors.average_temp_indoors.value)
+            new_temp_diff = self._predicted_temp() - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(
+                self._hvac.hub.sensors.average_temp_indoors.value)
             _tolerance = self._determine_tolerance(new_temp_diff)
             if abs(new_temp_diff) >= _tolerance:
                 ret = self._get_offset_steps(_tolerance)
@@ -236,7 +236,7 @@ class HouseHeater(IHeater):
 
     def _predicted_temp(self) -> float:
         return self._hvac.hub.sensors.average_temp_indoors.value + self._hvac.hub.sensors.temp_trend_indoors.gradient
-    
+
     def _determine_tolerance(self, determinator) -> float:
         tolerances = self._hvac.hub.sensors.set_temp_indoors.adjusted_tolerances(self._current_offset)
         return tolerances[1] if (determinator > 0 or determinator is True) else tolerances[0]
@@ -248,7 +248,7 @@ class HouseHeater(IHeater):
         if all([
             self._hvac.hub.sensors.temp_trend_indoors.is_clean,
             time.time() - self._wait_timer_boost > WAITTIMER_TIMEOUT
-            ]):
+        ]):
             ret = True
             if any([
                 all([
@@ -272,7 +272,6 @@ class HouseHeater(IHeater):
     def _set_lower_offset_strong(current_offset, temp_diff, temp_trend) -> int:
         calc = sum([current_offset, temp_diff, temp_trend])
         ret = max(-5, calc)
-        return round(ret,0)
+        return round(ret, 0)
 
     # def compare to water demand
-
