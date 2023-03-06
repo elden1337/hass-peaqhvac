@@ -75,6 +75,7 @@ class Offset:
             if len(self._hub.nordpool.prices) > 24:
                 _LOGGER.debug(f"nordpool prices being updated are {len(self._hub.nordpool.prices)} long.")
         self._set_offset()
+        self._update_model()
 
     def update_preset(self) -> None:
         self.internal_preset = self._hub.sensors.set_temp_indoors.preset
@@ -142,6 +143,10 @@ class Offset:
         ret = int(round(min(adjustment, self.model.tolerance) if adjustment >= 0 else max(adjustment, self.model.tolerance * -1), 0))
         return ret
 
+    def _update_model(self) -> None:
+        self.model.peaks_today = peakfinder.identify_peaks(self.prices)
+
+    #in use?
     def _getaverage(self, prices: list, prices_tomorrow: list = None) -> float:
         try:
             total = prices
@@ -153,6 +158,7 @@ class Offset:
         except Exception as e:
             _LOGGER.exception(f"Could not set offset. prices: {prices}, prices_tomorrow: {prices_tomorrow}. {e}")
             return 0.0
+    #in use?
 
     @staticmethod
     def _sanitize_pricelists(inputlist) -> list:
