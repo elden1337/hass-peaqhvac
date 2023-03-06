@@ -4,10 +4,11 @@ import logging
 from statistics import mean
 from typing import Tuple
 from datetime import datetime
-import custom_components.peaqhvac.service.hvac.peakfinder as peakfinder
+from custom_components.peaqhvac.service.hvac.offset.peakfinder import identify_peaks, smooth_transitions
+from custom_components.peaqhvac.service.hvac.offset.offset_utils import offset_per_day
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
 from custom_components.peaqhvac.service.models.offset_model import OffsetModel
-from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,6 +66,10 @@ class Offset:
     def update_prices(self):
         return self._update_prices_internal()
     
+    def update_preset(self) -> None:
+        self.internal_preset = self._hub.sensors.set_temp_indoors.preset
+        self._set_offset()
+
     def _update_prices_internal(self) -> None:
         if not self._hub.sensors.peaqev_installed:
             self.hours.prices = self._hub.nordpool.prices
@@ -76,10 +81,6 @@ class Offset:
                 _LOGGER.debug(f"nordpool prices being updated are {len(self._hub.nordpool.prices)} long.")
         self._set_offset()
         self._update_model()
-
-    def update_preset(self) -> None:
-        self.internal_preset = self._hub.sensors.set_temp_indoors.preset
-        self._set_offset()
 
     def max_price_lower(self, tempdiff) -> bool:
         """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
@@ -94,11 +95,17 @@ class Offset:
     def _update_offset(self,weather_adjusted_today=None) -> Tuple[dict, dict]:
         try:
             d = self.offsets
-            today = self._offset_per_day(d.get('today')) if weather_adjusted_today is None else weather_adjusted_today
+            today = offset_per_day(
+                offsets=d.get('today'), 
+                tolerance=self.model.tolerance, 
+                indoors_preset=self._hub.sensors.set_temp_indoors.preset) if weather_adjusted_today is None else weather_adjusted_today
             tomorrow = {}
             if len(d.get('tomorrow')):
-                tomorrow = self._offset_per_day(d.get('tomorrow'))
-            return Offset._smooth_transitions(today, tomorrow, self.model.tolerance)
+                tomorrow = self._offset_per_day(
+                offsets=d.get('tomorrow'), 
+                tolerance=self.model.tolerance, 
+                indoors_preset=self._hub.sensors.set_temp_indoors.preset)
+            return smooth_transitions(today, tomorrow, self.model.tolerance)
         except Exception as e:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
@@ -123,97 +130,32 @@ class Offset:
         else:
             _LOGGER.debug("not possible to calculate offset.")
 
-    def _offset_per_day(self, day_values: dict) -> dict:
-        ret = {}
-        _max_today = max(day_values.values())
-        _min_today = min(day_values.values())
-        if self.model.tolerance is not None:
-            try:
-                factor = max(abs(_max_today), abs(_min_today)) / self.model.tolerance
-            except ZeroDivisionError as z:
-                _LOGGER.info(f"Offset calculation not finalized due to missing tolerance. Will change shortly...")
-                factor = 1
-            for k, v in day_values.items():
-                ret[k] = int(round((day_values[k] / factor) * -1, 0))
-                if self._hub.sensors.set_temp_indoors.preset is HvacPresets.Away:
-                    ret[k] -= 1
-        return ret
-
     def adjust_to_threshold(self, adjustment: int) -> int:
         ret = int(round(min(adjustment, self.model.tolerance) if adjustment >= 0 else max(adjustment, self.model.tolerance * -1), 0))
         return ret
 
     def _update_model(self) -> None:
-        self.model.peaks_today = peakfinder.identify_peaks(self.prices)
+        self.model.peaks_today = identify_peaks(self.prices)
 
-    #in use?
-    def _getaverage(self, prices: list, prices_tomorrow: list = None) -> float:
-        try:
-            total = prices
-            self.model.peaks_today = peakfinder.identify_peaks(prices) #refactor
-            prices_tomorrow_cleaned = Offset._sanitize_pricelists(prices_tomorrow)
-            if len(prices_tomorrow_cleaned) == 24:
-                total.extend(prices_tomorrow_cleaned)
-            return mean(total)
-        except Exception as e:
-            _LOGGER.exception(f"Could not set offset. prices: {prices}, prices_tomorrow: {prices_tomorrow}. {e}")
-            return 0.0
-    #in use?
+    # #in use?
+    # def _getaverage(self, prices: list, prices_tomorrow: list = None) -> float:
+    #     try:
+    #         total = prices
+    #         self.model.peaks_today = identify_peaks(prices) #refactor
+    #         prices_tomorrow_cleaned = Offset._sanitize_pricelists(prices_tomorrow)
+    #         if len(prices_tomorrow_cleaned) == 24:
+    #             total.extend(prices_tomorrow_cleaned)
+    #         return mean(total)
+    #     except Exception as e:
+    #         _LOGGER.exception(f"Could not set offset. prices: {prices}, prices_tomorrow: {prices_tomorrow}. {e}")
+    #         return 0.0
+    # #in use?
 
-    @staticmethod
-    def _sanitize_pricelists(inputlist) -> list:
-        if inputlist is None or len(inputlist) < 24:
-            return []
-        for i in inputlist:
-            if not isinstance(i, (float, int)):
-                return []
-        return inputlist
-
-    @staticmethod
-    def _find_single_anomalies(
-            adj: list
-    ) -> list[int]:
-        for idx, p in enumerate(adj):
-            if idx <= 1 or idx >= len(adj) - 1:
-                pass
-            else:
-                if all([
-                    adj[idx - 1] == adj[idx + 1],
-                    adj[idx - 1] != adj[idx]
-                ]):
-                    _prev = adj[idx - 1]
-                    _curr = adj[idx]
-                    diff = max(_prev, _curr) - min(_prev, _curr)
-                    if int(diff / 2) > 0:
-                        if _prev > _curr:
-                            adj[idx] += int(diff / 2)
-                        else:
-                            adj[idx] -= int(diff / 2)
-        return adj
-
-    @staticmethod
-    def _smooth_transitions(
-            today: dict,
-            tomorrow: dict,
-            tolerance: int
-    ) -> Tuple[dict, dict]:
-        tolerance = min(tolerance, 3)
-        start_list = []
-        start_list.extend(today.values())
-        start_list.extend(tomorrow.values())
-
-        # Find and remove single anomalies.
-        start_list = Offset._find_single_anomalies(start_list)
-        # Smooth out transitions upwards so that there is less risk of electrical addon usage.
-        for idx, v in enumerate(start_list):
-            if idx < len(start_list) - 1:
-                if start_list[idx + 1] >= start_list[idx] + tolerance:
-                    start_list[idx] += 1
-        # Package it and return
-        ret = {}, {}
-        for hour in range(0, 24):
-            ret[0][hour] = start_list[hour]
-        if 23 <= len(tomorrow.items()) <= 25:
-            for hour in range(24, min(len(tomorrow.items()) + 24, 48)):
-                ret[1][hour - 24] = start_list[hour]
-        return ret
+    # @staticmethod
+    # def _sanitize_pricelists(inputlist) -> list:
+    #     if inputlist is None or len(inputlist) < 24:
+    #         return []
+    #     for i in inputlist:
+    #         if not isinstance(i, (float, int)):
+    #             return []
+    #     return inputlist

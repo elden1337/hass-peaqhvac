@@ -165,14 +165,12 @@ class HouseHeater(IHeater):
                 self._get_tempdiff() < 0,
                 self._hvac.hub.sensors.temp_trend_indoors.gradient <= 0.3
             ]):
-                """boost +1 since there is no sunwarming and no heating atm"""
                 _LOGGER.debug("adding additional heating since there is no sunwarming happening and house is too cold.")
                 pre_offset += 1
                 self._latest_boost = time.time()
         else:
             pre_offset += 1
             if self._get_tempdiff() > 1:
-                """Turn off the boost prematurely"""
                 pre_offset -= 1
                 self._latest_boost = 0
         return pre_offset
