@@ -5,7 +5,7 @@ from custom_components.peaqhvac.service.hub.nordpool import NordPoolUpdater
 from custom_components.peaqhvac.service.hub.state_changes import StateChanges
 from custom_components.peaqhvac.service.hub.weather_prognosis import WeatherPrognosis
 from custom_components.peaqhvac.service.hvac.hvacfactory import HvacFactory
-from custom_components.peaqhvac.service.hvac.offset import Offset
+from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import OffsetCoordinator
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.core import (
@@ -31,7 +31,7 @@ class Hub:
         self.states = StateChanges(self, self._hass)
         self.hvac = HvacFactory.create(self._hass, self.options, self)
         self.nordpool = NordPoolUpdater(self._hass, self)
-        self.offset = Offset(self)
+        self.offset = OffsetCoordinator(self)
         self.prognosis = WeatherPrognosis(self)
         self.options.hub = self
         self.trackerentities = []
@@ -76,3 +76,4 @@ class Hub:
     @property
     def predicted_temp(self) -> float:
         return self.sensors.average_temp_indoors.value + self.sensors.temp_trend_indoors.gradient
+    

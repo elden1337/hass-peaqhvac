@@ -4,7 +4,7 @@ from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPre
 _LOGGER = logging.getLogger(__name__)
 
 
-def offset_per_day(day_values: dict, tolerance: int|None, indoors_preset: HvacPresets = HvacPresets.Home) -> dict:
+def offset_per_day(day_values: dict, tolerance: int|None, indoors_preset: HvacPresets = HvacPresets.Normal) -> dict:
         ret = {}
         _max_today = max(day_values.values())
         _min_today = min(day_values.values())

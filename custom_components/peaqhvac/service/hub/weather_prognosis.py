@@ -109,12 +109,11 @@ class WeatherPrognosis:
             self,
             offsets
     ) -> Tuple[dict, dict]:
-        self._hub.prognosis.update_weather_prognosis()
+        self.update_weather_prognosis()
         ret = {}, offsets[1]
-        now = datetime.now()
         for k, v in offsets[0].items():
             ret[0][k] = self._get_weatherprognosis_hourly_adjustment(k, v)
-        return ret
+        return {k: v * -1 for (k, v) in ret[0].items()}, ret[1]
 
     def _get_weatherprognosis_hourly_adjustment(self, k, v):
         now = datetime.now()
@@ -154,15 +153,17 @@ class WeatherPrognosis:
 
     def _correct_temperature_for_windchill(self, temp: float, windspeed: float) -> float:
         windspeed_corrected = windspeed
-        ret = 13.12 + (0.6215 * temp) - (11.37 * windspeed_corrected ** 0.16) + (
-                0.3965 * temp * windspeed_corrected ** 0.16)
+        ret = 13.12 
+        ret += (0.6215 * temp) 
+        ret -= (11.37 * windspeed_corrected ** 0.16) 
+        ret += (0.3965 * temp * windspeed_corrected ** 0.16)
         return round(ret, 1)
 
     def _get_two_hour_prog(
             self,
             thishour: datetime
     ) -> PrognosisExportModel | None:
-        for p in self._hub.prognosis.prognosis:
+        for p in self.weather_prognosis:
             c = timedelta.total_seconds(p.DT - thishour)
             if c == 10800:
                 return p

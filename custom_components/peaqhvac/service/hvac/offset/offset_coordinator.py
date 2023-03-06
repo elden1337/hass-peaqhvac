@@ -13,7 +13,7 @@ from custom_components.peaqhvac.service.models.offset_model import OffsetModel
 _LOGGER = logging.getLogger(__name__)
 
 
-class Offset:
+class OffsetCoordinator:
     """The class that provides the offsets for the hvac"""
 
     def __init__(self, hub):
@@ -96,16 +96,16 @@ class Offset:
         try:
             d = self.offsets
             today = offset_per_day(
-                offsets=d.get('today'), 
+                day_values=d.get('today'), 
                 tolerance=self.model.tolerance, 
                 indoors_preset=self._hub.sensors.set_temp_indoors.preset) if weather_adjusted_today is None else weather_adjusted_today
             tomorrow = {}
             if len(d.get('tomorrow')):
-                tomorrow = self._offset_per_day(
-                offsets=d.get('tomorrow'), 
+                tomorrow = offset_per_day(
+                day_values=d.get('tomorrow'), 
                 tolerance=self.model.tolerance, 
                 indoors_preset=self._hub.sensors.set_temp_indoors.preset)
-            return smooth_transitions(today, tomorrow, self.model.tolerance)
+            return smooth_transitions(today=today, tomorrow=tomorrow, tolerance=self.model.tolerance)
         except Exception as e:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
@@ -121,8 +121,8 @@ class Offset:
                 _LOGGER.debug(f"Prices are not ok. length is {len(self.prices)}")
             try:
                 _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
-                _weather_inverted = {k: v * -1 for (k, v) in _weather_dict[0].items()}
-                self.model.calculated_offsets = self._update_offset(_weather_inverted)
+                
+                self.model.calculated_offsets = self._update_offset(_weather_dict)
             except Exception as e:
                 _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
                 self.model.calculated_offsets = self.model.raw_offsets
@@ -131,8 +131,8 @@ class Offset:
             _LOGGER.debug("not possible to calculate offset.")
 
     def adjust_to_threshold(self, adjustment: int) -> int:
-        ret = int(round(min(adjustment, self.model.tolerance) if adjustment >= 0 else max(adjustment, self.model.tolerance * -1), 0))
-        return ret
+        ret = min(adjustment, self.model.tolerance) if adjustment >= 0 else max(adjustment, self.model.tolerance * -1)
+        return int(round(ret, 0))
 
     def _update_model(self) -> None:
         self.model.peaks_today = identify_peaks(self.prices)
