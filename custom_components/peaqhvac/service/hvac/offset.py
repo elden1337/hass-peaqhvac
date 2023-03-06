@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from statistics import mean
 from typing import Tuple
+from datetime import datetime
 import custom_components.peaqhvac.service.hvac.peakfinder as peakfinder
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
 from custom_components.peaqhvac.service.models.offset_model import OffsetModel
@@ -78,6 +79,16 @@ class Offset:
     def update_preset(self) -> None:
         self.internal_preset = self._hub.sensors.set_temp_indoors.preset
         self._set_offset()
+
+    def max_price_lower(self, tempdiff) -> bool:
+        """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
+        if tempdiff >= 0:
+            if datetime.now().hour in self.model.peaks_today:
+                return True
+            elif datetime.now().hour < 23 and datetime.now().minute > 45:
+                if datetime.now().hour + 1 in self.model.peaks_today:
+                    return True
+        return False
 
     def _update_offset(self,weather_adjusted_today=None) -> Tuple[dict, dict]:
         try:

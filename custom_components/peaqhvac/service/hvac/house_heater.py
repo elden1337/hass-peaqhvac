@@ -78,14 +78,8 @@ class HouseHeater(IHeater):
                 return True
         return False
 
-    def max_price_lower(self) -> bool:
-        """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
-        if self._get_tempdiff() <= 0:
-            return datetime.now().hour in self._hvac.hub.offset.model.peaks_today
-        return False
-
     def get_current_offset(self, offsets: dict) -> int:
-        if self.max_price_lower():
+        if self._hvac.hub.offset.max_price_lower(self._get_tempdiff()):
             return -10
         else:
             desired_offset = self._set_calculated_offset(offsets)
@@ -191,8 +185,9 @@ class HouseHeater(IHeater):
         return int(diff / _tolerance) * -1
 
     def _get_tempdiff(self) -> float:
-        return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(
-            self._hvac.hub.sensors.average_temp_indoors.value)
+        _indoors = self._hvac.hub.sensors.average_temp_indoors.value
+        _set_temp = self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(self._hvac.hub.sensors.average_temp_indoors.value)
+        return _indoors - _set_temp
 
     def _get_temp_extremas(self) -> float:
         low_diffs = []
@@ -218,7 +213,7 @@ class HouseHeater(IHeater):
         if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
             if -0.1 < self._hvac.hub.sensors.temp_trend_indoors.gradient < 0.1:
                 return 0
-            new_temp_diff = self._predicted_temp() - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(
+            new_temp_diff = self._hvac.hub.predicted_temp - self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(
                 self._hvac.hub.sensors.average_temp_indoors.value)
             _tolerance = self._determine_tolerance(new_temp_diff)
             if abs(new_temp_diff) >= _tolerance:
@@ -233,9 +228,6 @@ class HouseHeater(IHeater):
     def _get_offset_steps(self, tolerance) -> int:
         ret = abs(self._hvac.hub.sensors.temp_trend_indoors.gradient) / tolerance
         return int(ret)
-
-    def _predicted_temp(self) -> float:
-        return self._hvac.hub.sensors.average_temp_indoors.value + self._hvac.hub.sensors.temp_trend_indoors.gradient
 
     def _determine_tolerance(self, determinator) -> float:
         tolerances = self._hvac.hub.sensors.set_temp_indoors.adjusted_tolerances(self._current_offset)

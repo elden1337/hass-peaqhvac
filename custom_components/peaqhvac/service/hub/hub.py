@@ -72,3 +72,7 @@ class Hub:
     async def call_set_mode(self, mode):
         #match towards enum. set hub to that state.
         pass
+
+    @property
+    def predicted_temp(self) -> float:
+        return self.sensors.average_temp_indoors.value + self.sensors.temp_trend_indoors.gradient
