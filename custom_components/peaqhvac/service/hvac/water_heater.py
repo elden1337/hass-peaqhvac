@@ -153,7 +153,7 @@ class WaterHeater(IHeater):
 
         # if self._get_current_offset() <= 0:
         #     self._toggle_hotwater_boost(LOWTEMP_THRESHOLD)
-        if self._get_current_offset() > 0:
+        if self._get_current_offset() > 0 and datetime.now().hour < 22:
             self._toggle_hotwater_boost(HIGHTEMP_THRESHOLD)
 
     def _toggle_hotwater_boost(self, temp_threshold):

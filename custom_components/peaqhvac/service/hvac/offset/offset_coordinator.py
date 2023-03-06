@@ -92,14 +92,17 @@ class OffsetCoordinator:
                     return True
         return False
 
-    def _update_offset(self,weather_adjusted_today=None) -> Tuple[dict, dict]:
+    def _update_offset(self,weather_adjusted_today:dict|None=None) -> Tuple[dict, dict]:
         try:
             d = self.offsets
-            today = offset_per_day(
-                day_values=d.get('today'), 
-                tolerance=self.model.tolerance, 
-                indoors_preset=self._hub.sensors.set_temp_indoors.preset) if weather_adjusted_today is None else weather_adjusted_today
-            tomorrow = {}
+            if weather_adjusted_today is None:
+                today = offset_per_day(
+                    day_values=d.get('today'), 
+                    tolerance=self.model.tolerance, 
+                    indoors_preset=self._hub.sensors.set_temp_indoors.preset) 
+            else:
+                today = weather_adjusted_today.values()
+            tomorrow = []
             if len(d.get('tomorrow')):
                 tomorrow = offset_per_day(
                 day_values=d.get('tomorrow'), 
@@ -121,8 +124,7 @@ class OffsetCoordinator:
                 _LOGGER.debug(f"Prices are not ok. length is {len(self.prices)}")
             try:
                 _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
-                
-                self.model.calculated_offsets = self._update_offset(_weather_dict)
+                self.model.calculated_offsets = self._update_offset(_weather_dict[0])
             except Exception as e:
                 _LOGGER.warning(f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}")
                 self.model.calculated_offsets = self.model.raw_offsets

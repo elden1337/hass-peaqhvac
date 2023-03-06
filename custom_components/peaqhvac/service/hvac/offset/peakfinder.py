@@ -68,23 +68,22 @@ def _smooth_upwards_transitions(start_list, tolerance):
     return start_list
 
 def smooth_transitions(
-        today: dict,
-        tomorrow: dict,
+        today: list,
+        tomorrow: list,
         tolerance: int
 ) -> Tuple[dict, dict]:
     tolerance = min(tolerance, 3)
     start_list = []
     ret = {}, {}
-    start_list.extend(today.values())
-    start_list.extend(tomorrow.values())
+    start_list.extend(today)
+    start_list.extend(tomorrow)
 
     start_list = _find_single_anomalies(start_list)    
     start_list = _smooth_upwards_transitions(start_list, tolerance)
     
-    
     for hour in range(0, 24):
         ret[0][hour] = start_list[hour]
-    if 23 <= len(tomorrow.items()) <= 25:
-        for hour in range(24, min(len(tomorrow.items()) + 24, 48)):
+    if 23 <= len(tomorrow) <= 25:
+        for hour in range(24, min(len(tomorrow) + 24, 48)):
             ret[1][hour - 24] = start_list[hour]
     return ret

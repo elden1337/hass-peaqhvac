@@ -163,7 +163,7 @@ class WeatherPrognosis:
             self,
             thishour: datetime
     ) -> PrognosisExportModel | None:
-        for p in self.weather_prognosis:
+        for p in self.prognosis:
             c = timedelta.total_seconds(p.DT - thishour)
             if c == 10800:
                 return p
