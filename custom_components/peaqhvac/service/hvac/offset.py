@@ -73,8 +73,10 @@ class Offset:
             self.hours.prices = self._hub.nordpool.prices
             self.hours.prices_tomorrow = self._hub.nordpool.prices_tomorrow
         else:
-            self._prices = self._hub.nordpool.prices
-            self._prices_tomorrow = self._hub.nordpool.prices_tomorrow
+            if self._hub.nordpool.prices != self._prices:
+                self._prices = self._hub.nordpool.prices
+            if self._hub.nordpool.prices_tomorrow != self._prices_tomorrow:
+                self._prices_tomorrow = self._hub.nordpool.prices_tomorrow
         self._hub.observer.broadcast("offset recalculation")
 
     def update_preset(self) -> None:

@@ -76,7 +76,6 @@ class NordPoolUpdater:
                     _LOGGER.error(f"Nordpool returned a faulty length of prices for tomorrow ({len(ret_attr_tomorrow)})")
             except Exception as e:
                 _LOGGER.warning(f"Couldn't parse tomorrow's prices from Nordpool. Array will be empty. {e}")
-                _tomorrow = []
 
             ret_attr_currency = str(ret.attributes.get("currency"))
             self.currency = ret_attr_currency
