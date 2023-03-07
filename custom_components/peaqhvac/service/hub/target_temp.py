@@ -1,20 +1,22 @@
 from typing import Tuple
 import logging
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
+from custom_components.peaqhvac.service.observer import ObserverBroadcaster
 
 MINTEMP = 15
 MAXTEMP = 27
 _LOGGER = logging.getLogger(__name__)
 
 
-class TargetTemp:
-    def __init__(self, initval=19, hub = None):
+class TargetTemp(ObserverBroadcaster):
+    def __init__(self, initval=19, observer_message:str = None, hub = None):
         self.hub = hub
         self._value = initval
         self._min_tolerance = None
         self._max_tolerance = None
         self._preset = HvacPresets.Normal
         self._internal_set_temp = initval
+        super().__init__(observer_message, hub)
         self._set_temperature_and_tolerances()
 
     @property
@@ -36,6 +38,7 @@ class TargetTemp:
                 self._value = val
             self._internal_set_temp = self._value - HvacPresets.get_tempdiff(self.preset)
             self._set_temperature_and_tolerances()
+            self._broadcast_changes()
         except:
             _LOGGER.error(f"Unable to set the targettemp value. The incoming val is {val}")
 

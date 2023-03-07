@@ -1,12 +1,12 @@
 import logging
 import statistics as stat
-from custom_components.peaqhvac.service.observer import Observer
+from custom_components.peaqhvac.service.observer import ObserverBroadcaster
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class Average:
-    def __init__(self, entities: list[str], observer: str = None, hub=None):
+class Average(ObserverBroadcaster):
+    def __init__(self, entities: list[str], observer_message: str = None, hub=None):
         self.listenerentities = entities
         self._value: float = 0.0
         self._median: float = 0.0
@@ -17,8 +17,8 @@ class Average:
         self._initialized_values = 0
         self._total_sensors = len(self.listenerentities)
         self._initialized_sensors = {}
-        self._observer_message = observer
         self.hub = hub
+        super().__init__(observer_message, hub)
 
         for i in self.listenerentities:
             self._values[i] = 999.0
@@ -88,7 +88,3 @@ class Average:
         except:
             self.value = 0
             _LOGGER.debug("unable to set averagesensor")
-
-    def _broadcast_changes(self):
-        if self._observer_message is not None:
-            self.hub.observer.broadcast(self._observer_message)
