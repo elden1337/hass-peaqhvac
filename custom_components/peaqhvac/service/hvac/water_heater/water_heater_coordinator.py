@@ -1,5 +1,4 @@
 import logging
-import statistics as stat
 import time
 from datetime import datetime
 import custom_components.peaqhvac.extensionmethods as ex

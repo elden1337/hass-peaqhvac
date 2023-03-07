@@ -1,5 +1,5 @@
 import logging
-import statistics as stat
+import statistics
 from custom_components.peaqhvac.service.observer import ObserverBroadcaster
 
 _LOGGER = logging.getLogger(__name__)
@@ -78,8 +78,8 @@ class Average(ObserverBroadcaster):
             if self.initialized_percentage > 0.2:
                 self._min = min(filtered_list)
                 self._max = max(filtered_list)
-                self.value = stat.mean(filtered_list)
-                self._median = stat.median(filtered_list)
+                self.value = statistics.mean(filtered_list)
+                self._median = statistics.median(filtered_list)
                 self._all_values = filtered_list
 
             else:
