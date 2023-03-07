@@ -15,14 +15,18 @@ class ObserverBroadcaster:
     def _broadcast_changes(self):
         if self._observer_message is not None:
             self.hub.observer.broadcast(self._observer_message)
-            
+
 
 class Observer:
     def __init__(self, hub):
         self._subscribers: dict = {}
         self._broadcast_queue = []
         self._wait_queue = {}
-        self.hub = hub
+        self._active = False
+        self._hub = hub
+
+    def activate(self) -> None:
+        self._active = True
 
     def add(self, command: str, func):
         if command in self._subscribers.keys():
@@ -36,10 +40,17 @@ class Observer:
             _expiration = time.time() + timeout
         if (command, _expiration) not in self._broadcast_queue:
             self._broadcast_queue.append((command, _expiration))
-        if self.hub.is_initialized:
+        self._prepare_dequeue()        
+
+    def _prepare_dequeue(self, attempt:int = 0) -> None:
+        if self._active:
             for q in self._broadcast_queue:
                 if q[0] in self._subscribers.keys():
                     self._dequeue_and_broadcast(q)
+        elif attempt < 5:
+            self._hub.is_initialized
+            attempt += 1
+            return self._prepare_dequeue(attempt)
 
     def _ok_to_broadcast(self, command) ->  bool:
         if command not in self._wait_queue.keys():

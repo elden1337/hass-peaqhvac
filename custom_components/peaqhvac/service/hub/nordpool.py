@@ -12,9 +12,17 @@ class NordPoolUpdater:
         self.currency: str = ""
         self._prices: list = []
         self._prices_tomorrow: list = []
-        self._state: float = 0
+        self._state: float = None
         self.nordpool_entity: str = ""
         self._setup_nordpool()
+
+    @property
+    def is_initialized(self) -> bool:
+        return all([
+            self.currency != "",
+            len(self._prices) > 0,
+            self._state is not None
+        ])
 
     @property
     def state(self) -> float:

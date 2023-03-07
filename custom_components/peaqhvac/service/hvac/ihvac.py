@@ -9,7 +9,7 @@ from custom_components.peaqhvac.service.hvac.house_heater import HouseHeater
 from homeassistant.core import (
     HomeAssistant
 )
-from custom_components.peaqhvac.service.hvac.water_heater import WaterHeater
+from custom_components.peaqhvac.service.hvac.water_heater.water_heater_coordinator import WaterHeater
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
 from custom_components.peaqhvac.service.models.ihvac_model import IHvacModel

@@ -23,7 +23,7 @@ class Hub:
     hubname = "PeaqHvac"
 
     def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
-        self.is_initialized = False
+        self._is_initialized = False
         self._hass = hass
         self.observer = Observer(self)
         self.options = hub_options
@@ -39,8 +39,22 @@ class Hub:
         self.trackerentities.extend(self.options.indoor_tempsensors)
         self.trackerentities.extend(self.options.outdoor_tempsensors)
         self.states.initialize_values()
-        self.is_initialized = True
         async_track_state_change(hass, self.trackerentities, self.state_changed)
+
+    @property
+    def is_initialized(self) -> bool:
+        if self._is_initialized:
+            return True
+        return self._check_initialized()
+
+    def _check_initialized(self) -> bool:
+        if all([
+            self.nordpool.is_initialized
+        ]):
+            self._is_initialized = True
+            self.observer.activate()
+            return True
+        return False
 
     @callback
     async def state_changed(self, entity_id, old_state, new_state):

@@ -7,7 +7,7 @@ from custom_components.peaqhvac.service.hub.trend import Gradient
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.waterbooster_model import WaterBoosterModel
-
+from custom_components.peaqhvac.service.hvac.water_heater.water_peak import get_water_peak
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
 _LOGGER = logging.getLogger(__name__)
@@ -93,49 +93,17 @@ class WaterHeater(IHeater):
         return Demand.NoDemand
 
     def _get_water_peak(self, hour: int) -> bool:
-        def __condition1() -> bool:
-            try:
-                cond1  = all([
-                _prices[hour] == min(_prices),
-                datetime.now().minute > 20
-            ])
-                if self._hvac.hub.sensors.peaqev_installed:
-                    return all([
-                        cond1,
-                        self._hvac.hub.sensors.peaqev_facade.average_this_month > _prices[hour]
-                    ])
-                else:
-                    return cond1
-            except Exception as e:
-                _LOGGER.debug(f"Condition1 failed: {e}")
-
-        def __condition2() -> bool:
-            try:
-                return all([
-                    _prices[hour + 1] == min(_prices),
-                    _prices[hour + 1] / _prices[hour] >= 0.7,
-                    datetime.now().minute >= 30
-                ])
-            except Exception as e:
-                _LOGGER.debug(f"Condition2 failed: {e}")
-
-        if time.time() - self._wait_timer_peak > WAITTIMER_TIMEOUT:
-            try:
-                _prices = self._get_pricelist_combined()
-                ret = all([
-                    any([
-                        __condition1(),
-                        __condition2()
-                    ]),
-                    _prices[hour] < stat.mean(_prices) / 2
-                ])
-                if ret:
-                    self._wait_timer_peak = time.time()
-                return ret
-            except Exception as e:
-                _LOGGER.debug(f"Could not calc peak water hours for hour {hour}. pricelist is {len(_prices)} long, {e}")
-            return False
-
+        if time.time() - self._wait_timer_peak > WAITTIMER_TIMEOUT and self._hvac.hub.is_initialized:
+            _prices = self._get_pricelist_combined()
+            avg_monthly = None
+            if self._hvac.hub.sensors.peaqev_installed:
+                avg_monthly = self._hvac.hub.sensors.peaqev_facade.average_this_month
+            ret = get_water_peak(hour, _prices, avg_monthly)
+            if ret:
+                self._wait_timer_peak = time.time()
+            return ret
+        return False
+    
     def _get_pricelist_combined(self) -> list:
         _prices = self._hvac.hub.nordpool.prices
         if self._hvac.hub.nordpool.prices_tomorrow is not None:
