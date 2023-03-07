@@ -137,27 +137,8 @@ class OffsetCoordinator:
         return int(round(ret, 0))
 
     def _update_model(self) -> None:
-        self.model.peaks_today = identify_peaks(self.prices)
+        avg_monthly = 0
+        if self._hub.sensors.peaqev_installed:
+            avg_monthly = self._hub.sensors.peaqev_facade.average_this_month
+        self.model.peaks_today = identify_peaks(self.prices, avg_monthly)
 
-    # #in use?
-    # def _getaverage(self, prices: list, prices_tomorrow: list = None) -> float:
-    #     try:
-    #         total = prices
-    #         self.model.peaks_today = identify_peaks(prices) #refactor
-    #         prices_tomorrow_cleaned = Offset._sanitize_pricelists(prices_tomorrow)
-    #         if len(prices_tomorrow_cleaned) == 24:
-    #             total.extend(prices_tomorrow_cleaned)
-    #         return mean(total)
-    #     except Exception as e:
-    #         _LOGGER.exception(f"Could not set offset. prices: {prices}, prices_tomorrow: {prices_tomorrow}. {e}")
-    #         return 0.0
-    # #in use?
-
-    # @staticmethod
-    # def _sanitize_pricelists(inputlist) -> list:
-    #     if inputlist is None or len(inputlist) < 24:
-    #         return []
-    #     for i in inputlist:
-    #         if not isinstance(i, (float, int)):
-    #             return []
-    #     return inputlist

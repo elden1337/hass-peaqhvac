@@ -1,8 +1,10 @@
 from typing import Tuple
 
-def identify_peaks(prices: list) -> list[int]:
+def identify_peaks(prices: list, monthly_average: float = 0) -> list[int]:
     ret = []
     for idx, p in enumerate(prices):
+        if p < monthly_average:
+            continue
         if idx == 0 or idx == len(prices) - 1:
             if p == max(prices):
                 ret.append(idx)
