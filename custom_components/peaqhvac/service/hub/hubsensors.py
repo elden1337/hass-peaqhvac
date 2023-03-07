@@ -21,10 +21,10 @@ class HubSensors:
         self.peaq_enabled = HubMember(initval=options.misc_options.enabled_on_boot, data_type=bool)
         self.hvac_tolerance = options.hvac_tolerance
         self.average_temp_indoors = Average(entities=options.indoor_tempsensors)
-        self.average_temp_outdoors = Average(entities=options.outdoor_tempsensors, observer="temperature outdoors changed", hub=hub)
+        self.average_temp_outdoors = Average(entities=options.outdoor_tempsensors, observer_message="temperature outdoors changed", hub=hub)
         self.temp_trend_indoors = Gradient(max_samples=20, max_age=7200, precision=1)
         self.temp_trend_outdoors = Gradient(max_samples=20, max_age=7200, precision=1)
-        self.set_temp_indoors = TargetTemp(hub=hub)
+        self.set_temp_indoors = TargetTemp(observer_message="set temperature changed",hub=hub)
 
         if peaqev_discovered:
             self.peaqev_installed = True

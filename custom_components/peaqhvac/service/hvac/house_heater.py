@@ -60,10 +60,16 @@ class HouseHeater(IHeater):
     @property
     def dm_lower(self) -> bool:
         if self._hvac.hub.sensors.peaqev_installed:
-            if self._hvac.hvac_dm <= -700:
+            if self._hvac.hvac_dm <= -600:
                 _LOGGER.debug("Lowering offset low degree minutes.")
                 return True
         return False
+
+    def _tjekrjle(self):
+        if self._hvac.hvac_dm <= -600:
+            _LOGGER.debug("Lowering offset low degree minutes.")
+            if self._hvac.hub.sensors.average_temp_outdoors.value >= -12:
+                _LOGGER.debug("Vent-boosting low degree minutes.")
 
     @property
     def addon_or_peak_lower(self) -> bool:
@@ -72,7 +78,7 @@ class HouseHeater(IHeater):
     def _temporarily_lower_offset(self) -> bool:
         if time.time() - self._wait_timer_breach > WAITTIMER_TIMEOUT:
             if any([
-                self._temp_lower_offset_threshold(),
+                self._lower_offset_threshold_breach(),
                 self._temp_lower_offset_addon()
             ]):
                 return True
@@ -109,7 +115,7 @@ class HouseHeater(IHeater):
             return True
         return False
 
-    def _temp_lower_offset_threshold(self) -> bool:
+    def _lower_offset_threshold_breach(self) -> bool:
         if all([
             self._hvac.hub.sensors.peaqev_installed,
             30 <= datetime.now().minute < 58,
@@ -188,23 +194,23 @@ class HouseHeater(IHeater):
         return _indoors - _set_temp
 
     def _get_temp_extremas(self) -> float:
-        low_diffs = []
-        high_diffs = []
+        _diffs = [], []
         set_temp = self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(
             self._hvac.hub.sensors.average_temp_indoors.value)
         for t in self._hvac.hub.sensors.average_temp_indoors.all_values:
             _diff = set_temp - t
             if _diff > 0:
-                low_diffs.append(_diff)
+                _diffs[0].append(_diff)
             elif _diff < 0:
-                high_diffs.append(_diff)
-        if len(low_diffs) == len(high_diffs):
+                _diffs[1].append(_diff)
+        if len(_diffs[0]) == len(_diffs[1]):
             return 0
-        _tolerance = self._determine_tolerance(len(low_diffs) > len(high_diffs))
-        if len(low_diffs) > len(high_diffs):
-            ret = stat.mean(low_diffs) - _tolerance
+        _cold = len(_diffs[0]) > len(_diffs[1])
+        _tolerance = self._determine_tolerance(_cold)
+        if len(_diffs[0]) > len(_diffs[1]):
+            ret = stat.mean(_diffs[0]) - _tolerance
         else:
-            ret = stat.mean(high_diffs) + _tolerance
+            ret = stat.mean(_diffs[1]) + _tolerance
         return round(ret, 2)
 
     def _get_temp_trend_offset(self) -> float:
@@ -248,7 +254,7 @@ class HouseHeater(IHeater):
                     self._hvac.hub.sensors.average_temp_outdoors.value >= -5,
                 ]),
                 all([
-                    self._hvac.hvac_dm <= -700,
+                    self._hvac.hvac_dm <= -600,
                     self._hvac.hub.sensors.average_temp_outdoors.value >= -12
                 ])
             ]):

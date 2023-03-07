@@ -7,6 +7,16 @@ from typing import Tuple
 _LOGGER = logging.getLogger(__name__)
 COMMAND_WAIT = 3
 
+class ObserverBroadcaster:
+    def __init__(self, message: str, hub):
+        self._observer_message = message
+        self.hub = hub
+
+    def _broadcast_changes(self):
+        if self._observer_message is not None:
+            self.hub.observer.broadcast(self._observer_message)
+            
+
 class Observer:
     def __init__(self, hub):
         self._subscribers: dict = {}

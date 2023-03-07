@@ -11,6 +11,7 @@ class Entities(Enum):
     Prediction = 1
     TotalEnergyAccumulated = 2
     Offsets = 3
+    AverageMonthlyPrice = 4
 
 ENTITIES = {
     Entities.Threshold: {
@@ -28,6 +29,10 @@ ENTITIES = {
     Entities.Offsets: {
         "entity": "sensor.peaqev_hour_controller",
         "attributes": ["offsets"]
+    },
+    Entities.AverageMonthlyPrice: {
+        "entity": "sensor.peaqev_hour_controller",
+        "attributes": ["nordpool_average_this_month"]
     }
 }
 
@@ -62,6 +67,15 @@ class PeaqevFacade:
         if data is not None:
             return float(data["state"]) < float(data["start_threshold"])
         return False
+
+    @property
+    def average_this_month(self) -> float:
+        data = self._get_state(ENTITIES[Entities.AverageMonthlyPrice])
+        if data is not None:
+            dd = data["nordpool_average_this_month"].split(' ')[0]
+            return float(dd)
+        return 0
+        
 
     def _get_state(self, entity_input: dict):
         _entity = entity_input["entity"]

@@ -95,10 +95,17 @@ class WaterHeater(IHeater):
     def _get_water_peak(self, hour: int) -> bool:
         def __condition1() -> bool:
             try:
-                return all([
+                cond1  = all([
                 _prices[hour] == min(_prices),
                 datetime.now().minute > 20
             ])
+                if self._hvac.hub.sensors.peaqev_installed:
+                    return all([
+                        cond1,
+                        self._hvac.hub.sensors.peaqev_facade.average_this_month > _prices[hour]
+                    ])
+                else:
+                    return cond1
             except Exception as e:
                 _LOGGER.debug(f"Condition1 failed: {e}")
 
@@ -150,9 +157,6 @@ class WaterHeater(IHeater):
             _LOGGER.debug("Current hour is identified as a good hour to boost water")
             self.booster_model.boost = True
             self._toggle_boost(timer_timeout=3600)
-
-        # if self._get_current_offset() <= 0:
-        #     self._toggle_hotwater_boost(LOWTEMP_THRESHOLD)
         if self._get_current_offset() > 0 and datetime.now().hour < 22:
             self._toggle_hotwater_boost(HIGHTEMP_THRESHOLD)
 

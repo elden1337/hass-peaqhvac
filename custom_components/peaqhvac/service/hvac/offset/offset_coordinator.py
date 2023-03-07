@@ -32,6 +32,7 @@ class OffsetCoordinator:
         self._hub.observer.add("prices changed", self.update_prices)
         self._hub.observer.add("prognosis changed", self.update_prognosis)
         self._hub.observer.add("hvac preset changed", self.update_preset)
+        self._hub.observer.add("set temperature changed", self._set_offset)
 
     @property
     def prices(self) -> list:
