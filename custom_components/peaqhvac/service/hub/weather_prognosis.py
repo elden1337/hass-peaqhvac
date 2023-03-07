@@ -17,8 +17,12 @@ class WeatherPrognosis:
         self._hvac_prognosis_list: list = []
         self._current_temperature = 1000
         self.entity = ""
-        self.initialized: bool = False
+        self._is_initialized: bool = False
         self._setup_weather_prognosis()
+
+    @property
+    def is_initialized(self) -> bool:
+        return self._is_initialized
 
     @property
     def prognosis(self) -> list:
@@ -35,7 +39,7 @@ class WeatherPrognosis:
             if len(_ent) == 1:
                 self.entity = _ent[0]
                 self.update_weather_prognosis()
-                self.initialized = True
+                self._is_initialized = True
             else:
                 pass
         except Exception as e:
@@ -43,7 +47,7 @@ class WeatherPrognosis:
             _LOGGER.error(msg)
 
     def update_weather_prognosis(self):
-        if self.initialized:
+        if self.is_initialized:
             ret = self._hass.states.get(self.entity)
             if ret is not None:
                 try:
@@ -62,25 +66,24 @@ class WeatherPrognosis:
         else:
             _LOGGER.debug("Tried to update weather-prognosis but the class is not initialized yet.")
 
-    def get_hvac_prognosis(self, current_temperature: float):
+    def get_hvac_prognosis(self, current_temperature: float) -> list:
         # if current_temperature == self._current_temperature:
         #     return
+        ret = []
+        if not self.is_initialized:
+            return ret
         try:
             self._current_temperature = float(current_temperature)
         except Exception as e:
             _LOGGER.debug(f"Could not parse temperature as float: {e}")
-            return
-        ret = []
-        if not self.initialized:
-            return
+            return ret
         corrected_temp_delta = 0
         now = datetime.now()
         thishour = datetime(now.year, now.month, now.day, now.hour, 0, 0)
 
         valid_progs = [p for idx, p in enumerate(self.prognosis_list) if p.DT >= thishour]
         if len(valid_progs) == 0:
-            _LOGGER.debug("No prognosis available")
-            return
+            return ret
         for p in valid_progs:
             c = p.DT - thishour
             if c.seconds == 0:

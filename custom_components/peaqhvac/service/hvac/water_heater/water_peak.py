@@ -1,7 +1,7 @@
 import time
 import logging
 from datetime import datetime
-from stat import mean
+import statistics
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ def get_water_peak(hour: int, prices:list, avg_monthly_price: float = None) -> b
                 __condition1(hour, prices, avg_monthly_price),
                 __condition2(hour, prices)
             ]),
-            prices[hour] < mean(prices) / 2
+            prices[hour] < statistics.mean(prices) / 2
         ])
         return ret
     except Exception as e:

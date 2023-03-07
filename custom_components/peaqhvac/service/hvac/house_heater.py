@@ -4,7 +4,7 @@ from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from datetime import datetime
 import logging
-import statistics as stat
+import statistics
 import time
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 
@@ -208,9 +208,9 @@ class HouseHeater(IHeater):
         _cold = len(_diffs[0]) > len(_diffs[1])
         _tolerance = self._determine_tolerance(_cold)
         if len(_diffs[0]) > len(_diffs[1]):
-            ret = stat.mean(_diffs[0]) - _tolerance
+            ret = statistics.mean(_diffs[0]) - _tolerance
         else:
-            ret = stat.mean(_diffs[1]) + _tolerance
+            ret = statistics.mean(_diffs[1]) + _tolerance
         return round(ret, 2)
 
     def _get_temp_trend_offset(self) -> float:

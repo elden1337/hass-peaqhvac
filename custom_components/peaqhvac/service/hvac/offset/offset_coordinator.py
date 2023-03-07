@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from statistics import mean
 from typing import Tuple
 from datetime import datetime
 from custom_components.peaqhvac.service.hvac.offset.peakfinder import identify_peaks, smooth_transitions

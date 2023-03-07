@@ -31,8 +31,8 @@ class Hub:
         self.states = StateChanges(self, self._hass)
         self.hvac = HvacFactory.create(self._hass, self.options, self)
         self.nordpool = NordPoolUpdater(self._hass, self)
-        self.offset = OffsetCoordinator(self)
         self.prognosis = WeatherPrognosis(self)
+        self.offset = OffsetCoordinator(self)
         self.options.hub = self
         self.trackerentities = []
         self.trackerentities.append(self.nordpool.nordpool_entity)
@@ -49,7 +49,8 @@ class Hub:
 
     def _check_initialized(self) -> bool:
         if all([
-            self.nordpool.is_initialized
+            self.nordpool.is_initialized, 
+            self.prognosis.is_initialized
         ]):
             self._is_initialized = True
             self.observer.activate()
