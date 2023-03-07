@@ -72,11 +72,11 @@ class OffsetCoordinator:
 
     def _update_prices_internal(self) -> None:
         if not self._hub.sensors.peaqev_installed:
-            self.hours.prices = self._hub.nordpool.prices
-            self.hours.prices_tomorrow = self._hub.nordpool.prices_tomorrow
+            self.hours.prices = self._hub.nordpool.prices[:]
+            self.hours.prices_tomorrow = self._hub.nordpool.prices_tomorrow[:]
         else:
-            self._prices = self._hub.nordpool.prices
-            self._prices_tomorrow = self._hub.nordpool.prices_tomorrow
+            self._prices = self._hub.nordpool.prices[:]
+            self._prices_tomorrow = self._hub.nordpool.prices_tomorrow[:]
             if len(self._hub.nordpool.prices) > 24:
                 _LOGGER.debug(f"nordpool prices being updated are {len(self._hub.nordpool.prices)} long.")
         self._set_offset()

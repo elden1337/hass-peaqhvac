@@ -1,9 +1,10 @@
 from typing import Tuple
+import statistics
 
 def identify_peaks(prices: list, monthly_average: float = 0) -> list[int]:
     ret = []
     for idx, p in enumerate(prices):
-        if p < monthly_average:
+        if p < monthly_average or p < statistics.mean(prices):
             continue
         if idx == 0 or idx == len(prices) - 1:
             if p == max(prices):
