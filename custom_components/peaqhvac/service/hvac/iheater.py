@@ -37,10 +37,6 @@ class IHeater(ABC):
     def control_module(self, val) -> None:
         self._control_module.value = val
 
-    @abstractmethod
-    def get_current_offset(self, offsets: dict) -> Tuple[int,bool]:
-        pass
-
     def _get_demand_for_current_hour(self) -> Demand:
         # if vacation or similar, return NoDemand
         pass
