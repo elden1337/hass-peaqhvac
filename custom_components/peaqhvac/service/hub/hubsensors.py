@@ -24,7 +24,7 @@ class HubSensors:
         self.average_temp_outdoors = Average(entities=options.outdoor_tempsensors, observer_message="temperature outdoors changed", hub=hub)
         self.temp_trend_indoors = Gradient(max_samples=20, max_age=7200, precision=1)
         self.temp_trend_outdoors = Gradient(max_samples=20, max_age=7200, precision=1)
-        self.set_temp_indoors = TargetTemp(observer_message="set temperature changed",hub=hub)
+        self.set_temp_indoors = TargetTemp(observer_message="set temperature changed", hub=hub)
 
         if peaqev_discovered:
             self.peaqev_installed = True
