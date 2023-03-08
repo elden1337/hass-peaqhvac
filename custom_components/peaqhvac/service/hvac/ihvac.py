@@ -30,6 +30,7 @@ class IHvac:
     def __init__(self, hass: HomeAssistant, hub):
         self.hub = hub
         self._hass = hass
+        self._force_update: bool = False
         self.house_heater = HouseHeater(hvac=self)
         self.water_heater = WaterHeater(hvac=self)
         self.periodic_update_timers: dict = {
@@ -46,9 +47,10 @@ class IHvac:
             if self.model.current_offset_dict == {}:
                 self.get_offsets()
             _hvac_offset = self.hvac_offset
-            new_offset = self.house_heater.get_current_offset(self.model.current_offset_dict)
+            new_offset, force_update = self.house_heater.get_current_offset(self.model.current_offset_dict)
             if new_offset != self.current_offset:
                 self.current_offset = new_offset
+                self._force_update = force_update
             if self.current_offset != _hvac_offset:
                 return True
             return False
@@ -112,18 +114,21 @@ class IHvac:
         await self.request_periodic_updates()
 
     async def _ready_to_update(self, operation) -> bool:
-        if operation is HvacOperations.WaterBoost:
-            return time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation]
-        if operation is HvacOperations.VentBoost:
-            return time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation]
-        if operation is HvacOperations.Offset:
-            return any([
-                time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation],
-                datetime.now().minute == 0,
-                self.house_heater.dm_lower,
-                self.house_heater.addon_or_peak_lower
-            ])
-        return False
+        match operation:
+            case HvacOperations.WaterBoost:
+                return time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation]
+            case HvacOperations.VentBoost:
+                return time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation]
+            case HvacOperations.Offset:
+                if self._force_update:
+                    self._force_update = False
+                    return True
+                return any([
+                    time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation],
+                    datetime.now().minute == 0
+                ])
+            case _:
+                return False
 
     async def request_periodic_updates(self) -> None:
         if self.hub.hvac.water_heater.control_module:

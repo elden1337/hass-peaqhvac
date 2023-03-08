@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Tuple
 
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
@@ -11,7 +12,7 @@ from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 _LOGGER = logging.getLogger(__name__)
 HEATBOOST_TIMER = 7200
 WAITTIMER_TIMEOUT = 240
-
+LOW_DEGREE_MINUTES = -600
 
 class HouseHeater(IHeater):
     def __init__(self, hvac):
@@ -57,56 +58,39 @@ class HouseHeater(IHeater):
     def current_temp_trend_offset(self):
         return self._get_temp_trend_offset()
 
-    @property
-    def dm_lower(self) -> bool:
-        if self._hvac.hub.sensors.peaqev_installed:
-            if self._hvac.hvac_dm <= -600:
-                _LOGGER.debug("Lowering offset low degree minutes.")
-                return True
-        return False
-
-    def _tjekrjle(self):
-        if self._hvac.hvac_dm <= -600:
-            _LOGGER.debug("Lowering offset low degree minutes.")
-            if self._hvac.hub.sensors.average_temp_outdoors.value >= -12:
-                _LOGGER.debug("Vent-boosting low degree minutes.")
-
-    @property
-    def addon_or_peak_lower(self) -> bool:
-        return self._temporarily_lower_offset()
-
-    def _temporarily_lower_offset(self) -> bool:
+    def _temporarily_lower_offset(self, input_offset) -> int:
         if time.time() - self._wait_timer_breach > WAITTIMER_TIMEOUT:
             if any([
                 self._lower_offset_threshold_breach(),
                 self._temp_lower_offset_addon()
             ]):
-                return True
-        return False
+                _LOGGER.debug("Lowering offset -2.")
+                input_offset -= 2
+        elif self._hvac.hub.sensors.peaqev_installed:
+            if self._hvac.hvac_dm <= LOW_DEGREE_MINUTES:
+                _LOGGER.debug("Lowering offset -1.")
+                input_offset -= 1
+        return input_offset
 
-    def get_current_offset(self, offsets: dict) -> int:
+    def get_current_offset(self, offsets: dict) -> Tuple[int,bool]:
         if self._hvac.hub.offset.max_price_lower(self._get_tempdiff()):
-            return -10
-        else:
-            desired_offset = self._set_calculated_offset(offsets)
-
-        if all([
-            desired_offset <= 0,
-            self.current_tempdiff <= 0
-        ]):
+            return -10, True
+        desired_offset = self._set_calculated_offset(offsets)
+        _force_update: bool = False
+        if desired_offset <= 0 and  self.current_tempdiff <= 0:
             return self._set_lower_offset_strong(
                 current_offset=self._current_offset,
                 temp_diff=self.current_tempdiff,
                 temp_trend=self._get_temp_trend_offset()
-            )
+            ), _force_update
 
         if self._hvac.hub.offset.model.raw_offsets != self._hvac.hub.offset.model.calculated_offsets and desired_offset < 0:
-            return self._hvac.hub.offset.adjust_to_threshold(desired_offset)
-        if self.dm_lower:
-            desired_offset -= 1
-        if self.addon_or_peak_lower:
-            desired_offset -= 2
-        return self._hvac.hub.offset.adjust_to_threshold(desired_offset)
+            return self._hvac.hub.offset.adjust_to_threshold(desired_offset), _force_update
+        lowered_offset = self._temporarily_lower_offset(desired_offset)
+        if lowered_offset < desired_offset:
+            desired_offset = lowered_offset
+            _force_update = True
+        return self._hvac.hub.offset.adjust_to_threshold(desired_offset), _force_update
 
     def _temp_lower_offset_addon(self) -> bool:
         if self._hvac.hvac_electrical_addon > 0:
@@ -139,8 +123,7 @@ class HouseHeater(IHeater):
         if dm <= _compressor_start:
             return Demand.HighDemand
         else:
-            _LOGGER.debug(
-                f"Compressor_start: {_compressor_start}, delta-return: {self._hvac.delta_return_temp} and pushed DM: {dm}. Could not calculate demand.")
+            _LOGGER.debug(f"Compressor_start: {_compressor_start}, delta-return: {self._hvac.delta_return_temp} and pushed DM: {dm}. Could not calculate demand.")
             return Demand.NoDemand
 
     def _set_calculated_offset(self, offsets: dict) -> int:
@@ -245,23 +228,22 @@ class HouseHeater(IHeater):
             self._hvac.hub.sensors.temp_trend_indoors.is_clean,
             time.time() - self._wait_timer_boost > WAITTIMER_TIMEOUT
         ]):
-            ret = True
-            if any([
-                all([
+            if all([
                     self._get_tempdiff() > 1,
                     self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
                     self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
                     self._hvac.hub.sensors.average_temp_outdoors.value >= -5,
-                ]),
-                all([
-                    self._hvac.hvac_dm <= -600,
-                    self._hvac.hub.sensors.average_temp_outdoors.value >= -12
-                ])
-            ]):
+                ]):
+                _LOGGER.debug("Vent boosting because of warmth.")
                 self._wait_timer_boost = time.time()
-            else:
-                ret = False
-            return ret
+                return True
+            if all([
+                    self._hvac.hvac_dm <= LOW_DEGREE_MINUTES,
+                    self._hvac.hub.sensors.average_temp_outdoors.value >= -12
+            ]):
+                _LOGGER.debug("Vent boosting because of low degree minutes.")
+                self._wait_timer_boost = time.time()
+                return True
         return False
 
     @staticmethod
@@ -270,4 +252,3 @@ class HouseHeater(IHeater):
         ret = max(-5, calc)
         return round(ret, 0)
 
-    # def compare to water demand
