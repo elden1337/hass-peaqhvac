@@ -14,6 +14,7 @@ HEATBOOST_TIMER = 7200
 WAITTIMER_TIMEOUT = 240
 LOW_DEGREE_MINUTES = -600
 
+
 class HouseHeater(IHeater):
     def __init__(self, hvac):
         self._hvac = hvac
@@ -72,12 +73,12 @@ class HouseHeater(IHeater):
                 input_offset -= 1
         return input_offset
 
-    def get_current_offset(self, offsets: dict) -> Tuple[int,bool]:
+    def get_current_offset(self, offsets: dict) -> Tuple[int, bool]:
         if self._hvac.hub.offset.max_price_lower(self._get_tempdiff()):
             return -10, True
         desired_offset = self._set_calculated_offset(offsets)
         _force_update: bool = False
-        if desired_offset <= 0 and  self.current_tempdiff <= 0:
+        if desired_offset <= 0 and self.current_tempdiff <= 0:
             return self._set_lower_offset_strong(
                 current_offset=self._current_offset,
                 temp_diff=self.current_tempdiff,
@@ -123,7 +124,8 @@ class HouseHeater(IHeater):
         if dm <= _compressor_start:
             return Demand.HighDemand
         else:
-            _LOGGER.debug(f"Compressor_start: {_compressor_start}, delta-return: {self._hvac.delta_return_temp} and pushed DM: {dm}. Could not calculate demand.")
+            _LOGGER.debug(
+                f"Compressor_start: {_compressor_start}, delta-return: {self._hvac.delta_return_temp} and pushed DM: {dm}. Could not calculate demand.")
             return Demand.NoDemand
 
     def _set_calculated_offset(self, offsets: dict) -> int:
@@ -173,7 +175,8 @@ class HouseHeater(IHeater):
 
     def _get_tempdiff(self) -> float:
         _indoors = self._hvac.hub.sensors.average_temp_indoors.value
-        _set_temp = self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(self._hvac.hub.sensors.average_temp_indoors.value)
+        _set_temp = self._hvac.hub.sensors.set_temp_indoors.adjusted_set_temp(
+            self._hvac.hub.sensors.average_temp_indoors.value)
         return _indoors - _set_temp
 
     def _get_temp_extremas(self) -> float:
@@ -229,17 +232,17 @@ class HouseHeater(IHeater):
             time.time() - self._wait_timer_boost > WAITTIMER_TIMEOUT
         ]):
             if all([
-                    self._get_tempdiff() > 1,
-                    self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
-                    self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
-                    self._hvac.hub.sensors.average_temp_outdoors.value >= -5,
-                ]):
+                self._get_tempdiff() > 1,
+                self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
+                self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
+                self._hvac.hub.sensors.average_temp_outdoors.value >= 0,
+            ]):
                 _LOGGER.debug("Vent boosting because of warmth.")
                 self._wait_timer_boost = time.time()
                 return True
             if all([
-                    self._hvac.hvac_dm <= LOW_DEGREE_MINUTES,
-                    self._hvac.hub.sensors.average_temp_outdoors.value >= -12
+                self._hvac.hvac_dm <= LOW_DEGREE_MINUTES,
+                self._hvac.hub.sensors.average_temp_outdoors.value >= -12
             ]):
                 _LOGGER.debug("Vent boosting because of low degree minutes.")
                 self._wait_timer_boost = time.time()
@@ -251,4 +254,3 @@ class HouseHeater(IHeater):
         calc = sum([current_offset, temp_diff, temp_trend])
         ret = max(-5, calc)
         return round(ret, 0)
-
