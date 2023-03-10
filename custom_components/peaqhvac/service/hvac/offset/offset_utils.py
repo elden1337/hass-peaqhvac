@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,3 +24,13 @@ def offset_per_day(
                 if indoors_preset is HvacPresets.Away:
                     ret[k] -= 1
         return ret.values()
+
+def max_price_lower_internal(tempdiff: float, peaks_today: list) -> bool:
+    """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
+    if tempdiff >= 0:
+        if datetime.now().hour in peaks_today:
+            return True
+        elif datetime.now().hour < 23 and datetime.now().minute > 40:
+            if datetime.now().hour + 1 in peaks_today:
+                return True
+    return False

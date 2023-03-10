@@ -4,7 +4,7 @@ import logging
 from typing import Tuple
 from datetime import datetime
 from custom_components.peaqhvac.service.hvac.offset.peakfinder import identify_peaks, smooth_transitions
-from custom_components.peaqhvac.service.hvac.offset.offset_utils import offset_per_day
+from custom_components.peaqhvac.service.hvac.offset.offset_utils import offset_per_day, max_price_lower_internal
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
 from custom_components.peaqhvac.service.models.offset_model import OffsetModel
 
@@ -19,18 +19,13 @@ class OffsetCoordinator:
         self._hub = hub
         self.model = OffsetModel(hub)
         self.internal_preset = None
-        if not self._hub.sensors.peaqev_installed:
-            _LOGGER.debug("initializing an hourselection-instance")
-            self.hours = Hoursselection()
-        else:
-            _LOGGER.debug("found peaqev and will not init hourelection")
-            self.hours = None
-            self._prices = None
-            self._prices_tomorrow = None
-            self._offsets = None
-        self._hub.observer.add("prices changed", self.update_prices)
-        self._hub.observer.add("prognosis changed", self.update_prognosis)
-        self._hub.observer.add("hvac preset changed", self.update_preset)
+        self.hours = self._set_hours_type()
+        self._prices = None
+        self._prices_tomorrow = None
+        self._offsets = None
+        self._hub.observer.add("prices changed", self._update_prices)
+        self._hub.observer.add("prognosis changed", self._update_prognosis)
+        self._hub.observer.add("hvac preset changed", self._update_preset)
         self._hub.observer.add("set temperature changed", self._set_offset)
 
     @property
@@ -59,14 +54,14 @@ class OffsetCoordinator:
             self._set_offset()
         return self.model.calculated_offsets
 
-    def update_prognosis(self) -> None:
+    def _update_prognosis(self) -> None:
         self.model.prognosis = self._hub.prognosis.prognosis
         self._set_offset()
 
-    def update_prices(self):
+    def _update_prices(self):
         return self._update_prices_internal()
     
-    def update_preset(self) -> None:
+    def _update_preset(self) -> None:
         self.internal_preset = self._hub.sensors.set_temp_indoors.preset
         self._set_offset()
 
@@ -77,22 +72,14 @@ class OffsetCoordinator:
         else:
             self._prices = self._hub.nordpool.prices[:]
             self._prices_tomorrow = self._hub.nordpool.prices_tomorrow[:]
-            if len(self._hub.nordpool.prices) > 24:
-                _LOGGER.debug(f"nordpool prices being updated are {len(self._hub.nordpool.prices)} long.")
         self._set_offset()
         self._update_model()
 
-    def max_price_lower(self, tempdiff) -> bool:
+    def max_price_lower(self, tempdiff: float) -> bool:
         """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
-        if tempdiff >= 0:
-            if datetime.now().hour in self.model.peaks_today:
-                return True
-            elif datetime.now().hour < 23 and datetime.now().minute > 45:
-                if datetime.now().hour + 1 in self.model.peaks_today:
-                    return True
-        return False
+        return max_price_lower_internal(tempdiff, self.model.peaks_today)
 
-    def _update_offset(self,weather_adjusted_today:dict|None=None) -> Tuple[dict, dict]:
+    def _update_offset(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
         try:
             d = self.offsets
             if weather_adjusted_today is None:
@@ -142,3 +129,9 @@ class OffsetCoordinator:
             avg_monthly = self._hub.sensors.peaqev_facade.average_this_month
         self.model.peaks_today = identify_peaks(self.prices, avg_monthly)
 
+    def _set_hours_type(self):
+        if not self._hub.sensors.peaqev_installed:
+            _LOGGER.debug("initializing an hourselection-instance")
+            return Hoursselection()
+        _LOGGER.debug("found peaqev and will not init hourelection")
+        return None

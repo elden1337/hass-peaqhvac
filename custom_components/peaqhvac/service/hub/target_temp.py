@@ -54,6 +54,15 @@ class TargetTemp(ObserverBroadcaster):
             self.hub.observer.broadcast("hvac preset changed")
         self._set_temperature_and_tolerances()
 
+    @property
+    def adjusted_temp(self) -> float:
+        """adjust the set temp slightly if below -5C outside"""
+        ret = self.value
+        _outdoors = self.hub.sensors.average_temp_outdoors.value
+        if _outdoors < -5 and self.preset is not HvacPresets.Normal:
+            ret += round(((int(_outdoors - -5) / 1.5) * 0.1), 1)
+        return max(ret, 15)
+
     def _set_temperature_and_tolerances(self):
         self._init_set_temp(preset=self.preset)
         self._init_tolerances(preset=self.preset)
@@ -66,14 +75,6 @@ class TargetTemp(ObserverBroadcaster):
         _tolerances = HvacPresets.get_tolerances(preset)
         self._min_tolerance = _tolerances[0]
         self._max_tolerance = _tolerances[1]
-
-    def adjusted_set_temp(self) -> float:
-        """adjust the set temp slightly if below -5C outside"""
-        ret = self.value
-        _outdoors = self.hub.sensors.average_temp_outdoors.value
-        if _outdoors < -5 and self.preset is not HvacPresets.Normal:
-            ret += round(((int(_outdoors - -5) / 1.5) * 0.1), 1)
-        return max(ret, 15)
 
     def adjusted_tolerances(self, offset: int) -> Tuple[float, float]:
         _max_tolerance = self.max_tolerance + (offset / 10) if offset > 0 else self.max_tolerance
