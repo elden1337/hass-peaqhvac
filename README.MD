@@ -14,7 +14,7 @@ PeaqHvac is a custom component for Nibe F-series users. As of 2022-12-20 the tes
 In future releases other brands might be added.
 
 Because of the slow response from the Nibe Uplink-api, calls are made somewhat prematurely to try and correct for this lag. 
-If peakshaving is active _(requires PeaqEv as of 0.1.1)_ this means that peaks sometimes cannot be avoided completely, but rather lessened in their emphasis.
+If peakshaving is active _(requires PeaqEv)_ this means that peaks sometimes cannot be avoided completely, but rather lessened in their emphasis.
 
 
 ## Preparations
