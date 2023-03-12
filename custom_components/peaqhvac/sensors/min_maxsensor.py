@@ -66,5 +66,11 @@ class AverageSensor(SensorBase, RestoreEntity):
         state = await super().async_get_last_state()
         if state:
             self._state = state.state
+            _all_values = state.attributes.get('values', 50)
+            if self._sensorname == AVERAGESENSOR_INDOORS:
+                self._hub.sensors.average_temp_indoors.all_values = _all_values
+            elif self._sensorname == AVERAGESENSOR_OUTDOORS:
+                self._hub.sensors.average_temp_outdoors.all_values = _all_values
+            self.update()
         else:
             self._state = 0.0

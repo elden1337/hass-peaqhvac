@@ -48,7 +48,7 @@ class Observer:
                 if q[0] in self._subscribers.keys():
                     self._dequeue_and_broadcast(q)
         elif attempt < 5:
-            self._hub.is_initialized
+            _ = self._hub.is_initialized
             attempt += 1
             return self._prepare_dequeue(attempt)
 
@@ -62,7 +62,7 @@ class Observer:
         return False
 
     def _dequeue_and_broadcast(self, command: Tuple[str, int | None]):
-        _LOGGER.debug(f"ready to broadcast: {command[0]}")
+        #_LOGGER.debug(f"ready to broadcast: {command[0]}")
         if command[1] is None or command[1] > time.time():
             if self._ok_to_broadcast(command[0]):
                 for func in self._subscribers[command[0]]:

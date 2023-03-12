@@ -21,6 +21,7 @@ class HouseHeater(IHeater):
         self._dm_compressor_start = hvac.hvac_compressor_start
         self._latest_boost = 0
         self._degree_minutes = 0
+        self._current_vent_state: bool = False
         self._current_offset = 0
         self._wait_timer_boost = 0
         self._wait_timer_breach = 0
@@ -234,17 +235,20 @@ class HouseHeater(IHeater):
                 self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
                 self._hvac.hub.sensors.average_temp_outdoors.value >= 0,
             ]):
-                _LOGGER.debug("Vent boosting because of warmth.")
-                self._wait_timer_boost = time.time()
-                return True
-            if all([
+                self._vent_boost_start("Vent boosting because of warmth.")
+            elif all([
                 self._hvac.hvac_dm <= LOW_DEGREE_MINUTES,
                 self._hvac.hub.sensors.average_temp_outdoors.value >= -12
             ]):
-                _LOGGER.debug("Vent boosting because of low degree minutes.")
-                self._wait_timer_boost = time.time()
-                return True
-        return False
+                self._vent_boost_start("Vent boosting because of low degree minutes.")
+            else:
+                self._current_vent_state = False
+        return self._current_vent_state
+
+    def _vent_boost_start(self, msg) -> None:
+        _LOGGER.debug(msg)
+        self._wait_timer_boost = time.time()
+        self._current_vent_state = True
 
     @staticmethod
     def _set_lower_offset_strong(current_offset, temp_diff, temp_trend) -> int:

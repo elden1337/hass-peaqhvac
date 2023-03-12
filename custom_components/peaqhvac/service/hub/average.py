@@ -60,6 +60,11 @@ class Average(ObserverBroadcaster):
     def all_values(self) -> list:
         return self._all_values
 
+    @all_values.setter
+    def all_values(self, val: list):
+        """warning. this replaces the values set and should only be used on startup."""
+        self._all_values = val
+
     def update_values(self, entity, value):
         try:
             floatval = float(value)
