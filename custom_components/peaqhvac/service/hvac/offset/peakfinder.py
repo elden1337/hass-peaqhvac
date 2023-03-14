@@ -1,29 +1,54 @@
 from typing import Tuple
 import statistics
 
-def identify_peaks(prices: list, monthly_average: float = 0) -> list[int]:
+def identify_peaks(prices: list) -> list[int]:
     ret = []
     for idx, p in enumerate(prices):
-        if p < monthly_average or p < statistics.mean(prices):
+        if p < statistics.mean(prices):
             continue
         if idx == 0 or idx == len(prices) - 1:
             if p == max(prices):
                 ret.append(idx)
         else:
             if all([
-                _check_deviation(p, prices[idx - 1]),
-                _check_deviation(p, prices[idx + 1])
+                _check_deviation_peaks(p, prices[idx - 1]),
+                _check_deviation_peaks(p, prices[idx + 1])
             ]):
                 ret.append(idx)
     return ret
 
 
-def _check_deviation(p: float, neighbor: float) -> bool:
+def identify_valleys(prices: list) -> list[int]:
+    ret = []
+    for idx, p in enumerate(prices):
+        if p > statistics.mean(prices):
+            continue
+        if idx == 0 or idx == len(prices) - 1:
+            if p == min(prices):
+                ret.append(idx)
+        else:
+            if all([
+                _check_deviation_valleys(p, prices[idx - 1]),
+                _check_deviation_valleys(p, prices[idx + 1])
+            ]):
+                ret.append(idx)
+    return ret
+
+
+def _check_deviation_peaks(p: float, neighbor: float) -> bool:
     if any([neighbor == 0, p == 0]):
         neighbor += 0.01
         p += 0.01
     if p > neighbor:
         return neighbor / p > 0.7
+    return False
+
+def _check_deviation_valleys(p: float, neighbor: float) -> bool:
+    if any([neighbor == 0, p == 0]):
+        neighbor += 0.01
+        p += 0.01
+    if p < neighbor:
+        return p / neighbor > 0.7
     return False
 
 

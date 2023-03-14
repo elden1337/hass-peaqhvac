@@ -124,10 +124,7 @@ class OffsetCoordinator:
         return int(round(ret, 0))
 
     def _update_model(self) -> None:
-        avg_monthly = 0
-        if self._hub.sensors.peaqev_installed:
-            avg_monthly = self._hub.sensors.peaqev_facade.average_this_month
-        self.model.peaks_today = identify_peaks(self.prices, avg_monthly)
+        self.model.peaks_today = identify_peaks(self.prices)
 
     def _set_hours_type(self):
         if not self._hub.sensors.peaqev_installed:
