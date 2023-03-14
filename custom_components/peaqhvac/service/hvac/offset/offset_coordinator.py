@@ -90,7 +90,7 @@ class OffsetCoordinator:
             else:
                 today = weather_adjusted_today.values()
             tomorrow = []
-            if len(d.get('tomorrow')):
+            if len(d.get('tomorrow', {})) > 0:
                 tomorrow = offset_per_day(
                 day_values=d.get('tomorrow'), 
                 tolerance=self.model.tolerance, 
