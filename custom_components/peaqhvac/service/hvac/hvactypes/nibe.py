@@ -28,9 +28,18 @@ class Nibe(IHvac):
             SensorType.CondenserReturn: f"sensor.nibe_{self.hub.options.systemid}_40012",
             SensorType.ElectricalAddition: f"sensor.nibe_{self.hub.options.systemid}_43084",
             SensorType.CompressorFrequency: f"sensor.nibe_{self.hub.options.systemid}_43136",
-            SensorType.DMCompressorStart: f"sensor.nibe_{self.hub.options.systemid}_47206"
+            SensorType.DMCompressorStart: f"sensor.nibe_{self.hub.options.systemid}_47206",
+            SensorType.FanSpeed:f"sensor.nibe_{self.hub.options.systemid}_10001|raw_value"
         }
         return types[sensor] if sensor is not None else self._get_sensors_for_callback(types)
+
+    @property
+    def fan_speed(self) -> float:
+        try:
+            speed = self.get_sensor(SensorType.FanSpeed)
+            return float(speed)
+        except Exception as e:
+            return 0
 
     @property
     def delta_return_temp(self):

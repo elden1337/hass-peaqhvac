@@ -225,24 +225,33 @@ class HouseHeater(IHeater):
         pass
 
     def _should_vent_boost(self) -> bool:
-        if all([
-            self._hvac.hub.sensors.temp_trend_indoors.is_clean,
-            time.time() - self._wait_timer_boost > WAITTIMER_TIMEOUT
-        ]):
+        if self._hvac.fan_speed < 100:
             if all([
-                self._get_tempdiff() > 1,
-                self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
-                self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
-                self._hvac.hub.sensors.average_temp_outdoors.value >= 0,
+                self._hvac.hub.sensors.temp_trend_indoors.is_clean,
+                time.time() - self._wait_timer_boost > WAITTIMER_TIMEOUT
             ]):
-                self._vent_boost_start("Vent boosting because of warmth.")
-            elif all([
-                self._hvac.hvac_dm <= LOW_DEGREE_MINUTES,
-                self._hvac.hub.sensors.average_temp_outdoors.value >= -12
-            ]):
-                self._vent_boost_start("Vent boosting because of low degree minutes.")
-            else:
-                self._current_vent_state = False
+                if all([
+                    self._get_tempdiff() > 1,
+                    self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
+                    self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
+                    self._hvac.hub.sensors.average_temp_outdoors.value >= 0,
+                ]):
+                    self._vent_boost_start("Vent boosting because of warmth.")
+                elif all([
+                    self._hvac.hvac_dm <= LOW_DEGREE_MINUTES,
+                    self._hvac.hub.sensors.average_temp_outdoors.value >= -12,
+                ]):
+                    self._vent_boost_start("Vent boosting because of low degree minutes.")
+                else:
+                    self._current_vent_state = False
+        elif any(
+            [
+                self._hvac.hvac_dm > LOW_DEGREE_MINUTES+100,
+                self._hvac.hub.sensors.average_temp_outdoors.value < -12,
+            ]
+        ):
+            """stop vent boosting"""
+            self._current_vent_state = False
         return self._current_vent_state
 
     def _vent_boost_start(self, msg) -> None:

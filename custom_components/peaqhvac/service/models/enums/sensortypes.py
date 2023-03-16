@@ -10,3 +10,4 @@ class SensorType(Enum):
     DMCompressorStart = 7
     HvacTemp = 8
     CondenserReturn = 9
+    FanSpeed = 10
