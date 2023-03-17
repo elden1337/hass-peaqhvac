@@ -35,6 +35,8 @@ class NordPoolUpdater:
 
     @property
     def prices(self) -> list:
+        # if len(self._prices) > 25:
+        #     raise Exception
         return self._prices
 
     @prices.setter
@@ -53,48 +55,6 @@ class NordPoolUpdater:
         if val != self._prices_tomorrow:
             self._prices_tomorrow = val
 
-    # def _update_prices(self, _today, _tomorrow) -> bool:
-    #     ret = False
-    #     if any([
-    #         self.prices != _today,
-    #         self.prices_tomorrow != _tomorrow
-    #     ]):
-    #         ret = True
-    #     self.prices = _today
-    #     self.prices_tomorrow = _tomorrow
-    #     return ret
-
-    # def update_nordpool(self):
-    #     ret = self._hass.states.get(self.nordpool_entity)
-    #     if ret is not None:
-    #         _today = []
-    #         _tomorrow = []
-    #         try:
-    #             ret_attr = list(ret.attributes.get("today"))
-    #             if 23 <= len(ret_attr) <= 25:
-    #                 _today = ret_attr
-    #             else:
-    #                 _LOGGER.error(f"Nordpool returned a faulty length of prices for today ({len(ret_attr)})")
-    #         except Exception as e:
-    #             _LOGGER.exception(f"Could not parse today's prices from Nordpool. Unsolveable error. {e}")
-    #             return
-    #         try:
-    #             ret_attr_tomorrow = list(ret.attributes.get("tomorrow"))
-    #             if (23 <= len(ret_attr_tomorrow) <= 25) or len(ret_attr_tomorrow) == 0:
-    #                 _tomorrow = ret_attr_tomorrow
-    #             else:
-    #                 _LOGGER.error(f"Nordpool returned a faulty length of prices for tomorrow ({len(ret_attr_tomorrow)})")
-    #         except Exception as e:
-    #             _LOGGER.warning(f"Couldn't parse tomorrow's prices from Nordpool. Array will be empty. {e}")
-    #
-    #         ret_attr_currency = str(ret.attributes.get("currency"))
-    #         self.currency = ret_attr_currency
-    #         self.state = ret.state
-    #         if self._update_prices(_today, _tomorrow):
-    #             self._hub.observer.broadcast("price changed")
-    #     else:
-    #         _LOGGER.error("could not get nordpool-prices")
-
     async def update_nordpool(self):
         ret = self._hass.states.get(self.nordpool_entity)
         _result = {}
@@ -111,18 +71,18 @@ class NordPoolUpdater:
                 _result["tomorrow"] = []
             _result["currency"] = str(ret.attributes.get("currency"))
             _result["state"] = ret.state
-            if await self._update_set_prices(_result):
-                self._hub.observer.broadcast("prices changed")
+            if self._update_set_prices(_result):
+                self._hub.observer.broadcast("prices changed", [self._prices, self._prices_tomorrow])
         else:
             _LOGGER.error("Could not get nordpool-prices")
 
-    async def _update_set_prices(self, result: dict) -> bool:
+    def _update_set_prices(self, result: dict) -> bool:
         ret = False
-        if self.prices != result.get("today"):
-            self.prices = result.get("today")
+        if self.prices != list(result.get("today")):
+            self.prices = list(result.get("today"))
             ret = True
-        if self.prices_tomorrow != result.get("tomorrow"):
-            self.prices_tomorrow = result.get("tomorrow")
+        if self.prices_tomorrow != list(result.get("tomorrow")):
+            self.prices_tomorrow = list(result.get("tomorrow"))
             ret = True
         self.currency = result.get("currency")
         self.state = result.get("state")

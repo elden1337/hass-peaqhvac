@@ -58,20 +58,24 @@ class OffsetCoordinator:
         self.model.prognosis = self._hub.prognosis.prognosis
         self._set_offset()
 
-    def _update_prices(self):
-        return self._update_prices_internal()
+    def _update_prices(self, prices):
+        self._update_prices_internal(prices)
     
     def _update_preset(self) -> None:
         self.internal_preset = self._hub.sensors.set_temp_indoors.preset
         self._set_offset()
 
-    def _update_prices_internal(self) -> None:
+    def _update_prices_internal(self, prices) -> None:
         if not self._hub.sensors.peaqev_installed:
-            self.hours.prices = self._hub.nordpool.prices[:]
-            self.hours.prices_tomorrow = self._hub.nordpool.prices_tomorrow[:]
+            if self.hours.prices != prices[0]:
+                self.hours.prices = prices[0]
+            if self.hours.prices_tomorrow != prices[1]:
+                self.hours.prices_tomorrow = prices[1]
         else:
-            self._prices = self._hub.nordpool.prices[:]
-            self._prices_tomorrow = self._hub.nordpool.prices_tomorrow[:]
+            if self._prices != prices[0]:
+                self._prices = prices[0]
+            if self._prices_tomorrow != prices[1]:
+                self._prices_tomorrow = prices[1]
         self._set_offset()
         self._update_model()
 
@@ -108,7 +112,7 @@ class OffsetCoordinator:
             if 23 <= len(self.prices) <= 25:
                 self.model.raw_offsets = self._update_offset()
             else:
-                _LOGGER.debug(f"Prices are not ok. length is {len(self.prices)}")
+                _LOGGER.debug(f"Prices are not ok. length is {len(self.prices)}. nordpool today len is {len(self._hub.nordpool.prices)}")
             try:
                 _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
                 self.model.calculated_offsets = self._update_offset(_weather_dict[0])
