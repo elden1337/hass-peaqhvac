@@ -67,10 +67,7 @@ class OffsetCoordinator:
 
     def _update_prices_internal(self, prices) -> None:
         if not self._hub.sensors.peaqev_installed:
-            if self.hours.prices != prices[0]:
-                self.hours.prices = prices[0]
-            if self.hours.prices_tomorrow != prices[1]:
-                self.hours.prices_tomorrow = prices[1]
+            self.hours.update_prices(prices[0], prices[1])
         else:
             if self._prices != prices[0]:
                 self._prices = prices[0]
