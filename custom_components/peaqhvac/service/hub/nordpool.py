@@ -35,14 +35,12 @@ class NordPoolUpdater:
 
     @property
     def prices(self) -> list:
-        # if len(self._prices) > 25:
-        #     raise Exception
         return self._prices
 
     @prices.setter
     def prices(self, val) -> None:
         if val != self._prices:
-            self._prices = val
+            self._prices = [v for v in val if v is not None]
             if not 20 < len(self._prices) < 25:
                 _LOGGER.error(f"pricelength is now: {len(self._prices)}")
 
@@ -53,7 +51,7 @@ class NordPoolUpdater:
     @prices_tomorrow.setter
     def prices_tomorrow(self, val) -> None:
         if val != self._prices_tomorrow:
-            self._prices_tomorrow = val
+            self._prices_tomorrow = [v for v in val if v is not None]
 
     async def update_nordpool(self):
         ret = self._hass.states.get(self.nordpool_entity)
@@ -71,12 +69,12 @@ class NordPoolUpdater:
                 _result["tomorrow"] = []
             _result["currency"] = str(ret.attributes.get("currency"))
             _result["state"] = ret.state
-            if self._update_set_prices(_result):
+            if await self._update_set_prices(_result):
                 self._hub.observer.broadcast("prices changed", [self._prices, self._prices_tomorrow])
         else:
             _LOGGER.error("Could not get nordpool-prices")
 
-    def _update_set_prices(self, result: dict) -> bool:
+    async def _update_set_prices(self, result: dict) -> bool:
         ret = False
         if self.prices != list(result.get("today")):
             self.prices = list(result.get("today"))
