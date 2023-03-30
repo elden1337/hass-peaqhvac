@@ -37,9 +37,8 @@ class IHvac:
             HvacOperations.VentBoost:  0
         }
         self.model = IHvacModel()
-        self.hub.observer.add("offset recalculation", self.get_offsets)
+        self.hub.observer.add("offset recalculation", self.update_offset)
 
-    @property
     def update_offset(self) -> bool:
         if self.hub.sensors.peaqev_installed:
             if len(self.hub.sensors.peaqev_facade.offsets.get("today", {})) < 20:
@@ -61,13 +60,14 @@ class IHvac:
                 return False
 
     def get_offsets(self) -> None:
-        ret = self.hub.offset.get_offset()
-        if ret is not None:
-            self.model.current_offset_dict = ret[0]
-            self.model.current_offset_dict_tomorrow = ret[1]
-        else:
+        if self.hub.sensors.peaqev_installed:
             self.model.current_offset_dict = self.hub.sensors.peaqev_facade.offsets.get("today", {})
             self.model.current_offset_dict_tomorrow = self.hub.sensors.peaqev_facade.offsets.get("tomorrow", {})
+        else:
+            ret = self.hub.offset.get_offset()
+            if ret is not None:
+                self.model.current_offset_dict = ret[0]
+                self.model.current_offset_dict_tomorrow = ret[1]
 
     @property
     @abstractmethod
@@ -148,7 +148,7 @@ class IHvac:
                 if await self._ready_to_update(HvacOperations.VentBoost):
                     self.model.update_list.append((HvacOperations.VentBoost, _vent_state))
                     self.model.current_vent_boost_state = _vent_state
-            if self.update_offset:
+            if self.update_offset():
                 if await self._ready_to_update(HvacOperations.Offset):
                     self.model.update_list.append((HvacOperations.Offset, self.house_heater.current_offset))
         return await self._do_periodic_updates()
