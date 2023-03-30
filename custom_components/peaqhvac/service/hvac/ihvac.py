@@ -44,22 +44,23 @@ class IHvac:
     @property
     def update_offset(self) -> bool:
         if self.hub.sensors.peaqev_installed:
-            if len(self.hub.sensors.peaqev_facade.offsets) < 1:
+            if len(self.hub.sensors.peaqev_facade.offsets.get("today", {})) < 20:
                 return False
-        try:
-            if self.model.current_offset_dict == {}:
-                self.get_offsets()
-            _hvac_offset = self.hvac_offset
-            new_offset, force_update = self.house_heater.get_current_offset(self.model.current_offset_dict)
-            if new_offset != self.current_offset:
-                self.current_offset = new_offset
-                self._force_update = force_update
-            if self.current_offset != _hvac_offset:
-                return True
-            return False
-        except Exception as e:
-            _LOGGER.exception(f"Error on updating offsets: {e}")
-            return False
+        else:
+            try:
+                if self.model.current_offset_dict == {}:
+                    self.get_offsets()
+                _hvac_offset = self.hvac_offset
+                new_offset, force_update = self.house_heater.get_current_offset(self.hub.sensors.peaqev_facade.offsets.get("today"))
+                if new_offset != self.current_offset:
+                    self.current_offset = new_offset
+                    self._force_update = force_update
+                if self.current_offset != _hvac_offset:
+                    return True
+                return False
+            except Exception as e:
+                _LOGGER.exception(f"Error on updating offsets: {e}")
+                return False
 
     def get_offsets(self) -> None:
         ret = self.hub.offset.get_offset()
