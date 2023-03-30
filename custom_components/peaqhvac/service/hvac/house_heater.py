@@ -26,6 +26,7 @@ class HouseHeater(IHeater):
         self._wait_timer_boost = 0
         self._wait_timer_breach = 0
         super().__init__(hvac=hvac)
+        #self._hvac.hub.sensors.peaqev_facade.add_callback("", self._update_degree_minutes)
 
     @property
     def is_initialized(self) -> bool:

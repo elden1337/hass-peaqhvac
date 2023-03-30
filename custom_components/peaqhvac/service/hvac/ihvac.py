@@ -43,6 +43,9 @@ class IHvac:
 
     @property
     def update_offset(self) -> bool:
+        if self.hub.sensors.peaqev_installed:
+            if len(self.hub.sensors.peaqev_facade.offsets) < 1:
+                return False
         try:
             if self.model.current_offset_dict == {}:
                 self.get_offsets()
