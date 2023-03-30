@@ -17,7 +17,6 @@ class StateChanges:
         for t in self._hub.trackerentities:
             retval = self._hass.states.get(t)
             if retval is not None:
-                _LOGGER.debug(f"Initializing {t} with {retval.state}")
                 self.update_sensor(entity=t, value=retval.state)
 
     def update_sensor(self, entity, value):
