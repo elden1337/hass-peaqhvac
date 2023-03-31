@@ -25,6 +25,8 @@ UPDATE_INTERVALS = {
 
 
 class IHvac:
+    current_offset: int = 0  # todo: remove either from here or from house_heater
+
     def __init__(self, hass: HomeAssistant, hub):
         self.hub = hub
         self._hass = hass
@@ -43,31 +45,31 @@ class IHvac:
         if self.hub.sensors.peaqev_installed:
             if len(self.hub.sensors.peaqev_facade.offsets.get("today", {})) < 20:
                 return False
-        else:
-            try:
-                if self.model.current_offset_dict == {}:                    
-                    self.get_offsets()
-                _hvac_offset = self.hvac_offset
-                new_offset, force_update = self.house_heater.get_current_offset(self.model.current_offset_dict)
-                if new_offset != self.house_heater.current_offset:
-                    self.house_heater.current_offset = new_offset
-                    self._force_update = force_update
-                if self.house_heater.current_offset != _hvac_offset:
-                    return True
+        try:
+            if self.model.current_offset_dict == {}:
+                self.get_offsets()
+            _hvac_offset = self.hvac_offset
+            new_offset, force_update = self.house_heater.get_current_offset(self.model.current_offset_dict)
+            if new_offset != self.current_offset:
+                self.current_offset = new_offset
+                self._force_update = force_update
+            if self.current_offset != _hvac_offset:
+                return True
+            else:
                 return False
-            except Exception as e:
-                _LOGGER.exception(f"Error on updating offsets: {e}")
-                return False
+        except Exception as e:
+            _LOGGER.exception(f"Error on updating offsets: {e}")
+            return False
 
     def get_offsets(self) -> None:
-        if self.hub.sensors.peaqev_installed:
-            self.model.current_offset_dict = self.hub.sensors.peaqev_facade.offsets.get("today", {})
-            self.model.current_offset_dict_tomorrow = self.hub.sensors.peaqev_facade.offsets.get("tomorrow", {})
-        else:
-            ret = self.hub.offset.get_offset()
-            if ret is not None:
-                self.model.current_offset_dict = ret[0]
-                self.model.current_offset_dict_tomorrow = ret[1]
+        # if self.hub.sensors.peaqev_installed:
+        #     self.model.current_offset_dict = self.hub.sensors.peaqev_facade.offsets.get("today", {})
+        #     self.model.current_offset_dict_tomorrow = self.hub.sensors.peaqev_facade.offsets.get("tomorrow", {})
+        # else:
+        ret = self.hub.offset.get_offset()
+        if ret is not None:
+            self.model.current_offset_dict = ret[0]
+            self.model.current_offset_dict_tomorrow = ret[1]
 
     @property
     @abstractmethod
@@ -150,7 +152,7 @@ class IHvac:
                     self.model.current_vent_boost_state = _vent_state
             if self.update_offset():
                 if await self._ready_to_update(HvacOperations.Offset):
-                    self.model.update_list.append((HvacOperations.Offset, self.house_heater.current_offset))
+                    self.model.update_list.append((HvacOperations.Offset, self.current_offset))
         return await self._do_periodic_updates()
 
     async def _do_periodic_updates(self) -> None:

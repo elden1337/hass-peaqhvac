@@ -79,8 +79,6 @@ class HouseHeater(IHeater):
         if self._hvac.hub.offset.max_price_lower(self._get_tempdiff()):
             return -10, True
         desired_offset = self._set_calculated_offset(offsets)
-        _LOGGER.debug("Desired offset: %s", desired_offset)
-        _LOGGER.debug("Offsets: %s", offsets)
         _force_update: bool = False
         if desired_offset <= 0 and self.current_tempdiff <= 0:
             return self._set_lower_offset_strong(

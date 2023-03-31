@@ -30,7 +30,7 @@ class OffsetSensor(SensorBase):
         return "mdi:stairs"
 
     def update(self) -> None:
-        self._state = self._hub.hvac.house_heater.current_offset
+        self._state = self._hub.hvac.current_offset
         self._offsets = self._offset_dict_to_list(self._hub.hvac.model.current_offset_dict)
         self._offsets_tomorrow = self._offset_dict_to_list(self._hub.hvac.model.current_offset_dict_tomorrow)
         self._current_offset = self._hub.hvac.house_heater.current_offset

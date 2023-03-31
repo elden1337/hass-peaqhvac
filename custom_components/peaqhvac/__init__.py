@@ -53,7 +53,7 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     hass.services.async_register(DOMAIN, "disable", servicehandler_disable)
     hass.services.async_register(DOMAIN, "set_mode", servicehandler_set_mode)
 
-    hass.config_entries.async_setup_platforms(config, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(config, PLATFORMS)
 
     undo_listener = config.add_update_listener(config_entry_update_listener)
 
