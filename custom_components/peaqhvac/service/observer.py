@@ -57,7 +57,7 @@ class Observer:
                 self._dequeue_and_broadcast(q)
 
     async def async_broadcast(self, command: str, argument=None):
-        await self.hub.state_machine.async_add_executor_job(self.broadcast, command, argument)
+        await self.hub._hass.async_add_executor_job(self.broadcast, command, argument)
 
     def _prepare_dequeue(self, attempt: int = 0) -> None:
         if self.model.active:
@@ -92,22 +92,6 @@ class Observer:
                     func()
         else:
             func()
-
-    # @staticmethod
-    # async def async_call_func(func, command: Command):
-    #     if command.argument is not None:
-    #         if isinstance(command.argument, dict):
-    #             try:
-    #                 await func(**command.argument)
-    #             except TypeError:
-    #                 await func()
-    #         else:
-    #             try:
-    #                 await func(command.argument)
-    #             except TypeError:
-    #                 await func()
-    #     else:
-    #         await func()
 
     def _ok_to_broadcast(self, command) -> bool:
         if command not in self.model.wait_queue.keys():
