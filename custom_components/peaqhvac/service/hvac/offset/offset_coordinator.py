@@ -22,7 +22,6 @@ class OffsetCoordinator:
         self.hours = self._set_hours_type()
         self._prices = None
         self._prices_tomorrow = None
-        self._offsets = None
         self._hub.observer.add("prices changed", self._update_prices)
         self._hub.observer.add("prognosis changed", self._update_prognosis)
         self._hub.observer.add("hvac preset changed", self._update_preset)
@@ -44,8 +43,7 @@ class OffsetCoordinator:
     def offsets(self) -> dict:
         if not self._hub.sensors.peaqev_installed:
             return self.hours.offsets
-        self._offsets = self._hub.sensors.peaqev_facade.offsets
-        return self._offsets
+        return self._hub.sensors.peaqev_facade.offsets
 
     def get_offset(self) -> Tuple[dict, dict]:
         """External entrypoint to the class"""
@@ -96,7 +94,7 @@ class OffsetCoordinator:
                 day_values=d.get('tomorrow'), 
                 tolerance=self.model.tolerance, 
                 indoors_preset=self._hub.sensors.set_temp_indoors.preset)
-            return smooth_transitions(today=today, tomorrow=tomorrow, tolerance=self.model.tolerance)
+            return smooth_transitions(today=list(today), tomorrow=list(tomorrow), tolerance=self.model.tolerance)
         except Exception as e:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
@@ -106,10 +104,11 @@ class OffsetCoordinator:
             self.prices is not None,
             self.model.prognosis is not None
         ]):
-            if 23 <= len(self.prices) <= 25:
-                self.model.raw_offsets = self._update_offset()
-            else:
-                _LOGGER.debug(f"Prices are not ok. length is {len(self.prices)}. nordpool today len is {len(self._hub.nordpool.prices)}")
+            self.model.raw_offsets = self._update_offset()
+            # if 23 <= len(self.prices) <= 25:
+            #     self.model.raw_offsets = self._update_offset()
+            # else:
+            #     _LOGGER.debug(f"Prices are not ok. length is {len(self.prices)}. nordpool today len is {len(self._hub.nordpool.prices)}")
             try:
                 _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
                 self.model.calculated_offsets = self._update_offset(_weather_dict[0])

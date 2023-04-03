@@ -144,7 +144,7 @@ class WaterHeater(IHeater):
             if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100:
                 return
         try:
-            if self._get_current_offset() >= 0 and datetime.now().minute > 10:
+            if self._get_current_offset() > 0 and 10 < datetime.now().minute < 50:
                 if 0 < self.current_temperature <= LOWTEMP_THRESHOLD:
                     self.booster_model.pre_heating = True
                     self._toggle_boost(timer_timeout=None)

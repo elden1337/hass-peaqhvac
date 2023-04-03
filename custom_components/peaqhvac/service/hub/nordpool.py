@@ -70,7 +70,7 @@ class NordPoolUpdater:
             _result["currency"] = str(ret.attributes.get("currency"))
             _result["state"] = ret.state
             if await self._update_set_prices(_result):
-                self._hub.observer.broadcast("prices changed", [self._prices, self._prices_tomorrow])
+                await self._hub.observer.async_broadcast("prices changed", [self._prices, self._prices_tomorrow])
         else:
             _LOGGER.error("Could not get nordpool-prices")
 

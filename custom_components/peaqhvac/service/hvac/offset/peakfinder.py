@@ -1,6 +1,7 @@
 from typing import Tuple
 import statistics
 
+
 def identify_peaks(prices: list) -> list[int]:
     ret = []
     for idx, p in enumerate(prices):
@@ -42,6 +43,7 @@ def _check_deviation_peaks(p: float, neighbor: float) -> bool:
     if p > neighbor:
         return neighbor / p > 0.7
     return False
+
 
 def _check_deviation_valleys(p: float, neighbor: float) -> bool:
     if any([neighbor == 0, p == 0]):
@@ -88,6 +90,7 @@ def _find_single_anomalies(
                         adj[idx] -= int(diff / 2)
     return adj
 
+
 def _smooth_upwards_transitions(start_list, tolerance):
     for idx, v in enumerate(start_list):
         if idx < len(start_list) - 1:
@@ -95,20 +98,23 @@ def _smooth_upwards_transitions(start_list, tolerance):
                 start_list[idx] += 1
     return start_list
 
+
 def smooth_transitions(
         today: list,
         tomorrow: list,
         tolerance: int
 ) -> Tuple[dict, dict]:
     tolerance = min(tolerance, 3)
-    start_list = []
-    ret = {}, {}
-    start_list.extend(today)
-    start_list.extend(tomorrow)
+    start_list: list = []
+    ret: Tuple[dict, dict] = {}, {}
 
-    start_list = _find_single_anomalies(start_list)    
+    start_list.extend(today)
+    if 23 <= len(tomorrow) <= 25:
+        start_list.extend(tomorrow)
+
+    start_list = _find_single_anomalies(start_list)
     start_list = _smooth_upwards_transitions(start_list, tolerance)
-    
+
     for hour in range(0, 24):
         ret[0][hour] = start_list[hour]
     if 23 <= len(tomorrow) <= 25:
