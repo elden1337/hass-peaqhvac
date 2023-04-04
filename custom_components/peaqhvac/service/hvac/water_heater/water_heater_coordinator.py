@@ -136,7 +136,7 @@ class WaterHeater(IHeater):
             self._toggle_boost(timer_timeout=None)
 
     def _get_current_offset(self) -> int:
-        offsets = self._hvac.hub.offset.get_offset()
+        offsets = self._hvac.hub.offset.get_raw_offset()
         return offsets[0].get(datetime.now().hour, 0)
 
     def _set_water_heater_operation_away(self):

@@ -39,6 +39,7 @@ class OffsetSensor(SensorBase):
         self._temptrend_offset = self._hub.hvac.house_heater.current_temp_trend_offset
         self._raw_offsets = self._offset_dict_to_list(self._hub.offset.model.raw_offsets[0])
         self._peaks_today = self._hub.offset.model.peaks_today
+        self._peaks_tomorrow = self._hub.offset.model.peaks_tomorrow
 
     def _offset_dict_to_list(self, _input: dict) -> list:
         return [i for i in _input.values()]
@@ -53,5 +54,6 @@ class OffsetSensor(SensorBase):
             "Today": self._offsets,
             "Tomorrow": self._offsets_tomorrow,
             "RawToday": self._raw_offsets,
-            "PeaksToday": self._peaks_today
+            "PeaksToday": self._peaks_today,
+            "PeaksTomorrow": self._peaks_tomorrow
         }

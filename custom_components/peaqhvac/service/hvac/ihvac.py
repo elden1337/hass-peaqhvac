@@ -46,8 +46,8 @@ class IHvac:
             if len(self.hub.sensors.peaqev_facade.offsets.get("today", {})) < 20:
                 return False
         try:
-            if self.model.current_offset_dict == {}:
-                self.get_offsets()
+            #if self.model.current_offset_dict == {}:
+            self.get_offsets()
             _hvac_offset = self.hvac_offset
             new_offset, force_update = self.house_heater.get_current_offset(self.model.current_offset_dict)
             if new_offset != self.current_offset:

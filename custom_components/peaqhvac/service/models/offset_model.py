@@ -4,12 +4,29 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class OffsetModel:
-    peaks_today = []
+    _peaks_today: list = []
+    _peaks_tomorrow: list = []
     calculated_offsets = {}, {}
     raw_offsets = {}, {}
     _tolerance = None
     tolerance_raw = None
     prognosis = None
+
+    @property
+    def peaks_today(self) -> list:
+        return self._peaks_today
+
+    @peaks_today.setter
+    def peaks_today(self, val: list):
+        self._peaks_today = [v for v in val if 0 <= v < 24]
+
+    @property
+    def peaks_tomorrow(self) -> list:
+        return self._peaks_tomorrow
+
+    @peaks_tomorrow.setter
+    def peaks_tomorrow(self, val: list):
+        self._peaks_tomorrow = [v for v in val if 0 <= v < 24]
 
     def __init__(self, hub):
         self.hub = hub
@@ -39,7 +56,8 @@ class OffsetModel:
             except:
                 self._tolerance = self.hub.options.hvac_tolerance
             if any([old_raw != self.tolerance_raw, old_tolerance != self.tolerance]):
-                _LOGGER.debug(f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self.hub.sensors.average_temp_outdoors.value}")
+                _LOGGER.debug(
+                    f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self.hub.sensors.average_temp_outdoors.value}")
                 self.hub.observer.broadcast("tolerance changed")
                 self.hub.observer.broadcast("offset recalculation")
 

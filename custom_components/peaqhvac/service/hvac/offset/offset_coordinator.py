@@ -52,6 +52,9 @@ class OffsetCoordinator:
             self._set_offset()
         return self.model.calculated_offsets
 
+    def get_raw_offset(self) -> Tuple[dict, dict]:
+        return self.model.raw_offsets
+
     def _update_prognosis(self) -> None:
         self.model.prognosis = self._hub.prognosis.prognosis
         self._set_offset()
@@ -125,6 +128,8 @@ class OffsetCoordinator:
 
     def _update_model(self) -> None:
         self.model.peaks_today = identify_peaks(self.prices)
+        self.model.peaks_tomorrow = identify_peaks(self.prices_tomorrow)
+
 
     def _set_hours_type(self):
         if not self._hub.sensors.peaqev_installed:
