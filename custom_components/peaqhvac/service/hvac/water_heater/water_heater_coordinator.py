@@ -116,9 +116,11 @@ class WaterHeater(IHeater):
             elif self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
                 self._set_water_heater_operation_away()
 
-    def _set_water_heater_operation_home(self):
+    def _set_water_heater_operation_home(self) -> None:
         if self._hvac.hub.sensors.peaqev_installed:
             if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100:
+                self.booster_model.try_heat_water = False
+                _LOGGER.debug("Peak is being breached. Turning off water heating")    
                 return
         if self._get_water_peak(datetime.now().hour):
             _LOGGER.debug("Current hour is identified as a good hour to boost water")

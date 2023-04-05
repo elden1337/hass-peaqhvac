@@ -120,12 +120,13 @@ class IHvac:
         self.water_heater.update_demand()
         await self.request_periodic_updates()
 
-    async def _ready_to_update(self, operation) -> bool:
+    async def _ready_to_update(self, operation) -> bool:        
         match operation:
-            case HvacOperations.WaterBoost:
-                return time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation]
-            case HvacOperations.VentBoost:
-                return time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation]
+            case HvacOperations.WaterBoost | HvacOperations.VentBoost:
+                return any([
+                    time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation],
+                    self.hub.sensors.peaqev_facade.exact_threshold >= 100
+                           ])
             case HvacOperations.Offset:
                 if self._force_update:
                     self._force_update = False
@@ -139,21 +140,27 @@ class IHvac:
 
     async def request_periodic_updates(self) -> None:
         if self.hub.hvac.water_heater.control_module:
-            if self.water_heater.try_heat_water or self.water_heater.water_heating:
+            await self.async_request_periodic_updates_water()
+        if self.hub.hvac.house_heater.control_module:
+            await self.async_request_periodic_updates_heat()    
+        return await self._do_periodic_updates()
+
+    async def async_request_periodic_updates_heat(self) -> None:
+        _vent_state = int(self.house_heater.vent_boost)
+        if _vent_state != self.model.current_vent_boost_state:
+            if await self._ready_to_update(HvacOperations.VentBoost):
+                self.model.update_list.append((HvacOperations.VentBoost, _vent_state))
+                self.model.current_vent_boost_state = _vent_state
+            if self.update_offset():
+                if await self._ready_to_update(HvacOperations.Offset):
+                    self.model.update_list.append((HvacOperations.Offset, self.current_offset))
+
+    async def async_request_periodic_updates_water(self) -> None:
+        if self.water_heater.try_heat_water or self.water_heater.water_heating:
                 if await self._ready_to_update(HvacOperations.WaterBoost):
                     if self.model.current_water_boost_state != int(self.water_heater.try_heat_water):
                         self.model.update_list.append((HvacOperations.WaterBoost, int(self.water_heater.try_heat_water)))
                         self.model.current_water_boost_state = int(self.water_heater.try_heat_water)
-        if self.hub.hvac.house_heater.control_module:
-            _vent_state = int(self.house_heater.vent_boost)
-            if _vent_state != self.model.current_vent_boost_state:
-                if await self._ready_to_update(HvacOperations.VentBoost):
-                    self.model.update_list.append((HvacOperations.VentBoost, _vent_state))
-                    self.model.current_vent_boost_state = _vent_state
-            if self.update_offset():
-                if await self._ready_to_update(HvacOperations.Offset):
-                    self.model.update_list.append((HvacOperations.Offset, self.current_offset))
-        return await self._do_periodic_updates()
 
     async def _do_periodic_updates(self) -> None:
         if len(self.model.update_list) > 0:
@@ -187,7 +194,7 @@ class IHvac:
         return ret
 
     async def update_system(self, operation: HvacOperations, set_val: any = None):
-        if self.hub.sensors.peaq_enabled.value is True:
+        if self.hub.sensors.peaq_enabled.value:
             _value = 0
             if self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5:
                 _value = await self._get_operation_value(operation, set_val)
