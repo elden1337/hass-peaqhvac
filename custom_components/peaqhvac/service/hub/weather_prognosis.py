@@ -67,8 +67,6 @@ class WeatherPrognosis:
             _LOGGER.debug("Tried to update weather-prognosis but the class is not initialized yet.")
 
     def get_hvac_prognosis(self, current_temperature: float) -> list:
-        # if current_temperature == self._current_temperature:
-        #     return
         ret = []
         if not self.is_initialized:
             return ret

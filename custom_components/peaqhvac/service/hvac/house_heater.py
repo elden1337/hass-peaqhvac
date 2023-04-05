@@ -113,7 +113,7 @@ class HouseHeater(IHeater):
             return True
         return False
 
-    def _get_demand(self) -> Demand:
+    async def async_get_demand(self) -> Demand:
         _compressor_start = self._dm_compressor_start if self._dm_compressor_start is not None else -300
         _return_temp = self._hvac.delta_return_temp if self._hvac.delta_return_temp is not None else 1000
         dm = self._hvac.hvac_dm
@@ -222,7 +222,7 @@ class HouseHeater(IHeater):
         tolerances = self._hvac.hub.sensors.set_temp_indoors.adjusted_tolerances(self._current_offset)
         return tolerances[1] if (determinator > 0 or determinator is True) else tolerances[0]
 
-    def update_operation(self):
+    async def async_update_operation(self):
         pass
 
     def _should_vent_boost(self) -> bool:

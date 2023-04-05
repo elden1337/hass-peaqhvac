@@ -108,10 +108,6 @@ class OffsetCoordinator:
             self.model.prognosis is not None
         ]):
             self.model.raw_offsets = self._update_offset()
-            # if 23 <= len(self.prices) <= 25:
-            #     self.model.raw_offsets = self._update_offset()
-            # else:
-            #     _LOGGER.debug(f"Prices are not ok. length is {len(self.prices)}. nordpool today len is {len(self._hub.nordpool.prices)}")
             try:
                 _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
                 self.model.calculated_offsets = self._update_offset(_weather_dict[0])
@@ -129,7 +125,6 @@ class OffsetCoordinator:
     def _update_model(self) -> None:
         self.model.peaks_today = identify_peaks(self.prices)
         self.model.peaks_tomorrow = identify_peaks(self.prices_tomorrow)
-
 
     def _set_hours_type(self):
         if not self._hub.sensors.peaqev_installed:

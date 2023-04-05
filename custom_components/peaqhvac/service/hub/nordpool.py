@@ -14,7 +14,6 @@ class NordPoolUpdater:
         self._prices_tomorrow: list = []
         self._state: float = None
         self.nordpool_entity: str = ""
-        self._setup_nordpool()
 
     @property
     def is_initialized(self) -> bool:
@@ -53,7 +52,7 @@ class NordPoolUpdater:
         if val != self._prices_tomorrow:
             self._prices_tomorrow = [v for v in val if v is not None]
 
-    async def update_nordpool(self):
+    async def async_update_nordpool(self):
         ret = self._hass.states.get(self.nordpool_entity)
         _result = {}
         if ret is not None:
@@ -69,12 +68,12 @@ class NordPoolUpdater:
                 _result["tomorrow"] = []
             _result["currency"] = str(ret.attributes.get("currency"))
             _result["state"] = ret.state
-            if await self._update_set_prices(_result):
+            if await self.async_update_set_prices(_result):
                 await self._hub.observer.async_broadcast("prices changed", [self._prices, self._prices_tomorrow])
         else:
             _LOGGER.error("Could not get nordpool-prices")
 
-    async def _update_set_prices(self, result: dict) -> bool:
+    async def async_update_set_prices(self, result: dict) -> bool:
         ret = False
         if self.prices != list(result.get("today")):
             self.prices = list(result.get("today"))
@@ -86,7 +85,7 @@ class NordPoolUpdater:
         self.state = result.get("state")
         return ret
 
-    def _setup_nordpool(self):
+    async def async_setup(self):
         try:
             entities = template.integration_entities(self._hass, NORDPOOL)
             if len(list(entities)) < 1:
@@ -94,7 +93,7 @@ class NordPoolUpdater:
             if len(list(entities)) == 1:
                 self.nordpool_entity = list(entities)[0]
                 _LOGGER.debug(f"Nordpool has been set up and is ready to be used with {self.nordpool_entity}")
-                self.update_nordpool()
+                await self.async_update_nordpool()
             else:
                 raise Exception("more than one Nordpool entity found. Cannot continue.")
         except Exception as e:

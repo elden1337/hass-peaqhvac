@@ -39,6 +39,8 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
 
     hass.data[DOMAIN]["hub"] = hub
 
+    await hub.async_setup()
+
     async def servicehandler_enable(call): # pylint:disable=unused-argument
         await hub.call_enable_peaq()
 

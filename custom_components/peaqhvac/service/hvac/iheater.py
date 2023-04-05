@@ -41,19 +41,19 @@ class IHeater(ABC):
         # if vacation or similar, return NoDemand
         pass
 
-    def update_demand(self):
+    async def async_update_demand(self):
         if time.time() - self._latest_update > self._update_interval:
             self._latest_update = time.time()
-            self._demand = self._get_demand()
+            self._demand = await self.async_get_demand()
             if self.control_module:
-                self.update_operation()
+                await self.async_update_operation()
 
     @abstractmethod
-    def _get_demand(self):
+    async def async_get_demand(self):
         pass
 
     @abstractmethod
-    def update_operation(self):
+    async def async_update_operation(self):
         pass
 
     # def compare to heating demand

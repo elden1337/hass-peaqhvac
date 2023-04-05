@@ -65,7 +65,7 @@ class Average(ObserverBroadcaster):
         """warning. this replaces the values set and should only be used on startup."""
         self._all_values = val
 
-    def update_values(self, entity, value):
+    async def async_update_values(self, entity, value):
         try:
             floatval = float(value)
             if isinstance(floatval, (float, int)):
@@ -73,11 +73,11 @@ class Average(ObserverBroadcaster):
                     self._initialized_sensors[entity] = True
                     self._initialized_values += 1
                 self._values[entity] = floatval
-                self._create_values(self._values)
+                await self.async_create_values(self._values)
         except:
             _LOGGER.debug(f"unable to set average-val for {entity}: {value}")
 
-    def _create_values(self, _values: dict):
+    async def async_create_values(self, _values: dict):
         try:
             filtered_list = [i for i in _values.values() if i != 999.0]
             if self.initialized_percentage > 0.2:

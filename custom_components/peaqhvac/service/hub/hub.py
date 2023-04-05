@@ -34,12 +34,18 @@ class Hub:
         self.prognosis = WeatherPrognosis(self)
         self.offset = OffsetCoordinator(self)
         self.options.hub = self
+
+    async def async_setup(self) -> None:
+        await self.nordpool.async_setup()
+        await self.async_set_up_trackers()
+
+    async def async_setup_trackers(self):
         self.trackerentities = []
         self.trackerentities.append(self.nordpool.nordpool_entity)
         self.trackerentities.extend(self.options.indoor_tempsensors)
         self.trackerentities.extend(self.options.outdoor_tempsensors)
-        self.states.initialize_values()
-        async_track_state_change(hass, self.trackerentities, self.state_changed)
+        await self.states.async_initialize_values()
+        async_track_state_change(self._hass, self.trackerentities, self.async_state_changed)
 
     @property
     def is_initialized(self) -> bool:
@@ -58,11 +64,11 @@ class Hub:
         return False
 
     @callback
-    async def state_changed(self, entity_id, old_state, new_state):
+    async def async_state_changed(self, entity_id, old_state, new_state):
         if entity_id is not None:
             try:
                 if old_state is None or old_state != new_state:
-                    await self.states.update_sensor_async(entity_id, new_state.state)
+                    await self.states.async_update_sensor(entity_id, new_state.state)
             except Exception as e:
                 _LOGGER.exception(f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}")
 

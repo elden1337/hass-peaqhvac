@@ -83,3 +83,31 @@ class Gradient:
             if len(self._temp_readings) > 2:
                 # Always keep two readings to be able to calc trend
                 self._temp_readings.remove(i)
+
+    async def async_set_gradient(self):
+        await self.async_remove_from_list()
+        temps = self._temp_readings
+        if len(temps) - 1 > 0:
+            try:
+                x = (temps[-1][1] - temps[0][1]) / ((time.time() - temps[0][0]) / 3600)
+                self._gradient = x
+            except ZeroDivisionError as e:
+                _LOGGER.warning({e})
+                self._gradient = 0
+
+    async def async_add_reading(self, val: float, t: float):
+        if self._ignore is None or self._ignore < val:
+            self._temp_readings.append((int(t), round(val, 3)))
+            self._latest_update = time.time()
+            self._remove_from_list()
+            await self.async_set_gradient()
+
+    async def async_remove_from_list(self):
+        """Removes overflowing number of samples and old samples from the list."""
+        while len(self._temp_readings) > self._max_samples:
+            self._temp_readings.pop(0)
+        gen = (x for x in self._temp_readings if time.time() - int(x[0]) > self._max_age)
+        for i in gen:
+            if len(self._temp_readings) > 2:
+                # Always keep two readings to be able to calc trend
+                self._temp_readings.remove(i)

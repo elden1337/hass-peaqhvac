@@ -6,7 +6,7 @@ from custom_components.peaqhvac.service.hub.trend import Gradient
 from custom_components.peaqhvac.service.hvac.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.waterbooster_model import WaterBoosterModel
-from custom_components.peaqhvac.service.hvac.water_heater.water_peak import get_water_peak
+from custom_components.peaqhvac.service.hvac.water_heater.water_peak import get_water_peak, async_get_water_peak_helper
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
 _LOGGER = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ class WaterHeater(IHeater):
         """Return true if the water is currently being heated"""
         return self.temperature_trend > 0 or self.booster_model.pre_heating is True
 
-    def _get_demand(self) -> Demand:
+    async def async_get_demand(self) -> Demand:
         temp = self.current_temperature
         if 0 < temp < 100:
             if temp >= 42:
@@ -103,11 +103,36 @@ class WaterHeater(IHeater):
             return ret
         return False
     
+    async def async_get_water_peak(self, hour: int) -> bool:
+        if time.time() - self._wait_timer_peak > WAITTIMER_TIMEOUT and self._hvac.hub.is_initialized:
+            _prices = await self.async_get_pricelist_combined()
+            avg_monthly = None
+            if self._hvac.hub.sensors.peaqev_installed:
+                avg_monthly = self._hvac.hub.sensors.peaqev_facade.average_this_month
+            ret = await async_get_water_peak_helper(hour, _prices, avg_monthly)
+            if ret:
+                self._wait_timer_peak = time.time()
+            return ret
+        return False
+    
     def _get_pricelist_combined(self) -> list:
         _prices = self._hvac.hub.nordpool.prices
         if self._hvac.hub.nordpool.prices_tomorrow is not None:
             _prices.extend([p for p in self._hvac.hub.nordpool.prices_tomorrow if isinstance(p, (float, int))])
         return _prices
+
+    async def async_get_pricelist_combined(self) -> list:
+        _prices = self._hvac.hub.nordpool.prices
+        if self._hvac.hub.nordpool.prices_tomorrow is not None:
+            _prices.extend([p for p in self._hvac.hub.nordpool.prices_tomorrow if isinstance(p, (float, int))])
+        return _prices
+
+    async def async_update_operation(self):
+        if self.is_initialized:
+            if self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
+                await self.async_set_water_heater_operation_home()
+            elif self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
+                await self.async_set_water_heater_operation_away()
 
     def update_operation(self):
         if self.is_initialized:
@@ -129,6 +154,19 @@ class WaterHeater(IHeater):
         if self._get_current_offset() > 0 and datetime.now().hour < 22:
             self._toggle_hotwater_boost(HIGHTEMP_THRESHOLD)
 
+    async def async_set_water_heater_operation_home(self) -> None:
+        if self._hvac.hub.sensors.peaqev_installed:
+            if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100:
+                self.booster_model.try_heat_water = False
+                _LOGGER.debug("Peak is being breached. Turning off water heating")    
+                return
+        if await self.async_get_water_peak(datetime.now().hour):
+            _LOGGER.debug("Current hour is identified as a good hour to boost water")
+            self.booster_model.boost = True
+            self._toggle_boost(timer_timeout=3600)
+        if await self.async_get_current_offset() > 0 and datetime.now().hour < 22:
+            await self.async_toggle_hotwater_boost(HIGHTEMP_THRESHOLD)
+
     def _toggle_hotwater_boost(self, temp_threshold):
         if all([
             0 < self.current_temperature <= temp_threshold,
@@ -136,6 +174,18 @@ class WaterHeater(IHeater):
         ]):
             self.booster_model.pre_heating = True
             self._toggle_boost(timer_timeout=None)
+        else:
+            self.booster_model.pre_heating = False
+
+    async def async_toggle_hotwater_boost(self, temp_threshold):
+        if all([
+            0 < self.current_temperature <= temp_threshold,
+            datetime.now().minute > 10
+        ]):
+            self.booster_model.pre_heating = True
+            await self.async_toggle_boost(timer_timeout=None)
+        else:
+            self.booster_model.pre_heating = False
 
     def _get_current_offset(self) -> int:
         offsets = self._hvac.hub.offset.get_raw_offset()
@@ -153,7 +203,37 @@ class WaterHeater(IHeater):
         except Exception as e:
             _LOGGER.debug(f"Could not properly update water operation in away-mode: {e}")
 
+    async def async_set_water_heater_operation_away(self):
+        if self._hvac.hub.sensors.peaqev_installed:
+            if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100:
+                return
+        try:
+            if self._get_current_offset() > 0 and 10 < datetime.now().minute < 50:
+                if 0 < self.current_temperature <= LOWTEMP_THRESHOLD:
+                    self.booster_model.pre_heating = True
+                    await self.async_toggle_boost(timer_timeout=None)
+        except Exception as e:
+            _LOGGER.debug(f"Could not properly update water operation in away-mode: {e}")
+
     def _toggle_boost(self, timer_timeout: int = None) -> None:
+        if self.booster_model.try_heat_water:
+            if self.booster_model.heat_water_timer_timeout > 0:
+                if time.time() - self.booster_model.heat_water_timer > self.booster_model.heat_water_timer_timeout:
+                    self.booster_model.try_heat_water = False
+                    self._wait_timer = time.time()
+        elif all([
+            any([
+                self.booster_model.pre_heating,
+                self.booster_model.boost
+                ]),
+            time.time() - self._wait_timer > WAITTIMER_TIMEOUT
+        ]):
+            self.booster_model.try_heat_water = True
+            self.booster_model.heat_water_timer = time.time()
+            if timer_timeout is not None:
+                self.booster_model.heat_water_timer_timeout = timer_timeout
+
+    async def async_toggle_boost(self, timer_timeout: int = None) -> None:
         if self.booster_model.try_heat_water:
             if self.booster_model.heat_water_timer_timeout > 0:
                 if time.time() - self.booster_model.heat_water_timer > self.booster_model.heat_water_timer_timeout:

@@ -115,9 +115,9 @@ class IHvac:
         self.water_heater.current_temperature = val
         return val
 
-    async def update_hvac(self) -> None:
-        self.house_heater.update_demand()
-        self.water_heater.update_demand()
+    async def async_update_hvac(self) -> None:
+        await self.house_heater.async_update_demand()
+        await self.water_heater.async_update_demand()
         await self.request_periodic_updates()
 
     async def _ready_to_update(self, operation) -> bool:        
