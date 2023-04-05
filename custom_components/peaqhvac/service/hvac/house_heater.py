@@ -117,6 +117,12 @@ class HouseHeater(IHeater):
         _compressor_start = self._dm_compressor_start if self._dm_compressor_start is not None else -300
         _return_temp = self._hvac.delta_return_temp if self._hvac.delta_return_temp is not None else 1000
         dm = self._hvac.hvac_dm
+        if any([
+            dm is None,
+            _return_temp is None,
+            _compressor_start is None
+            ]):
+            return Demand.NoDemand
         if dm >= 0 or _return_temp < 0:
             return Demand.NoDemand
         if dm > int(_compressor_start / 2):

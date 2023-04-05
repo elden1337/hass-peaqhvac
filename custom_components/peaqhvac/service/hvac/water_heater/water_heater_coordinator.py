@@ -80,6 +80,8 @@ class WaterHeater(IHeater):
 
     async def async_get_demand(self) -> Demand:
         temp = self.current_temperature
+        if temp is None:
+            return Demand.NoDemand
         if 0 < temp < 100:
             if temp >= 42:
                 return Demand.NoDemand
@@ -189,6 +191,10 @@ class WaterHeater(IHeater):
 
     def _get_current_offset(self) -> int:
         offsets = self._hvac.hub.offset.get_raw_offset()
+        return offsets[0].get(datetime.now().hour, 0)
+    
+    async def async_get_current_offset(self) -> int:
+        offsets = await self._hvac.hub.offset.async_get_raw_offset()
         return offsets[0].get(datetime.now().hour, 0)
 
     def _set_water_heater_operation_away(self):

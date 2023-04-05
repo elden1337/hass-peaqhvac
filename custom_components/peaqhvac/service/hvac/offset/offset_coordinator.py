@@ -55,6 +55,9 @@ class OffsetCoordinator:
     def get_raw_offset(self) -> Tuple[dict, dict]:
         return self.model.raw_offsets
 
+    async def async_get_raw_offset(self) -> Tuple[dict, dict]:
+        return self.model.raw_offsets
+
     def _update_prognosis(self) -> None:
         self.model.prognosis = self._hub.prognosis.prognosis
         self._set_offset()
@@ -119,7 +122,13 @@ class OffsetCoordinator:
             _LOGGER.debug("not possible to calculate offset.")
 
     def adjust_to_threshold(self, adjustment: int) -> int:
-        ret = min(adjustment, self.model.tolerance) if adjustment >= 0 else max(adjustment, self.model.tolerance * -1)
+        if adjustment is None:
+            return 0
+        if self.model.tolerance is None:
+            tolerance = 3
+        else:
+            tolerance = self.model.tolerance
+        ret = min(adjustment, tolerance) if adjustment >= 0 else max(adjustment, tolerance * -1)
         return int(round(ret, 0))
 
     def _update_model(self) -> None:

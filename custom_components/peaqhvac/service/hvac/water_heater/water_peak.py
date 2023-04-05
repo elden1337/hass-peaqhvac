@@ -54,7 +54,7 @@ def __condition2(hour, prices) -> bool:
     try:
         return all([
             prices[hour + 1] == min(prices),
-            prices[hour + 1] / prices[hour] >= 0.7,
+            prices[hour + 1] / prices[hour] < 0.9,
             datetime.now().minute >= 30
         ])
     except Exception as e:
@@ -80,7 +80,7 @@ async def async_condition2(hour, prices) -> bool:
     try:
         return all([
             prices[hour + 1] == min(prices),
-            prices[hour + 1] / prices[hour] >= 0.7,
+            prices[hour + 1] / prices[hour] < 0.9,
             datetime.now().minute >= 30
         ])
     except Exception as e:

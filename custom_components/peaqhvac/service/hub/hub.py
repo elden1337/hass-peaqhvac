@@ -37,7 +37,7 @@ class Hub:
 
     async def async_setup(self) -> None:
         await self.nordpool.async_setup()
-        await self.async_set_up_trackers()
+        await self.async_setup_trackers()
 
     async def async_setup_trackers(self):
         self.trackerentities = []

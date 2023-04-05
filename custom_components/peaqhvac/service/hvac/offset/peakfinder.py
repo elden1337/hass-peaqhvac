@@ -41,7 +41,7 @@ def _check_deviation_peaks(p: float, neighbor: float) -> bool:
         neighbor += 0.01
         p += 0.01
     if p > neighbor:
-        return neighbor / p > 0.7
+        return neighbor / p < 0.9
     return False
 
 
@@ -50,7 +50,7 @@ def _check_deviation_valleys(p: float, neighbor: float) -> bool:
         neighbor += 0.01
         p += 0.01
     if p < neighbor:
-        return p / neighbor > 0.7
+        return p / neighbor > 0.9
     return False
 
 
@@ -104,14 +104,20 @@ def smooth_transitions(
         tomorrow: list,
         tolerance: int
 ) -> Tuple[dict, dict]:
-    tolerance = min(tolerance, 3)
+    if tolerance is not None:
+        tolerance = min(tolerance, 3)   
+    else:
+        tolerance = 3
+
     start_list: list = []
     ret: Tuple[dict, dict] = {}, {}
 
     start_list.extend(today)
     if 23 <= len(tomorrow) <= 25:
         start_list.extend(tomorrow)
-
+    if len(start_list) < 24:
+        return ret
+    
     start_list = _find_single_anomalies(start_list)
     start_list = _smooth_upwards_transitions(start_list, tolerance)
 
