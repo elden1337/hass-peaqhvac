@@ -13,20 +13,14 @@ WATERDEMAND = "Water demand"
 HEATINGDEMAND = "Heating demand"
 CLIMATE_SENSOR = "Climate control"
 
-AVERAGESENSORS = [
-    AVERAGESENSOR_INDOORS,
-    AVERAGESENSOR_OUTDOORS
-]
+AVERAGESENSORS = [AVERAGESENSOR_INDOORS, AVERAGESENSOR_OUTDOORS]
 
 TRENDSENSORS = {
     TRENDSENSOR_INDOORS: "mdi:home-thermometer",
-    TRENDSENSOR_OUTDOORS: "mdi:sun-thermometer"
+    TRENDSENSOR_OUTDOORS: "mdi:sun-thermometer",
 }
 
-DEMANDSENSORS = {
-    WATERDEMAND: "mdi:water-boiler",
-    HEATINGDEMAND: "mdi:heat-pump"
-}
+DEMANDSENSORS = {WATERDEMAND: "mdi:water-boiler", HEATINGDEMAND: "mdi:heat-pump"}
 
 HVACBRAND_NIBE = "Nibe"
 HVACBRAND_IVT = "IVT"

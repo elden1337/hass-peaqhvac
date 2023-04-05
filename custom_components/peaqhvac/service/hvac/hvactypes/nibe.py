@@ -3,8 +3,10 @@ from typing import Tuple
 
 from custom_components.peaqhvac.service.hvac.ihvac import IHvac
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
-from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
-from custom_components.peaqhvac.service.models.enums.sensortypes import SensorType
+from custom_components.peaqhvac.service.models.enums.hvacoperations import \
+    HvacOperations
+from custom_components.peaqhvac.service.models.enums.sensortypes import \
+    SensorType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -13,9 +15,9 @@ class Nibe(IHvac):
     domain = "Nibe"
 
     _servicecall_types = {
-        HvacOperations.Offset:     47011,
-        HvacOperations.VentBoost:  "ventilation_boost",
-        HvacOperations.WaterBoost: "hot_water_boost"
+        HvacOperations.Offset: 47011,
+        HvacOperations.VentBoost: "ventilation_boost",
+        HvacOperations.WaterBoost: "hot_water_boost",
     }
 
     def get_sensor(self, sensor: SensorType = None):
@@ -29,16 +31,20 @@ class Nibe(IHvac):
             SensorType.ElectricalAddition: f"sensor.nibe_{self.hub.options.systemid}_43084",
             SensorType.CompressorFrequency: f"sensor.nibe_{self.hub.options.systemid}_43136",
             SensorType.DMCompressorStart: f"sensor.nibe_{self.hub.options.systemid}_47206",
-            SensorType.FanSpeed:f"sensor.nibe_{self.hub.options.systemid}_10001|raw_value"
+            SensorType.FanSpeed: f"sensor.nibe_{self.hub.options.systemid}_10001|raw_value",
         }
-        return types[sensor] if sensor is not None else self._get_sensors_for_callback(types)
+        return (
+            types[sensor]
+            if sensor is not None
+            else self._get_sensors_for_callback(types)
+        )
 
     @property
     def fan_speed(self) -> float:
         try:
             speed = self.get_sensor(SensorType.FanSpeed)
             return float(speed)
-        except Exception as e:
+        except Exception:
             return 0
 
     @property
@@ -46,9 +52,13 @@ class Nibe(IHvac):
         try:
             temp = self.get_sensor(SensorType.HvacTemp)
             returntemp = self.get_sensor(SensorType.CondenserReturn)
-            return round(float(self._handle_sensor(temp)) - float(self._handle_sensor(returntemp)), 2)
-        except Exception as e:
-            #_LOGGER.debug(f"Unable to calculate delta return: {e}")
+            return round(
+                float(self._handle_sensor(temp))
+                - float(self._handle_sensor(returntemp)),
+                2,
+            )
+        except Exception:
+            # _LOGGER.debug(f"Unable to calculate delta return: {e}")
             return 0
 
     @property
@@ -64,7 +74,9 @@ class Nibe(IHvac):
         #     _LOGGER.warning("could not get hvac mode from hvac")
         return HvacMode.Unknown
 
-    async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):
+    async def _get_operation_value(
+        self, operation: HvacOperations, set_val: any = None
+    ):
         _value = None
         match operation:
             case HvacOperations.Offset:
@@ -75,12 +87,14 @@ class Nibe(IHvac):
                 _value = set_val
         return _value
 
-    async def _get_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
+    async def _get_operation_call_parameters(
+        self, operation: HvacOperations, _value: any
+    ) -> Tuple[str, dict, str]:
         call_operation = "set_parameter"
         params = {
-            "system":    int(self.hub.options.systemid),
+            "system": int(self.hub.options.systemid),
             "parameter": self._servicecall_types[operation],
-            "value":     _value
+            "value": _value,
         }
         return call_operation, params, self.domain
 
@@ -88,4 +102,3 @@ class Nibe(IHvac):
         if abs(val) <= 10:
             return val
         return 10 if val > 10 else -10
-

@@ -31,7 +31,9 @@ class OffsetModel:
     def __init__(self, hub):
         self.hub = hub
         self.hub.observer.add("hvac tolerance changed", self.recalculate_tolerance)
-        self.hub.observer.add("temperature outdoors changed", self.recalculate_tolerance)
+        self.hub.observer.add(
+            "temperature outdoors changed", self.recalculate_tolerance
+        )
 
     @property
     def tolerance(self) -> int:
@@ -51,13 +53,16 @@ class OffsetModel:
             try:
                 self._tolerance = self.get_boundrary(
                     adjustment=self.hub.options.hvac_tolerance,
-                    set_tolerance=self.get_tolerance_difference(self.hub.sensors.average_temp_outdoors.value)
+                    set_tolerance=self.get_tolerance_difference(
+                        self.hub.sensors.average_temp_outdoors.value
+                    ),
                 )
             except:
                 self._tolerance = self.hub.options.hvac_tolerance
             if any([old_raw != self.tolerance_raw, old_tolerance != self.tolerance]):
                 _LOGGER.debug(
-                    f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self.hub.sensors.average_temp_outdoors.value}")
+                    f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self.hub.sensors.average_temp_outdoors.value}"
+                )
                 self.hub.observer.broadcast("tolerance changed")
                 self.hub.observer.broadcast("offset recalculation")
 

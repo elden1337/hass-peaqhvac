@@ -1,7 +1,8 @@
-
-from custom_components.peaqhvac.sensors.sensorbase import SensorBase
-from custom_components.peaqhvac.const import TRENDSENSOR_INDOORS, TRENDSENSOR_OUTDOORS
 from homeassistant.helpers.restore_state import RestoreEntity
+
+from custom_components.peaqhvac.const import (TRENDSENSOR_INDOORS,
+                                              TRENDSENSOR_OUTDOORS)
+from custom_components.peaqhvac.sensors.sensorbase import SensorBase
 
 
 class TrendSensor(SensorBase, RestoreEntity):
@@ -9,7 +10,7 @@ class TrendSensor(SensorBase, RestoreEntity):
         self._sensorname = name
         self._attr_name = f"{hub.hubname} {name}"
         self._icon = icon
-        self._attr_unit_of_measurement = '°C/h'
+        self._attr_unit_of_measurement = "°C/h"
         super().__init__(hub, self._attr_name, entry_id)
         self._state = 0
         self._samples = 0
@@ -57,10 +58,10 @@ class TrendSensor(SensorBase, RestoreEntity):
         state = await super().async_get_last_state()
         if state:
             self._state = state.state
-            self._samples = state.attributes.get('samples', 50)
-            self._oldest_sample = state.attributes.get('oldest_sample', 50)
-            self._newest_sample = state.attributes.get('newest_sample', 50)
-            self._samples_raw = state.attributes.get('samples_raw', 50)
+            self._samples = state.attributes.get("samples", 50)
+            self._oldest_sample = state.attributes.get("oldest_sample", 50)
+            self._newest_sample = state.attributes.get("newest_sample", 50)
+            self._samples_raw = state.attributes.get("samples_raw", 50)
             if self._sensorname == TRENDSENSOR_INDOORS:
                 self._hub.sensors.temp_trend_indoors.samples_raw = self._samples_raw
             elif self._sensorname == TRENDSENSOR_OUTDOORS:

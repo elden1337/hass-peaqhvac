@@ -1,12 +1,13 @@
-from abc import ABC, abstractmethod
-from typing import Tuple
-
-from custom_components.peaqhvac.service.models.enums.demand import Demand
-from peaqevcore.models.hub.hubmember import HubMember
 import logging
 import time
+from abc import ABC, abstractmethod
+
+from peaqevcore.models.hub.hubmember import HubMember
+
+from custom_components.peaqhvac.service.models.enums.demand import Demand
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class IHeater(ABC):
     _update_interval = 60

@@ -1,5 +1,5 @@
-from typing import Tuple
 import statistics
+from typing import Tuple
 
 
 def identify_peaks(prices: list) -> list[int]:
@@ -11,10 +11,12 @@ def identify_peaks(prices: list) -> list[int]:
             if p == max(prices):
                 ret.append(idx)
         else:
-            if all([
-                _check_deviation_peaks(p, prices[idx - 1]),
-                _check_deviation_peaks(p, prices[idx + 1])
-            ]):
+            if all(
+                [
+                    _check_deviation_peaks(p, prices[idx - 1]),
+                    _check_deviation_peaks(p, prices[idx + 1]),
+                ]
+            ):
                 ret.append(idx)
     return ret
 
@@ -28,10 +30,12 @@ def identify_valleys(prices: list) -> list[int]:
             if p == min(prices):
                 ret.append(idx)
         else:
-            if all([
-                _check_deviation_valleys(p, prices[idx - 1]),
-                _check_deviation_valleys(p, prices[idx + 1])
-            ]):
+            if all(
+                [
+                    _check_deviation_valleys(p, prices[idx - 1]),
+                    _check_deviation_valleys(p, prices[idx + 1]),
+                ]
+            ):
                 ret.append(idx)
     return ret
 
@@ -60,26 +64,25 @@ def find_single_valleys(prices: list) -> list[int]:
         if idx <= 1 or idx >= len(prices) - 2:
             pass
         else:
-            if all([
-                prices[idx] < prices[idx - 1],
-                prices[idx] < prices[idx + 1],
-                min(prices[idx - 1], prices[idx + 1]) / max(prices[idx - 1], prices[idx + 1]) > 0.8
-            ]):
+            if all(
+                [
+                    prices[idx] < prices[idx - 1],
+                    prices[idx] < prices[idx + 1],
+                    min(prices[idx - 1], prices[idx + 1])
+                    / max(prices[idx - 1], prices[idx + 1])
+                    > 0.8,
+                ]
+            ):
                 ret.append(idx)
     return ret
 
 
-def _find_single_anomalies(
-        adj: list
-) -> list[int]:
+def _find_single_anomalies(adj: list) -> list[int]:
     for idx, p in enumerate(adj):
         if idx <= 1 or idx >= len(adj) - 1:
             pass
         else:
-            if all([
-                adj[idx - 1] == adj[idx + 1],
-                adj[idx - 1] != adj[idx]
-            ]):
+            if all([adj[idx - 1] == adj[idx + 1], adj[idx - 1] != adj[idx]]):
                 _prev = adj[idx - 1]
                 _curr = adj[idx]
                 diff = max(_prev, _curr) - min(_prev, _curr)
@@ -100,12 +103,10 @@ def _smooth_upwards_transitions(start_list, tolerance):
 
 
 def smooth_transitions(
-        today: list,
-        tomorrow: list,
-        tolerance: int
+    today: list, tomorrow: list, tolerance: int
 ) -> Tuple[dict, dict]:
     if tolerance is not None:
-        tolerance = min(tolerance, 3)   
+        tolerance = min(tolerance, 3)
     else:
         tolerance = 3
 
@@ -117,7 +118,7 @@ def smooth_transitions(
         start_list.extend(tomorrow)
     if len(start_list) < 24:
         return ret
-    
+
     start_list = _find_single_anomalies(start_list)
     start_list = _smooth_upwards_transitions(start_list, tolerance)
 

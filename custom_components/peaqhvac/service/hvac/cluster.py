@@ -1,5 +1,6 @@
 from datetime import datetime
-from statistics import stdev, mean
+from statistics import mean, stdev
+
 from custom_components.peaqhvac.service.models.clusterdata import ClusterData
 
 
@@ -59,13 +60,15 @@ class Cluster:
         ret = {}
         for c in set(self.clusters.values()):
             _hours = [i for i in self.clusters if self.clusters[i] == c]
-            _localized_prices = [p for idx, p in enumerate(self.prices) if idx in _hours]
+            _localized_prices = [
+                p for idx, p in enumerate(self.prices) if idx in _hours
+            ]
             ret[c] = ClusterData(
                 max_price=max(_localized_prices),
                 min_price=min(_localized_prices),
                 avg_price=round(mean(_localized_prices), 2),
                 hours=_hours,
-                hours_ranked=Cluster._rank_hours(_localized_prices, _hours)
+                hours_ranked=Cluster._rank_hours(_localized_prices, _hours),
             )
         self._cluster_data = ret
 

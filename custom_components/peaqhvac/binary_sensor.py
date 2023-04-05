@@ -1,9 +1,7 @@
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import HomeAssistant
 
-from .const import (
-    DOMAIN, PEAQENABLED)
-
+from .const import DOMAIN, PEAQENABLED
 
 """
 ventilate pollen
@@ -11,6 +9,7 @@ sun-heat timer?
 pre-cold timer
 night-cool
 """
+
 
 async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entities):
     hub = hass.data[DOMAIN]["hub"]
@@ -21,6 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
 
 class PeaqBinarySensorEnabled(BinarySensorEntity):
     """The binary sensor for peaq being enabled or disabled"""
+
     def __init__(self, hub) -> None:
         self._attr_name = f"{hub.hubname} {PEAQENABLED}"
         self._hub = hub

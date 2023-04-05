@@ -10,11 +10,11 @@ def nametoid(input_string) -> str:
     return input_string
 
 
-def try_parse(input_string:str, parsetype:type):
+def try_parse(input_string: str, parsetype: type):
     try:
         ret = parsetype(input_string)
         return ret
-    except Exception as e:
+    except Exception:
         return False
 
 
@@ -54,4 +54,4 @@ def parse_to_type(value, _type):
 
 
 def dt_from_epoch(epoch: int) -> str:
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epoch))
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(epoch))

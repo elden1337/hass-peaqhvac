@@ -1,27 +1,20 @@
 import logging
 from datetime import timedelta
 
-from homeassistant.core import (
-    HomeAssistant,
-)
 from homeassistant.components.climate import ClimateEntity
-from homeassistant.components.climate.const import (
-    SUPPORT_TARGET_TEMPERATURE,
-    HVACMode,
-    HVACAction,
-    PRESET_NONE,
-    PRESET_AWAY,
-    PRESET_ECO,
-    SUPPORT_PRESET_MODE
-)
-from homeassistant.const import (
-    TEMP_CELSIUS,
-    ATTR_TEMPERATURE
-)
-from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode as HvacModeInternal
-import custom_components.peaqhvac.extensionmethods as ex
-from custom_components.peaqhvac.const import DOMAIN, CLIMATE_SENSOR
+from homeassistant.components.climate.const import (PRESET_AWAY, PRESET_ECO,
+                                                    PRESET_NONE,
+                                                    SUPPORT_PRESET_MODE,
+                                                    SUPPORT_TARGET_TEMPERATURE,
+                                                    HVACAction, HVACMode)
+from homeassistant.const import ATTR_TEMPERATURE, TEMP_CELSIUS
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.restore_state import RestoreEntity
+
+import custom_components.peaqhvac.extensionmethods as ex
+from custom_components.peaqhvac.const import CLIMATE_SENSOR, DOMAIN
+from custom_components.peaqhvac.service.models.enums.hvacmode import \
+    HvacMode as HvacModeInternal
 
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=10)
@@ -31,12 +24,7 @@ async def async_setup_entry(hass: HomeAssistant, config, async_add_entities):
     hub = hass.data[DOMAIN]["hub"]
 
     devices = []
-    device = PeaqClimate(
-        hass,
-        config.entry_id,
-        hub,
-        CLIMATE_SENSOR
-    )
+    device = PeaqClimate(hass, config.entry_id, hub, CLIMATE_SENSOR)
 
     devices.append(device)
     async_add_entities(devices)
@@ -172,6 +160,6 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
     async def async_added_to_hass(self):
         state = await super().async_get_last_state()
         if state:
-            self.set_preset_mode(str(state.attributes.get('preset_mode', 50)))
-            self._current_temperature = state.attributes.get('temperature', 50)
+            self.set_preset_mode(str(state.attributes.get("preset_mode", 50)))
+            self._current_temperature = state.attributes.get("temperature", 50)
             self._hub.sensors.set_temp_indoors.value = self._current_temperature

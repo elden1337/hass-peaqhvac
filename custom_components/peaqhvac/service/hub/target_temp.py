@@ -1,6 +1,8 @@
-from typing import Tuple
 import logging
-from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
+from typing import Tuple
+
+from custom_components.peaqhvac.service.models.enums.hvac_presets import \
+    HvacPresets
 from custom_components.peaqhvac.service.observer import ObserverBroadcaster
 
 MINTEMP = 15
@@ -9,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class TargetTemp(ObserverBroadcaster):
-    def __init__(self, initval=19, observer_message:str = None, hub = None):
+    def __init__(self, initval=19, observer_message: str = None, hub=None):
         self.hub = hub
         self._value = initval
         self._min_tolerance = None
@@ -36,11 +38,15 @@ class TargetTemp(ObserverBroadcaster):
         try:
             if val is not None:
                 self._value = val
-            self._internal_set_temp = self._value - HvacPresets.get_tempdiff(self.preset)
+            self._internal_set_temp = self._value - HvacPresets.get_tempdiff(
+                self.preset
+            )
             self._set_temperature_and_tolerances()
             self._broadcast_changes()
         except:
-            _LOGGER.error(f"Unable to set the targettemp value. The incoming val is {val}")
+            _LOGGER.error(
+                f"Unable to set the targettemp value. The incoming val is {val}"
+            )
 
     @property
     def preset(self) -> HvacPresets:
@@ -77,8 +83,14 @@ class TargetTemp(ObserverBroadcaster):
         self._max_tolerance = _tolerances[1]
 
     def adjusted_tolerances(self, offset: int) -> Tuple[float, float]:
-        _max_tolerance = self.max_tolerance + (offset / 10) if offset > 0 else self.max_tolerance
-        _min_tolerance = self.min_tolerance + (abs(offset) / 10) if offset < 0 else self.min_tolerance
+        _max_tolerance = (
+            self.max_tolerance + (offset / 10) if offset > 0 else self.max_tolerance
+        )
+        _min_tolerance = (
+            self.min_tolerance + (abs(offset) / 10)
+            if offset < 0
+            else self.min_tolerance
+        )
         return max(_min_tolerance, 0.1), max(_max_tolerance, 0.1)
 
     def _minmax(self, desired_temp) -> float:

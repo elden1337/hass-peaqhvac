@@ -5,11 +5,10 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+
 from custom_components.peaqhvac.service.hub.hub import Hub
-from .const import (
-    DOMAIN,
-    PLATFORMS, LISTENER_FN_CLOSE, HVACBRAND_NIBE
-)
+
+from .const import DOMAIN, HVACBRAND_NIBE, LISTENER_FN_CLOSE, PLATFORMS
 from .service.models.config_model import ConfigModel
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,11 +28,17 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
 
     huboptions = ConfigModel()
 
-    huboptions.indoor_tempsensors = huboptions.set_sensors_from_string(config.data["indoor_tempsensors"])
-    huboptions.outdoor_tempsensors = huboptions.set_sensors_from_string(config.data["outdoor_tempsensors"])
+    huboptions.indoor_tempsensors = huboptions.set_sensors_from_string(
+        config.data["indoor_tempsensors"]
+    )
+    huboptions.outdoor_tempsensors = huboptions.set_sensors_from_string(
+        config.data["outdoor_tempsensors"]
+    )
     huboptions.systemid = config.data["systemid"]
-    huboptions.hvacbrand = huboptions.set_hvacbrand(HVACBRAND_NIBE) #todo:move to proper dropdown in configflow
-    #configinputs["hvacbrand"] = config.data["hvacbrand"]
+    huboptions.hvacbrand = huboptions.set_hvacbrand(
+        HVACBRAND_NIBE
+    )  # todo:move to proper dropdown in configflow
+    # configinputs["hvacbrand"] = config.data["hvacbrand"]
 
     hub = Hub(hass, huboptions)
 
@@ -41,10 +46,10 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
 
     await hub.async_setup()
 
-    async def servicehandler_enable(call): # pylint:disable=unused-argument
+    async def servicehandler_enable(call):  # pylint:disable=unused-argument
         await hub.call_enable_peaq()
 
-    async def servicehandler_disable(call): # pylint:disable=unused-argument
+    async def servicehandler_disable(call):  # pylint:disable=unused-argument
         await hub.call_disable_peaq()
 
     async def servicehandler_set_mode(call):
@@ -64,8 +69,10 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     }
     return True
 
+
 async def config_entry_update_listener(hass: HomeAssistant, entry: ConfigEntry):
     await hass.config_entries.async_reload(entry.entry_id)
+
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""

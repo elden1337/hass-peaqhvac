@@ -1,15 +1,11 @@
-from custom_components.peaqhvac.const import HEATINGDEMAND, WATERDEMAND
-from custom_components.peaqhvac.sensors.sensorbase import SensorBase
 from homeassistant.helpers.restore_state import RestoreEntity
 
+from custom_components.peaqhvac.const import HEATINGDEMAND, WATERDEMAND
+from custom_components.peaqhvac.sensors.sensorbase import SensorBase
+
+
 class PeaqSensor(SensorBase, RestoreEntity):
-    def __init__(
-            self,
-            hub,
-            entry_id,
-            name: str,
-            icon: str = "mdi:thermometer"
-    ):
+    def __init__(self, hub, entry_id, name: str, icon: str = "mdi:thermometer"):
         self._sensorname = name
         self._icon = icon
         self._attr_name = f"{hub.hubname} {name}"

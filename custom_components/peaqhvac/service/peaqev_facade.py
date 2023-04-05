@@ -1,11 +1,11 @@
 import logging
-from homeassistant.core import (
-    HomeAssistant
-)
+
+from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
 PEAQEVDOMAIN = "peaqev"
+
 
 class PeaqevFacade:
     def __init__(self, hass: HomeAssistant):

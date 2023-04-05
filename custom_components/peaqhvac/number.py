@@ -1,36 +1,30 @@
 from __future__ import annotations
 
-from homeassistant.components.number import NumberEntity, NumberEntityDescription
+import logging
+
+from homeassistant.components.number import NumberEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.restore_state import RestoreEntity
-import logging
-from .const import (
-    DOMAIN,
-)
+
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 TOLERANCE = "Tolerance"
 
-async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entities): # pylint:disable=unused-argument
+
+async def async_setup_entry(
+    hass: HomeAssistant, config_entry, async_add_entities
+):  # pylint:disable=unused-argument
     hub = hass.data[DOMAIN]["hub"]
 
-    inputnumbers = [
-        {
-            "name":   TOLERANCE,
-            "entity": "_tolerance"
-        }
-    ]
+    inputnumbers = [{"name": TOLERANCE, "entity": "_tolerance"}]
 
     async_add_entities(PeaqNumber(i, hub) for i in inputnumbers)
 
 
 class PeaqNumber(NumberEntity, RestoreEntity):
-    def __init__(
-        self,
-        number,
-        hub
-    ) -> None:
+    def __init__(self, number, hub) -> None:
         self._number = number
         self._attr_name = f"{hub.hubname} {self._number['name']}"
         self._hub = hub
@@ -60,7 +54,7 @@ class PeaqNumber(NumberEntity, RestoreEntity):
     def set_native_value(self, value: float) -> None:
         self._state = value
         self._hub.options.hvac_tolerance = int(float(self._state))
-        tt = self._hub.hvac.update_offset()
+        self._hub.hvac.update_offset()
 
     async def async_added_to_hass(self):
         state = await super().async_get_last_state()

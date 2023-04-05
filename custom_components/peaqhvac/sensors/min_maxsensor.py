@@ -1,23 +1,18 @@
-from custom_components.peaqhvac.const import AVERAGESENSOR_INDOORS, AVERAGESENSOR_OUTDOORS
-from custom_components.peaqhvac.sensors.sensorbase import SensorBase
+from homeassistant.components.sensor import SensorStateClass
 from homeassistant.helpers.restore_state import RestoreEntity
-from homeassistant.components.sensor import (
-    SensorStateClass,
-)
+
+from custom_components.peaqhvac.const import (AVERAGESENSOR_INDOORS,
+                                              AVERAGESENSOR_OUTDOORS)
+from custom_components.peaqhvac.sensors.sensorbase import SensorBase
+
 
 class AverageSensor(SensorBase, RestoreEntity):
-
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(
-            self,
-            hub,
-            entry_id,
-            name
-    ):
+    def __init__(self, hub, entry_id, name):
         self._sensorname = name
         self._attr_name = f"{hub.hubname} {name}"
-        self._attr_unit_of_measurement = '°C'
+        self._attr_unit_of_measurement = "°C"
         super().__init__(hub, self._attr_name, entry_id)
         self._state = 0.0
         self._min = 0.0
@@ -66,7 +61,7 @@ class AverageSensor(SensorBase, RestoreEntity):
         state = await super().async_get_last_state()
         if state:
             self._state = state.state
-            _all_values = state.attributes.get('values', 50)
+            _all_values = state.attributes.get("values", 50)
             if self._sensorname == AVERAGESENSOR_INDOORS:
                 self._hub.sensors.average_temp_indoors.all_values = _all_values
             elif self._sensorname == AVERAGESENSOR_OUTDOORS:

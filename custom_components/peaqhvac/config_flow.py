@@ -1,14 +1,16 @@
 """Config flow for Peaq integration."""
 from __future__ import annotations
+
 import logging
-from homeassistant import config_entries
-#from homeassistant.core import callback
+# from homeassistant.core import callback
 from typing import Any, Optional
 
-from custom_components.peaqhvac.configflow.config_flow_validation import ConfigFlowValidation
-from custom_components.peaqhvac.configflow.config_flow_schemas import (
+from homeassistant import config_entries
+
+from custom_components.peaqhvac.configflow.config_flow_schemas import \
     USER_SCHEMA
-)
+from custom_components.peaqhvac.configflow.config_flow_validation import \
+    ConfigFlowValidation
 
 from .const import DOMAIN  # pylint:disable=unused-import
 
@@ -36,10 +38,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(title=self.info["title"], data=self.data)
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=USER_SCHEMA,
-            errors=errors,
-            last_step=True
+            step_id="user", data_schema=USER_SCHEMA, errors=errors, last_step=True
         )
 
     # async def async_step_sensor(self, user_input=None):

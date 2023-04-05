@@ -1,5 +1,6 @@
 import logging
 import statistics
+
 from custom_components.peaqhvac.service.observer import ObserverBroadcaster
 
 _LOGGER = logging.getLogger(__name__)
@@ -88,7 +89,9 @@ class Average(ObserverBroadcaster):
                 self._all_values = filtered_list
 
             else:
-                _LOGGER.debug(f"Unable to calculate average. Initialized sensors are: {self.initialized_percentage}")
+                _LOGGER.debug(
+                    f"Unable to calculate average. Initialized sensors are: {self.initialized_percentage}"
+                )
                 self.value = 0
         except:
             self.value = 0

@@ -15,25 +15,20 @@ AWAYMODE = "away mode"
 CONTROL_WATER = "control water"
 CONTROL_HEAT = "control heat"
 
-async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entities): # pylint:disable=unused-argument
+
+async def async_setup_entry(
+    hass: HomeAssistant, config_entry, async_add_entities
+):  # pylint:disable=unused-argument
     hub = hass.data[DOMAIN]["hub"]
 
     switches = [
-        {
-            "name": ENABLED,
-            "entity": "_enabled"
-        },
-        {
-            "name":CONTROL_WATER,
-            "entity": "control_water"
-        },
-        {
-            "name":   CONTROL_HEAT,
-            "entity": "control_heat"
-        }
+        {"name": ENABLED, "entity": "_enabled"},
+        {"name": CONTROL_WATER, "entity": "control_water"},
+        {"name": CONTROL_HEAT, "entity": "control_heat"},
     ]
 
     async_add_entities(PeaqSwitch(s, hub) for s in switches)
+
 
 class PeaqSwitch(SwitchEntity, RestoreEntity):
     def __init__(self, switch, hub) -> None:
@@ -55,11 +50,11 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
 
     @property
     def is_on(self) -> bool:
-        if self._switch['name'] == ENABLED:
+        if self._switch["name"] == ENABLED:
             return self._hub.sensors.peaq_enabled.value
-        elif self._switch['name'] == CONTROL_WATER:
+        elif self._switch["name"] == CONTROL_WATER:
             return self._hub.hvac.water_heater.control_module
-        elif self._switch['name'] == CONTROL_HEAT:
+        elif self._switch["name"] == CONTROL_HEAT:
             return self._hub.hvac.house_heater.control_module
 
     @property
@@ -71,28 +66,28 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
         self._state = value
 
     def turn_on(self):
-        if self._switch['name'] == ENABLED:
+        if self._switch["name"] == ENABLED:
             self._hub.sensors.peaq_enabled.value = True
-        elif self._switch['name'] == CONTROL_WATER:
+        elif self._switch["name"] == CONTROL_WATER:
             self._hub.hvac.water_heater.control_module = True
-        elif self._switch['name'] == CONTROL_HEAT:
+        elif self._switch["name"] == CONTROL_HEAT:
             self._hub.hvac.house_heater.control_module = True
-        
+
     def turn_off(self):
-        if self._switch['name'] == ENABLED:
+        if self._switch["name"] == ENABLED:
             self._hub.sensors.peaq_enabled.value = False
-        elif self._switch['name'] == CONTROL_WATER:
+        elif self._switch["name"] == CONTROL_WATER:
             self._hub.hvac.water_heater.control_module = False
-        elif self._switch['name'] == CONTROL_HEAT:
+        elif self._switch["name"] == CONTROL_HEAT:
             self._hub.hvac.house_heater.control_module = False
 
     def update(self):
         new_state = None
-        if self._switch['name'] == ENABLED:
+        if self._switch["name"] == ENABLED:
             new_state = self._hub.sensors.peaq_enabled.value
-        elif self._switch['name'] == CONTROL_WATER:
+        elif self._switch["name"] == CONTROL_WATER:
             new_state = self._hub.hvac.water_heater.control_module
-        elif self._switch['name'] == CONTROL_HEAT:
+        elif self._switch["name"] == CONTROL_HEAT:
             new_state = self._hub.hvac.house_heater.control_module
         self.state = "on" if new_state is True else "off"
 
@@ -100,11 +95,11 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
         state = await super().async_get_last_state()
         if state:
             self.state = state.state
-            if self._switch['name'] == ENABLED:
+            if self._switch["name"] == ENABLED:
                 self._hub.sensors.peaq_enabled.value = state.state
-            elif self._switch['name'] == CONTROL_WATER:
+            elif self._switch["name"] == CONTROL_WATER:
                 self._hub.hvac.water_heater.control_module = state.state
-            elif self._switch['name'] == CONTROL_HEAT:
+            elif self._switch["name"] == CONTROL_HEAT:
                 self._hub.hvac.house_heater.control_module = state.state
         else:
             self.update()

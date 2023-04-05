@@ -1,14 +1,14 @@
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from homeassistant.const import CONF_NAME
-#import custom_components.peaqev.peaqservice.util.constants as pk
+
+# import custom_components.peaqev.peaqservice.util.constants as pk
 
 
 USER_SCHEMA = vol.Schema(
     {
         vol.Optional("indoor_tempsensors"): cv.string,
         vol.Optional("outdoor_tempsensors"): cv.string,
-        vol.Optional("systemid"): cv.string
+        vol.Optional("systemid"): cv.string,
     }
 )
 #

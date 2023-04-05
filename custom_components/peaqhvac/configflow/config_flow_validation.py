@@ -1,15 +1,15 @@
 import logging
+from typing import Any
 
 from homeassistant import exceptions
 from homeassistant.core import HomeAssistant
-from typing import Any
 
 import custom_components.peaqhvac.extensionmethods as ex
 
 _LOGGER = logging.getLogger(__name__)
 
-class ConfigFlowValidation:
 
+class ConfigFlowValidation:
     @staticmethod
     async def validate_power_sensor(hass: HomeAssistant, powersensor: str) -> bool:
         val_state = hass.states.get(powersensor)
@@ -21,13 +21,13 @@ class ConfigFlowValidation:
 
     @staticmethod
     async def validate_input_first(data: dict) -> dict[str, Any]:
-        """ Validate the data can be used to set up a connection."""
+        """Validate the data can be used to set up a connection."""
 
         # if len(data["name"]) < 3:
         #     raise ValueError
         # if not data["name"].startswith("sensor."):
         #     data["name"] = f"sensor.{data['name']}"
-        #if await _check_power_sensor(hass, data["name"]) is False:
+        # if await _check_power_sensor(hass, data["name"]) is False:
         #    raise ValueError
 
         # return {"title": data["name"]}
@@ -35,8 +35,8 @@ class ConfigFlowValidation:
 
     @staticmethod
     async def validate_input_first_chargerid(data: dict) -> dict[str, Any]:
-        """ Validate the chargerId"""
-        #if len(data["chargerid"]) < 1:
+        """Validate the chargerId"""
+        # if len(data["chargerid"]) < 1:
         #    raise ValueError
 
         return {"title": data["name"]}

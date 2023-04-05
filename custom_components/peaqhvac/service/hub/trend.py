@@ -1,13 +1,16 @@
 import logging
 import time
 from datetime import datetime
+
 import custom_components.peaqhvac.extensionmethods as ex
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class Gradient:
-    def __init__(self, max_age: int, max_samples: int, precision: int = 2, ignore: int = None):
+    def __init__(
+        self, max_age: int, max_samples: int, precision: int = 2, ignore: int = None
+    ):
         self._init_time = time.time()
         self._temp_readings = []
         self._gradient = 0
@@ -49,12 +52,7 @@ class Gradient:
 
     @property
     def is_clean(self) -> bool:
-        return all(
-            [
-                time.time() - self._init_time > 300,
-                self.samples > 1
-            ]
-        )
+        return all([time.time() - self._init_time > 300, self.samples > 1])
 
     def set_gradient(self):
         self._remove_from_list()
@@ -78,7 +76,9 @@ class Gradient:
         """Removes overflowing number of samples and old samples from the list."""
         while len(self._temp_readings) > self._max_samples:
             self._temp_readings.pop(0)
-        gen = (x for x in self._temp_readings if time.time() - int(x[0]) > self._max_age)
+        gen = (
+            x for x in self._temp_readings if time.time() - int(x[0]) > self._max_age
+        )
         for i in gen:
             if len(self._temp_readings) > 2:
                 # Always keep two readings to be able to calc trend
@@ -106,7 +106,9 @@ class Gradient:
         """Removes overflowing number of samples and old samples from the list."""
         while len(self._temp_readings) > self._max_samples:
             self._temp_readings.pop(0)
-        gen = (x for x in self._temp_readings if time.time() - int(x[0]) > self._max_age)
+        gen = (
+            x for x in self._temp_readings if time.time() - int(x[0]) > self._max_age
+        )
         for i in gen:
             if len(self._temp_readings) > 2:
                 # Always keep two readings to be able to calc trend

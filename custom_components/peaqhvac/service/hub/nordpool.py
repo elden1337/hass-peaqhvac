@@ -1,9 +1,11 @@
 import logging
+
 import homeassistant.helpers.template as template
 
 _LOGGER = logging.getLogger(__name__)
 
 NORDPOOL = "nordpool"
+
 
 class NordPoolUpdater:
     def __init__(self, hass, hub):
@@ -17,11 +19,9 @@ class NordPoolUpdater:
 
     @property
     def is_initialized(self) -> bool:
-        return all([
-            self.currency != "",
-            len(self._prices) > 0,
-            self._state is not None
-        ])
+        return all(
+            [self.currency != "", len(self._prices) > 0, self._state is not None]
+        )
 
     @property
     def state(self) -> float:
@@ -59,17 +59,23 @@ class NordPoolUpdater:
             try:
                 _result["today"] = list(ret.attributes.get("today"))
             except Exception as e:
-                _LOGGER.exception(f"Could not parse today's prices from Nordpool. Unsolveable error. {e}")
+                _LOGGER.exception(
+                    f"Could not parse today's prices from Nordpool. Unsolveable error. {e}"
+                )
                 return
             try:
                 _result["tomorrow"] = list(ret.attributes.get("tomorrow"))
             except Exception as e:
-                _LOGGER.warning(f"Couldn't parse tomorrow's prices from Nordpool. Array will be empty. {e}")
+                _LOGGER.warning(
+                    f"Couldn't parse tomorrow's prices from Nordpool. Array will be empty. {e}"
+                )
                 _result["tomorrow"] = []
             _result["currency"] = str(ret.attributes.get("currency"))
             _result["state"] = ret.state
             if await self.async_update_set_prices(_result):
-                await self._hub.observer.async_broadcast("prices changed", [self._prices, self._prices_tomorrow])
+                await self._hub.observer.async_broadcast(
+                    "prices changed", [self._prices, self._prices_tomorrow]
+                )
         else:
             _LOGGER.error("Could not get nordpool-prices")
 
@@ -92,7 +98,9 @@ class NordPoolUpdater:
                 raise Exception("no entities found for Nordpool.")
             if len(list(entities)) == 1:
                 self.nordpool_entity = list(entities)[0]
-                _LOGGER.debug(f"Nordpool has been set up and is ready to be used with {self.nordpool_entity}")
+                _LOGGER.debug(
+                    f"Nordpool has been set up and is ready to be used with {self.nordpool_entity}"
+                )
                 await self.async_update_nordpool()
             else:
                 raise Exception("more than one Nordpool entity found. Cannot continue.")
