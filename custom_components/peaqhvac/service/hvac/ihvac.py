@@ -1,11 +1,10 @@
 from __future__ import annotations
+
 import logging
 import time
 from abc import abstractmethod
 from datetime import datetime
-from typing import Tuple
-
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from custom_components.peaqhvac.service.hub.hub import Hub
@@ -49,7 +48,7 @@ class IHvac:
         self.model = IHvacModel()
         self.hub.observer.add("offset recalculation", self.update_offset)
 
-    def update_offset(self) -> bool: #todo: make async
+    def update_offset(self) -> bool:  # todo: make async
         if self.hub.sensors.peaqev_installed:
             if len(self.hub.sensors.peaqev_facade.offsets.get("today", {})) < 20:
                 return False
@@ -69,7 +68,7 @@ class IHvac:
             _LOGGER.exception(f"Error on updating offsets: {e}")
             return False
 
-    def get_offsets(self) -> None: #todo: make async
+    def get_offsets(self) -> None:  # todo: make async
         ret = self.hub.offset.get_offset()
         if ret is not None:
             self.model.current_offset_dict = ret[0]
@@ -169,7 +168,7 @@ class IHvac:
             if await self.async_ready_to_update(HvacOperations.Offset):
                 self.model.update_list.append(
                     (HvacOperations.Offset, self.current_offset)
-                )           
+                )
 
     async def async_request_periodic_updates_water(self) -> None:
         if self.water_heater.try_heat_water or self.water_heater.water_heating:
@@ -229,7 +228,9 @@ class IHvac:
                     domain,
                 ) = await self._get_operation_call_parameters(operation, _value)
 
-                _LOGGER.debug(f"Requesting to update hvac-{operation.name} with value {set_val}")
+                _LOGGER.debug(
+                    f"Requesting to update hvac-{operation.name} with value {set_val}"
+                )
                 await self._hass.services.async_call(domain, call_operation, params)
 
     def get_value(self, sensor: SensorType, return_type):
