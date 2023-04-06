@@ -128,7 +128,7 @@ class IHvac:
         await self.water_heater.async_update_demand()
         await self.request_periodic_updates()
 
-    async def _ready_to_update(self, operation) -> bool:
+    async def async_ready_to_update(self, operation) -> bool:
         match operation:
             case HvacOperations.WaterBoost | HvacOperations.VentBoost:
                 return any(
@@ -162,18 +162,18 @@ class IHvac:
     async def async_request_periodic_updates_heat(self) -> None:
         _vent_state = int(self.house_heater.vent_boost)
         if _vent_state != self.model.current_vent_boost_state:
-            if await self._ready_to_update(HvacOperations.VentBoost):
+            if await self.async_ready_to_update(HvacOperations.VentBoost):
                 self.model.update_list.append((HvacOperations.VentBoost, _vent_state))
                 self.model.current_vent_boost_state = _vent_state
             if self.update_offset():
-                if await self._ready_to_update(HvacOperations.Offset):
+                if await self.async_ready_to_update(HvacOperations.Offset):
                     self.model.update_list.append(
                         (HvacOperations.Offset, self.current_offset)
                     )
 
     async def async_request_periodic_updates_water(self) -> None:
         if self.water_heater.try_heat_water or self.water_heater.water_heating:
-            if await self._ready_to_update(HvacOperations.WaterBoost):
+            if await self.async_ready_to_update(HvacOperations.WaterBoost):
                 if self.model.current_water_boost_state != int(
                     self.water_heater.try_heat_water
                 ):
