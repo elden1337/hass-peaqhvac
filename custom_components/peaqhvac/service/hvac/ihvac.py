@@ -1,8 +1,14 @@
+from __future__ import annotations
 import logging
 import time
 from abc import abstractmethod
 from datetime import datetime
 from typing import Tuple
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from custom_components.peaqhvac.service.hub.hub import Hub
 
 from homeassistant.core import HomeAssistant
 
@@ -29,7 +35,7 @@ UPDATE_INTERVALS = {
 class IHvac:
     current_offset: int = 0  # todo: remove either from here or from house_heater
 
-    def __init__(self, hass: HomeAssistant, hub):
+    def __init__(self, hass: HomeAssistant, hub: Hub):
         self.hub = hub
         self._hass = hass
         self._force_update: bool = False
@@ -43,12 +49,11 @@ class IHvac:
         self.model = IHvacModel()
         self.hub.observer.add("offset recalculation", self.update_offset)
 
-    def update_offset(self) -> bool:
+    def update_offset(self) -> bool: #todo: make async
         if self.hub.sensors.peaqev_installed:
             if len(self.hub.sensors.peaqev_facade.offsets.get("today", {})) < 20:
                 return False
         try:
-            # if self.model.current_offset_dict == {}:
             self.get_offsets()
             _hvac_offset = self.hvac_offset
             new_offset, force_update = self.house_heater.get_current_offset(
@@ -59,17 +64,12 @@ class IHvac:
                 self._force_update = force_update
             if self.current_offset != _hvac_offset:
                 return True
-            else:
-                return False
+            return False
         except Exception as e:
             _LOGGER.exception(f"Error on updating offsets: {e}")
             return False
 
-    def get_offsets(self) -> None:
-        # if self.hub.sensors.peaqev_installed:
-        #     self.model.current_offset_dict = self.hub.sensors.peaqev_facade.offsets.get("today", {})
-        #     self.model.current_offset_dict_tomorrow = self.hub.sensors.peaqev_facade.offsets.get("tomorrow", {})
-        # else:
+    def get_offsets(self) -> None: #todo: make async
         ret = self.hub.offset.get_offset()
         if ret is not None:
             self.model.current_offset_dict = ret[0]
@@ -165,11 +165,11 @@ class IHvac:
             if await self.async_ready_to_update(HvacOperations.VentBoost):
                 self.model.update_list.append((HvacOperations.VentBoost, _vent_state))
                 self.model.current_vent_boost_state = _vent_state
-            if self.update_offset():
-                if await self.async_ready_to_update(HvacOperations.Offset):
-                    self.model.update_list.append(
-                        (HvacOperations.Offset, self.current_offset)
-                    )
+        if await self._hass.async_add_executor_job(self.update_offset):
+            if await self.async_ready_to_update(HvacOperations.Offset):
+                self.model.update_list.append(
+                    (HvacOperations.Offset, self.current_offset)
+                )           
 
     async def async_request_periodic_updates_water(self) -> None:
         if self.water_heater.try_heat_water or self.water_heater.water_heating:
@@ -229,9 +229,7 @@ class IHvac:
                     domain,
                 ) = await self._get_operation_call_parameters(operation, _value)
 
-                _LOGGER.debug(
-                    f"Requesting to update hvac-{operation.name} with value {set_val}"
-                )
+                _LOGGER.debug(f"Requesting to update hvac-{operation.name} with value {set_val}")
                 await self._hass.services.async_call(domain, call_operation, params)
 
     def get_value(self, sensor: SensorType, return_type):
@@ -242,6 +240,4 @@ class IHvac:
                 return ex.parse_to_type(ret, return_type)
             except Exception as e:
                 _LOGGER.debug(f"Could not parse {sensor.name} from hvac. {e}")
-        # else:
-        #     _LOGGER.warning(f"Could not get {sensor.name} from hvac.")
         return 0

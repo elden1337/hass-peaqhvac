@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from custom_components.peaqhvac.service.hvac.ihvac import IHvac
 import logging
 import time
 from abc import ABC, abstractmethod
@@ -12,11 +17,11 @@ _LOGGER = logging.getLogger(__name__)
 class IHeater(ABC):
     _update_interval = 60
 
-    def __init__(self, hvac):
-        self._demand = Demand.NoDemand
-        self._hvac = hvac
-        self._control_module = HubMember(data_type=bool, initval=False)
-        self._latest_update = 0
+    def __init__(self, hvac: IHvac):
+        self._demand: Demand = Demand.NoDemand
+        self._hvac: IHvac = hvac
+        self._control_module: HubMember = HubMember(data_type=bool, initval=False)
+        self._latest_update: float = 0
 
     @property
     @abstractmethod
