@@ -133,7 +133,7 @@ class OffsetCoordinator:
             _LOGGER.debug("not possible to calculate offset.")
 
     def adjust_to_threshold(self, adjustment: int) -> int:
-        if adjustment is None:
+        if adjustment is None or self._hub.sensors.average_temp_outdoors.value > 13:
             return 0
         if self.model.tolerance is None:
             tolerance = 3

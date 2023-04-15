@@ -76,6 +76,8 @@ class HouseHeater(IHeater):
         return input_offset
 
     def get_current_offset(self, offsets: dict) -> Tuple[int, bool]:
+        if self._hvac.hub.sensors.average_temp_outdoors.value > 13:
+            return 0, True
         if self._hvac.hub.offset.max_price_lower(self._get_tempdiff()):
             return -10, True
         desired_offset = self._set_calculated_offset(offsets)

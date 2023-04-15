@@ -1,10 +1,8 @@
 from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from custom_components.peaqhvac.service.hvac.ihvac import IHvac
-
 import logging
 import time
 from abc import ABC, abstractmethod
