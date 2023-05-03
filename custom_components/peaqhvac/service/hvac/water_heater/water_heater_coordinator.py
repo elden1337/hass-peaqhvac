@@ -33,9 +33,7 @@ class WaterHeater(IHeater):
         self.messages = {
             "water_breach": "Peak is being breached. Turning off water heating"
         }
-        self.wait_queue = {
-            "water_breach": 0
-        }
+        self.wait_queue = {"water_breach": 0}
         self.booster_model = WaterBoosterModel()
         self._hvac.hub.observer.add("offset recalculation", self.update_operation)
 
