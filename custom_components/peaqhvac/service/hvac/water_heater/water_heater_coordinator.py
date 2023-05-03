@@ -30,6 +30,12 @@ class WaterHeater(IHeater):
         self._water_temp_trend = Gradient(
             max_age=3600, max_samples=10, precision=0, ignore=0
         )
+        self.messages = {
+            "water_breach": "Peak is being breached. Turning off water heating"
+        }
+        self.wait_queue = {
+            "water_breach": 0
+        }
         self.booster_model = WaterBoosterModel()
         self._hvac.hub.observer.add("offset recalculation", self.update_operation)
 
@@ -167,11 +173,16 @@ class WaterHeater(IHeater):
             elif self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
                 self._set_water_heater_operation_away()
 
+    def timed_log(self, log):
+        if time.time() - self.wait_queue.get(log) > 180:
+            _LOGGER.debug(self.messages.get(log))
+            self.wait_queue[log] = time.time()
+
     def _set_water_heater_operation_home(self) -> None:
         if self._hvac.hub.sensors.peaqev_installed:
             if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100:
                 self.booster_model.try_heat_water = False
-                _LOGGER.debug("Peak is being breached. Turning off water heating")
+                self.timed_log("water_breach")
                 return
         if self._get_water_peak(datetime.now().hour):
             _LOGGER.debug("Current hour is identified as a good hour to boost water")
