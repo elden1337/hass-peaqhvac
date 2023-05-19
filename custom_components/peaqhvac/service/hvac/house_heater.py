@@ -153,19 +153,19 @@ class HouseHeater(IHeater):
             )
             return Demand.NoDemand
 
-    def _set_calculated_offset(self, offsets: dict) -> int:
+    async def async_set_calculated_offset(self, offsets: dict) -> int:
         self._update_current_offset(offsets=offsets)
         ret = sum(
             [
                 self.current_offset,
                 self.current_tempdiff,
-                self._get_temp_extremas(),
-                self._get_temp_trend_offset(),
+                await self.async_get_temp_extremas(),
+                await self.async_get_temp_trend_offset(),
             ]
         )
         return int(round(ret, 0))
 
-    def _update_current_offset(self, offsets: dict) -> None:
+    async def async_update_current_offset(self, offsets: dict) -> None:
         hour = datetime.now().hour
         if datetime.now().hour < 23 and datetime.now().minute >= 50:
             hour = datetime.now().hour + 1
@@ -178,7 +178,7 @@ class HouseHeater(IHeater):
             _offset = 0
         self.current_offset = _offset
 
-    def _add_temp_boost(self, pre_offset: int) -> int:
+    async def async_add_temp_boost(self, pre_offset: int) -> int:
         if time.time() - self._latest_boost > HEATBOOST_TIMER:
             if all(
                 [
@@ -194,24 +194,24 @@ class HouseHeater(IHeater):
                 self._latest_boost = time.time()
         else:
             pre_offset += 1
-            if self._get_tempdiff() > 1:
+            if await self.async_get_tempdiff() > 1:
                 pre_offset -= 1
                 self._latest_boost = 0
         return pre_offset
 
-    def _get_tempdiff_inverted(self) -> int:
-        diff = self._get_tempdiff()
+    async def async_get_tempdiff_inverted(self) -> int:
+        diff = await self.async_get_tempdiff()
         if diff == 0:
             return 0
-        _tolerance = self._determine_tolerance(diff)
+        _tolerance = await self.async_determine_tolerance(diff)
         return int(diff / _tolerance) * -1
 
-    def _get_tempdiff(self) -> float:
+    async def async_get_tempdiff(self) -> float:
         _indoors = self._hvac.hub.sensors.average_temp_indoors.value
         _set_temp = self._hvac.hub.sensors.set_temp_indoors.adjusted_temp
         return _indoors - _set_temp
 
-    def _get_temp_extremas(self) -> float:
+    async def async_get_temp_extremas(self) -> float:
         _diffs = [], []
         set_temp = self._hvac.hub.sensors.set_temp_indoors.adjusted_temp
         for t in self._hvac.hub.sensors.average_temp_indoors.all_values:
@@ -223,14 +223,14 @@ class HouseHeater(IHeater):
         if len(_diffs[0]) == len(_diffs[1]):
             return 0
         _cold = len(_diffs[0]) > len(_diffs[1])
-        _tolerance = self._determine_tolerance(_cold)
+        _tolerance = await self.async_determine_tolerance(_cold)
         if len(_diffs[0]) > len(_diffs[1]):
             ret = statistics.mean(_diffs[0]) - _tolerance
         else:
             ret = statistics.mean(_diffs[1]) + _tolerance
         return round(ret, 2)
 
-    def _get_temp_trend_offset(self) -> float:
+    async def async_get_temp_trend_offset(self) -> float:
         if self._hvac.hub.sensors.temp_trend_indoors.is_clean:
             if -0.1 < self._hvac.hub.sensors.temp_trend_indoors.gradient < 0.1:
                 return 0
@@ -238,9 +238,9 @@ class HouseHeater(IHeater):
                 self._hvac.hub.predicted_temp
                 - self._hvac.hub.sensors.set_temp_indoors.adjusted_temp
             )
-            _tolerance = self._determine_tolerance(new_temp_diff)
+            _tolerance = await self.async_determine_tolerance(new_temp_diff)
             if abs(new_temp_diff) >= _tolerance:
-                ret = self._get_offset_steps(_tolerance)
+                ret = await self.async_get_offset_steps(_tolerance)
                 if new_temp_diff > 0:
                     ret = ret * -1
                 if ret == 0:
@@ -248,14 +248,14 @@ class HouseHeater(IHeater):
                 return ret
         return 0
 
-    def _get_offset_steps(self, tolerance) -> int:
+    async def async_get_offset_steps(self, tolerance) -> int:
         ret = abs(self._hvac.hub.sensors.temp_trend_indoors.gradient) / tolerance
         return int(ret)
 
-    def _determine_tolerance(self, determinator) -> float:
-        tolerances = self._hvac.hub.sensors.set_temp_indoors.adjusted_tolerances(
+    async def async_determine_tolerance(self, determinator) -> float:
+        tolerances = await self._hvac.hub.sensors.set_temp_indoors.async_adjusted_tolerances(
             self._current_offset
-        )
+        ) #todo: fix this
         return (
             tolerances[1]
             if (determinator > 0 or determinator is True)
@@ -265,7 +265,7 @@ class HouseHeater(IHeater):
     async def async_update_operation(self):
         pass
 
-    def _should_vent_boost(self) -> bool:
+    async def async_should_vent_boost(self) -> bool:
         if self._hvac.fan_speed < 100:
             if all(
                 [
@@ -275,20 +275,20 @@ class HouseHeater(IHeater):
             ):
                 if all(
                     [
-                        self._get_tempdiff() > 1,
+                        await self.async_get_tempdiff() > 1,
                         self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
                         self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
                         self._hvac.hub.sensors.average_temp_outdoors.value >= 0,
                     ]
                 ):
-                    self._vent_boost_start("Vent boosting because of warmth.")
+                    await self.async_vent_boost_start("Vent boosting because of warmth.")
                 elif all(
                     [
                         self._hvac.hvac_dm <= LOW_DEGREE_MINUTES,
                         self._hvac.hub.sensors.average_temp_outdoors.value >= -12,
                     ]
                 ):
-                    self._vent_boost_start(
+                    await self.async_vent_boost_start(
                         "Vent boosting because of low degree minutes."
                     )
                 else:
@@ -303,7 +303,7 @@ class HouseHeater(IHeater):
             self._current_vent_state = False
         return self._current_vent_state
 
-    def _vent_boost_start(self, msg) -> None:
+    async def async_vent_boost_start(self, msg) -> None:
         _LOGGER.debug(msg)
         self._wait_timer_boost = time.time()
         self._current_vent_state = True
