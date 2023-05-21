@@ -23,6 +23,13 @@ class PeaqevFacade:
         return {}
 
     @property
+    def min_price(self) -> float:
+        data = self._peaqevhub.options.price.min_price
+        if data is not None:
+            return data
+        return 0
+
+    @property
     def exact_threshold(self) -> float:
         data = self._peaqevhub.prediction.predictedpercentageofpeak
         if data is not None:
