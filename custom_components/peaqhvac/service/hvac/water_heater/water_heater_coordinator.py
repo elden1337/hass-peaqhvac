@@ -4,7 +4,7 @@ from datetime import datetime
 
 import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.service.hub.trend import Gradient
-from custom_components.peaqhvac.service.hvac.iheater import IHeater
+from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.hvac.water_heater.water_peak import (
     async_get_water_peak_helper, get_water_peak)
 from custom_components.peaqhvac.service.models.enums.demand import Demand

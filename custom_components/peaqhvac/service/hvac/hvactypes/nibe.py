@@ -1,7 +1,7 @@
 import logging
 from typing import Tuple
 
-from custom_components.peaqhvac.service.hvac.ihvac import IHvac
+from custom_components.peaqhvac.service.hvac.interfaces.ihvac import IHvac
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 from custom_components.peaqhvac.service.models.enums.hvacoperations import \
     HvacOperations

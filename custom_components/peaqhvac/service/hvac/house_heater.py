@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 from typing import Tuple
 
-from custom_components.peaqhvac.service.hvac.iheater import IHeater
+from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from custom_components.peaqhvac.service.hvac.ihvac import IHvac
+    from custom_components.peaqhvac.service.hvac.interfaces.ihvac import IHvac
 
 import logging
 import time

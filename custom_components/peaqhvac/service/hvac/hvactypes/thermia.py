@@ -1,6 +1,6 @@
 import logging
 
-from custom_components.peaqhvac.service.hvac.ihvac import IHvac
+from custom_components.peaqhvac.service.hvac.interfaces.ihvac import IHvac
 from custom_components.peaqhvac.service.models.enums.hvacoperations import \
     HvacOperations
 
