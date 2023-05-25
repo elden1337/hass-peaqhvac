@@ -198,16 +198,16 @@ class WaterHeater(IHeater):
                     _LOGGER.debug("Peak is being breached. Turning off water heating")
                     return
         if await self.async_get_water_peak(datetime.now().hour):
-            _LOGGER.debug("Current hour is identified as a good hour to boost water")
+            #_LOGGER.debug("Current hour is identified as a good hour to boost water")
             self.booster_model.boost = True
             await self.async_toggle_boost(timer_timeout=3600)
         elif any([
             all([
                 await self.async_get_current_offset() > 0,
                 datetime.now().hour < 22]),
-            self._hvac.hub.nordpool.state <= self._hvac.hub.sensors.peaqev_facade.min_price
+            float(self._hvac.hub.nordpool.state) <= float(self._hvac.hub.sensors.peaqev_facade.min_price)
         ]):
-            _LOGGER.debug("price is lower than min-price so i'm happily warming water")
+            #_LOGGER.debug("price is lower than min-price so i'm happily warming water")
             await self.async_toggle_hotwater_boost(HIGHTEMP_THRESHOLD)
 
     def _toggle_hotwater_boost(self, temp_threshold):
