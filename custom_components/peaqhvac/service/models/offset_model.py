@@ -46,7 +46,6 @@ class OffsetModel:
         self._tolerance = val
 
     def recalculate_tolerance(self):
-        """need to make this one better. 10c and +5 makes heater heat when too warm inside."""
         if self.hub.options.hvac_tolerance is not None:
             old_tolerance = self._tolerance
             old_raw = self.tolerance_raw
