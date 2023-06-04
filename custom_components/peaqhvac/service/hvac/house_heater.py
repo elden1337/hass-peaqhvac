@@ -279,6 +279,7 @@ class HouseHeater(IHeater):
                         self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
                         self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
                         self._hvac.hub.sensors.average_temp_outdoors.value >= 0,
+                        not self._current_vent_state
                     ]
                 ):
                     self._vent_boost_start("Vent boosting because of warmth.")
@@ -286,6 +287,7 @@ class HouseHeater(IHeater):
                     [
                         self._hvac.hvac_dm <= LOW_DEGREE_MINUTES,
                         self._hvac.hub.sensors.average_temp_outdoors.value >= -12,
+                        not self._current_vent_state
                     ]
                 ):
                     self._vent_boost_start(
