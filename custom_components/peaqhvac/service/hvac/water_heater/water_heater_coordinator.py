@@ -171,9 +171,7 @@ class WaterHeater(IHeater):
                 self.booster_model.boost = True
                 self._toggle_boost(timer_timeout=3600)
             elif any([
-                all([
-                    self._get_current_offset() > 0,
-                    datetime.now().hour < 22]),
+                self._get_current_offset() > 0,
                 float(self._hvac.hub.nordpool.state) <= float(self._hvac.hub.sensors.peaqev_facade.min_price)
             ]):
                 #_LOGGER.debug("price is lower than min-price so i'm happily warming water")

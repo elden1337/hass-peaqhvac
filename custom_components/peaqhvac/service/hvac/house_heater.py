@@ -8,6 +8,7 @@ from typing import Tuple
 
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
+from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 
 _LOGGER = logging.getLogger(__name__)
@@ -211,6 +212,9 @@ class HouseHeater(IHeater):
         _set_temp = self._hvac.hub.sensors.set_temp_indoors.adjusted_temp
         return _indoors - _set_temp
 
+    def _get_tempdiff_in_out(self) -> float:
+        return self._hvac.hub.sensors.average_temp_indoors.value - self._hvac.hub.sensors.average_temp_outdoors.value
+
     def _get_temp_extremas(self) -> float:
         _diffs = [], []
         set_temp = self._hvac.hub.sensors.set_temp_indoors.adjusted_temp
@@ -279,10 +283,20 @@ class HouseHeater(IHeater):
                         self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
                         self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
                         self._hvac.hub.sensors.average_temp_outdoors.value >= 0,
+                        self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away,
                         not self._current_vent_state
                     ]
                 ):
                     self._vent_boost_start("Vent boosting because of warmth.")
+                elif all(
+                    [
+                        self._get_tempdiff_in_out() > 4,
+                        self._hvac.hub.sensors.average_temp_outdoors.value >= 15
+                        self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away,
+                        not self._current_vent_state
+                    ]
+                ):
+                    self._vent_boost_start("Vent boost night cooling")
                 elif all(
                     [
                         self._hvac.hvac_dm <= LOW_DEGREE_MINUTES,
