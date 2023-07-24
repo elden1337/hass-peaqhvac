@@ -285,7 +285,8 @@ class HouseHeater(IHeater):
         return all(
                     [
                         self._hvac.hub.sensors.get_tempdiff_in_out() > 4,
-                        self._hvac.hub.sensors.average_temp_outdoors.value >= 15,
+                        self._hvac.hub.sensors.average_temp_outdoors.value >= 17,
+                        datetime.now().hour < 6,
                         self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away,
                         not self._current_vent_state
                     ]
