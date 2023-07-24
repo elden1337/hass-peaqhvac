@@ -70,24 +70,19 @@ class Nibe(IHvac):
                 return HvacMode.Heat
             elif ret == "idle":
                 return HvacMode.Idle
-        # else:
-        #     _LOGGER.warning("could not get hvac mode from hvac")
         return HvacMode.Unknown
 
     async def _get_operation_value(
         self, operation: HvacOperations, set_val: any = None
     ):
-        _value = None
         match operation:
             case HvacOperations.Offset:
-                _value = await self._set_offset_value(set_val)
-            case HvacOperations.VentBoost:
-                _value = set_val
-            case HvacOperations.WaterBoost:
-                _value = set_val
-        return _value
+                return self._set_offset_value(set_val)
+            case HvacOperations.VentBoost | HvacOperations.WaterBoost:
+                return set_val
+        raise ValueError(f"Operation {operation} not supported")
 
-    async def _get_operation_call_parameters(
+    def _get_operation_call_parameters(
         self, operation: HvacOperations, _value: any
     ) -> Tuple[str, dict, str]:
         call_operation = "set_parameter"
@@ -98,7 +93,8 @@ class Nibe(IHvac):
         }
         return call_operation, params, self.domain
 
-    async def _set_offset_value(self, val: int):
+    @staticmethod
+    def _set_offset_value(val: int):
         if abs(val) <= 10:
             return val
         return 10 if val > 10 else -10

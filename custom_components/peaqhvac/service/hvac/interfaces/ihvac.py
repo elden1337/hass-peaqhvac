@@ -89,7 +89,7 @@ class IHvac:
         pass
 
     @abstractmethod
-    async def _get_operation_call_parameters(
+    def _get_operation_call_parameters(
         self, operation: HvacOperations, _value: any
     ) -> Tuple[str, dict, str]:
         pass
@@ -187,11 +187,26 @@ class IHvac:
                     )
 
     async def _do_periodic_updates(self) -> None:
-        if len(self.model.update_list) > 0:
-            for u in self.model.update_list:
-                await self.update_system(operation=u[0], set_val=u[1])
-                self.periodic_update_timers[u[0]] = time.time()
-            self.model.update_list = []
+        for u in self.model.update_list:
+            await self.update_system(operation=u[0], set_val=u[1])
+            self.periodic_update_timers[u[0]] = time.time()
+        self.model.update_list = []
+
+    async def update_system(self, operation: HvacOperations, set_val: any = None):
+        if self.hub.sensors.peaq_enabled.value:
+            _value = 0
+            if self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5:
+                _value = await self._get_operation_value(operation, set_val)
+                (
+                    call_operation,
+                    params,
+                    domain,
+                ) = self._get_operation_call_parameters(operation, _value)
+
+                _LOGGER.debug(
+                    f"Requesting to update hvac-{operation.name} with value {set_val}"
+                )
+                await self._hass.services.async_call(domain, call_operation, params)
 
     def _handle_sensor(self, sensor: str):
         sensor_obj = sensor.split("|")
@@ -216,22 +231,6 @@ class IHvac:
             ret.append(item.split("|")[0])
         self.model.listenerentities = ret
         return ret
-
-    async def update_system(self, operation: HvacOperations, set_val: any = None):
-        if self.hub.sensors.peaq_enabled.value:
-            _value = 0
-            if self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5:
-                _value = await self._get_operation_value(operation, set_val)
-                (
-                    call_operation,
-                    params,
-                    domain,
-                ) = await self._get_operation_call_parameters(operation, _value)
-
-                _LOGGER.debug(
-                    f"Requesting to update hvac-{operation.name} with value {set_val}"
-                )
-                await self._hass.services.async_call(domain, call_operation, params)
 
     def get_value(self, sensor: SensorType, return_type):
         _sensor = self.get_sensor(sensor)
