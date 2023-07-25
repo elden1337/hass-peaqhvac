@@ -43,7 +43,7 @@ class Nibe(IHvac):
     def fan_speed(self) -> float:
         try:
             speed = self.get_sensor(SensorType.FanSpeed)
-            return float(speed)
+            return float(self._handle_sensor(speed))
         except Exception:
             return 0
 
