@@ -52,31 +52,27 @@ class HouseVentilation:
                 )
 
     def _should_vent_boost(self) -> bool:
-        if self._hvac.fan_speed < 100:
-            if all(
-                [
-                    self._hvac.hub.sensors.temp_trend_indoors.is_clean,
-                    self._wait_timer_boost.is_timeout(),
-                ]
-            ):
+        if self._hvac.fan_speed >= 100:
+            # If fan speed is high, stop vent boosting
+            self._current_vent_state = False
+        else:
+            # If fan speed is low, check if we should start vent boosting
+            if self._hvac.hub.sensors.temp_trend_indoors.is_clean and self._wait_timer_boost.is_timeout():
                 if self._vent_boost_warmth():
                     self._vent_boost_start("Vent boosting because of warmth.")
                 elif self._vent_boost_night_cooling():
                     self._vent_boost_start("Vent boost night cooling")
                 elif self._vent_boost_low_dm():
-                    self._vent_boost_start(
-                        "Vent boosting because of low degree minutes."
-                    )
+                    self._vent_boost_start("Vent boosting because of low degree minutes.")
                 else:
                     self._current_vent_state = False
-        elif any(
-            [
-                self._hvac.hvac_dm > LOW_DEGREE_MINUTES + 100,
-                self._hvac.hub.sensors.average_temp_outdoors.value < VERY_COLD_TEMP,
-            ]
-        ):
-            """stop vent boosting"""
-            self._current_vent_state = False
+            else:
+                self._current_vent_state = False
+
+            if self._hvac.hvac_dm > LOW_DEGREE_MINUTES + 100 or self._hvac.hub.sensors.average_temp_outdoors.value < VERY_COLD_TEMP:
+                # If HVAC degree minutes are high or outdoor temperature is very cold, stop vent boosting
+                self._current_vent_state = False
+
         return self._current_vent_state
 
     def _vent_boost_start(self, msg) -> None:

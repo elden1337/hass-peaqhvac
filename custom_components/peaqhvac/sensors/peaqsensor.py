@@ -31,7 +31,7 @@ class PeaqSensor(SensorBase, RestoreEntity):
             attr_dict["watertemp_trend"] = self._watertemp_trend
             attr_dict["current_temperature"] = self._current_water_temperature
             attr_dict["heat_water"] = self._heat_water
-            attr_dict["water_heating"] = self._water_is_heating
+            attr_dict["water_is_heating"] = self._water_is_heating
             attr_dict["latest_boost_call"] = self._latest_boost_call
 
         return attr_dict
@@ -47,7 +47,7 @@ class PeaqSensor(SensorBase, RestoreEntity):
             self._state = self._hub.hvac.water_heater.demand.value
             self._watertemp_trend = self._hub.hvac.water_heater.temperature_trend
             self._current_water_temperature = self._hub.hvac.hvac_watertemp
-            self._heat_water = self._hub.hvac.water_heater.try_heat_water
+            self._heat_water = self._hub.hvac.water_heater.water_boost
             self._water_is_heating = self._hub.hvac.water_heater.water_heating
             self._latest_boost_call = self._hub.hvac.water_heater.latest_boost_call
 

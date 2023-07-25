@@ -44,7 +44,8 @@ class Nibe(IHvac):
         try:
             speed = self.get_sensor(SensorType.FanSpeed)
             return float(self._handle_sensor(speed))
-        except Exception:
+        except Exception as e:
+            _LOGGER.debug(f"Unable to get fan speed: {e}")
             return 0
 
     @property
@@ -52,13 +53,9 @@ class Nibe(IHvac):
         try:
             temp = self.get_sensor(SensorType.HvacTemp)
             returntemp = self.get_sensor(SensorType.CondenserReturn)
-            return round(
-                float(self._handle_sensor(temp))
-                - float(self._handle_sensor(returntemp)),
-                2,
-            )
-        except Exception:
-            # _LOGGER.debug(f"Unable to calculate delta return: {e}")
+            return round(float(self._handle_sensor(temp)) - float(self._handle_sensor(returntemp)),2,)
+        except Exception as e:
+            _LOGGER.debug(f"Unable to calculate delta return: {e}")
             return 0
 
     @property
@@ -77,7 +74,7 @@ class Nibe(IHvac):
     ):
         match operation:
             case HvacOperations.Offset:
-                return self._set_offset_value(set_val)
+                return self._cap_nibe_offset_value(set_val)
             case HvacOperations.VentBoost | HvacOperations.WaterBoost:
                 return set_val
         raise ValueError(f"Operation {operation} not supported")
@@ -94,7 +91,8 @@ class Nibe(IHvac):
         return call_operation, params, self.domain
 
     @staticmethod
-    def _set_offset_value(val: int):
+    def _cap_nibe_offset_value(val: int):
+        """Nibe only supports offsets between -10 and 10"""
         if abs(val) <= 10:
             return val
         return 10 if val > 10 else -10

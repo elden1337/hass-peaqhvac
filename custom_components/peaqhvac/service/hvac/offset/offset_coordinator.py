@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Tuple
 
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
@@ -47,6 +48,11 @@ class OffsetCoordinator:
             return self.hours.offsets
         return self._hub.sensors.peaqev_facade.offsets
 
+    @property
+    def current_offset(self) -> int:
+        offsets = self.get_raw_offset()
+        return offsets[0].get(datetime.now().hour, 0)
+
     def get_offset(self) -> Tuple[dict, dict]:
         """External entrypoint to the class"""
         if len(self.model.calculated_offsets[0]) == 0:
@@ -64,14 +70,11 @@ class OffsetCoordinator:
         self.model.prognosis = self._hub.prognosis.prognosis
         self._set_offset()
 
-    def _update_prices(self, prices):
-        self._update_prices_internal(prices)
-
     def _update_preset(self) -> None:
         self.internal_preset = self._hub.sensors.set_temp_indoors.preset
         self._set_offset()
 
-    def _update_prices_internal(self, prices) -> None:
+    def _update_prices(self, prices) -> None:
         if not self._hub.sensors.peaqev_installed:
             self.hours.update_prices(prices[0], prices[1])
         else:
@@ -154,5 +157,5 @@ class OffsetCoordinator:
         if not self._hub.sensors.peaqev_installed:
             _LOGGER.debug("initializing an hourselection-instance")
             return Hoursselection()
-        _LOGGER.debug("found peaqev and will not init hourelection")
+        _LOGGER.debug("found peaqev and will not init hourselection")
         return None
