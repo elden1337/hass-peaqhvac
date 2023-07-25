@@ -40,6 +40,7 @@ class IHvac:
         self._force_update: bool = False
         self.house_heater = HouseHeater(hvac=self)
         self.water_heater = WaterHeater(hvac=self)
+        self.house_ventilation = HouseVentilation(hvac=self)
         self.periodic_update_timers: dict = {
             HvacOperations.Offset: 0,
             HvacOperations.WaterBoost: 0,
@@ -82,6 +83,11 @@ class IHvac:
     @property
     @abstractmethod
     def hvac_mode(self) -> HvacMode:
+        pass
+
+    @property
+    @abstractmethod
+    def fan_speed(self) -> float:
         pass
 
     @abstractmethod
@@ -160,7 +166,7 @@ class IHvac:
         return await self._do_periodic_updates()
 
     async def async_request_periodic_updates_ventilation(self) -> None:
-        _vent_state = int(self.house_heater.vent_boost)
+        _vent_state = int(self.house_ventilation.vent_boost)
         if _vent_state != self.model.current_vent_boost_state:
             if await self.async_ready_to_update(HvacOperations.VentBoost):
                 self.model.update_list.append((HvacOperations.VentBoost, _vent_state))

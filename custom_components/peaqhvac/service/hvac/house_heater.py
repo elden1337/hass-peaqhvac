@@ -2,20 +2,16 @@ from __future__ import annotations
 
 import logging
 import statistics
-import time
 from datetime import datetime
 from typing import Tuple
 
+from custom_components.peaqhvac.service.hvac.const import LOW_DEGREE_MINUTES, WAITTIMER_TIMEOUT, HEATBOOST_TIMER
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
-from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
 
 _LOGGER = logging.getLogger(__name__)
-HEATBOOST_TIMER = 7200
-WAITTIMER_TIMEOUT = 240
-LOW_DEGREE_MINUTES = -600
 
 
 class HouseHeater(IHeater):
@@ -24,7 +20,7 @@ class HouseHeater(IHeater):
         self._degree_minutes = 0
         self._current_vent_state: bool = False
         self._current_offset: int = 0
-        self._wait_timer_boost = WaitTimer(timeout=WAITTIMER_TIMEOUT)
+
         self._wait_timer_breach = WaitTimer(timeout=WAITTIMER_TIMEOUT)
         self._latest_boost = WaitTimer(timeout=HEATBOOST_TIMER)
         super().__init__(hvac=hvac)
@@ -36,10 +32,6 @@ class HouseHeater(IHeater):
     @IHeater.demand.setter
     def demand(self, val):
         self._demand = val
-
-    @property
-    def vent_boost(self) -> bool:
-        return self._should_vent_boost()
 
     @property
     def current_offset(self) -> int:
@@ -135,14 +127,8 @@ class HouseHeater(IHeater):
         return False
 
     async def async_get_demand(self) -> Demand:
-        _compressor_start = (
-            self._hvac.hvac_compressor_start or -300
-        )
-        _return_temp = (
-            self._hvac.delta_return_temp
-            if self._hvac.delta_return_temp is not None
-            else 1000
-        )
+        _compressor_start = self._hvac.hvac_compressor_start or -300
+        _return_temp = self._hvac.delta_return_temp or 1000
         dm = self._hvac.hvac_dm
         if any([dm is None, _return_temp is None, _compressor_start is None]):
             return Demand.NoDemand
@@ -268,74 +254,12 @@ class HouseHeater(IHeater):
     async def async_update_operation(self):
         pass
 
-
-    def _vent_boost_warmth(self) -> bool:
-        return all(
-                    [
-                        self._hvac.hub.sensors.get_tempdiff() > 1,
-                        self._hvac.hub.sensors.temp_trend_indoors.gradient > 0.5,
-                        self._hvac.hub.sensors.temp_trend_outdoors.gradient > 0,
-                        self._hvac.hub.sensors.average_temp_outdoors.value >= 0,
-                        self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away,
-                        not self._current_vent_state
-                    ]
-                )
-
-    def _vent_boost_night_cooling(self) -> bool:
-        return all(
-                    [
-                        self._hvac.hub.sensors.get_tempdiff_in_out() > 4,
-                        self._hvac.hub.sensors.average_temp_outdoors.value >= 17,
-                        datetime.now().hour < 6,
-                        self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away,
-                        not self._current_vent_state
-                    ]
-                )
-
-    def _vent_boost_low_dm(self) -> bool:
-        return all(
-                    [
-                        self._hvac.hvac_dm <= LOW_DEGREE_MINUTES,
-                        self._hvac.hub.sensors.average_temp_outdoors.value >= -12,
-                        not self._current_vent_state
-                    ]
-                )
-
-    def _should_vent_boost(self) -> bool:
-        if self._hvac.fan_speed < 100:
-            if all(
-                [
-                    self._hvac.hub.sensors.temp_trend_indoors.is_clean,
-                    self._wait_timer_boost.is_timeout(),
-                ]
-            ):
-                if self._vent_boost_warmth():
-                    self._vent_boost_start("Vent boosting because of warmth.")
-                elif self._vent_boost_night_cooling():
-                    self._vent_boost_start("Vent boost night cooling")
-                elif self._vent_boost_low_dm():
-                    self._vent_boost_start(
-                        "Vent boosting because of low degree minutes."
-                    )
-                else:
-                    self._current_vent_state = False
-        elif any(
-            [
-                self._hvac.hvac_dm > LOW_DEGREE_MINUTES + 100,
-                self._hvac.hub.sensors.average_temp_outdoors.value < -12,
-            ]
-        ):
-            """stop vent boosting"""
-            self._current_vent_state = False
-        return self._current_vent_state
-
-    def _vent_boost_start(self, msg) -> None:
-        _LOGGER.debug(msg)
-        self._wait_timer_boost.update()
-        self._current_vent_state = True
-
     @staticmethod
     def _set_lower_offset_strong(current_offset, temp_diff, temp_trend) -> int:
         calc = sum([current_offset, temp_diff, temp_trend])
         ret = max(-5, calc)
         return round(ret, 0)
+
+
+
+

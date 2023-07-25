@@ -2,28 +2,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
+
 if TYPE_CHECKING:
     from custom_components.peaqhvac.service.hvac.interfaces.ihvac import IHvac
 
 import logging
-import time
 from abc import ABC, abstractmethod
-
 from peaqevcore.models.hub.hubmember import HubMember
-
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 
 _LOGGER = logging.getLogger(__name__)
 
-
+UPDATE_INTERVAL = 60
 class IHeater(ABC):
-    _update_interval = 60
 
     def __init__(self, hvac: IHvac):
         self._demand: Demand = Demand.NoDemand
         self._hvac: IHvac = hvac
         self._control_module: HubMember = HubMember(data_type=bool, initval=False)
-        self._latest_update: float = 0
+        self._latest_update = WaitTimer(timeout=UPDATE_INTERVAL)
 
     @property
     @abstractmethod
@@ -50,8 +48,8 @@ class IHeater(ABC):
         pass
 
     async def async_update_demand(self):
-        if time.time() - self._latest_update > self._update_interval:
-            self._latest_update = time.time()
+        if self._latest_update.is_timeout():
+            self._latest_update.update()
             self._demand = await self.async_get_demand()
             if self.control_module:
                 await self.async_update_operation()
