@@ -5,6 +5,7 @@ from datetime import datetime
 import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.service.hub.trend import Gradient
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
+from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
 from custom_components.peaqhvac.service.hvac.water_heater.water_peak import get_water_peak
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import \
@@ -24,9 +25,9 @@ class WaterHeater(IHeater):
         self._hvac = hvac
         super().__init__(hvac=hvac)
         self._current_temp = None
-        self._wait_timer = 0
-        self._wait_timer_peak = 0
-        self._water_temp_trend = Gradient(
+        self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT)
+        self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT)
+        self._temp_trend = Gradient(
             max_age=3600, max_samples=10, precision=0, ignore=0
         )
         self.booster_model = WaterBoosterModel()
@@ -39,7 +40,7 @@ class WaterHeater(IHeater):
     @property
     def temperature_trend(self) -> float:
         """returns the current temp_trend in C/hour"""
-        return self._water_temp_trend.gradient
+        return self._temp_trend.gradient
 
     @property
     def latest_boost_call(self) -> str:
@@ -62,7 +63,7 @@ class WaterHeater(IHeater):
         try:
             if self._current_temp != float(val):
                 self._current_temp = float(val)
-                self._water_temp_trend.add_reading(val=float(val), t=time.time())
+                self._temp_trend.add_reading(val=float(val), t=time.time())
                 self._hvac.hub.observer.broadcast("watertemp change")
                 self.update_operation()
         except ValueError as E:
@@ -99,17 +100,14 @@ class WaterHeater(IHeater):
         return Demand.NoDemand
 
     def _get_water_peak(self, hour: int) -> bool:
-        if (
-                time.time() - self._wait_timer_peak > WAITTIMER_TIMEOUT
-                and self._hvac.hub.is_initialized
-        ):
+        if self._wait_timer_peak.is_timeout() and self._hvac.hub.is_initialized:
             _prices = self._get_pricelist_combined()
             avg_monthly = None
             if self._hvac.hub.sensors.peaqev_installed:
                 avg_monthly = self._hvac.hub.sensors.peaqev_facade.average_this_month
             ret = get_water_peak(hour, _prices, avg_monthly)
             if ret:
-                self._wait_timer_peak = time.time()
+                self._wait_timer_peak.update()
             return ret
         return False
 
@@ -217,20 +215,17 @@ class WaterHeater(IHeater):
     def _toggle_boost(self, timer_timeout: int = None) -> None:
         if self.booster_model.try_heat_water:
             if self.booster_model.heat_water_timer_timeout > 0:
-                if (
-                        time.time() - self.booster_model.heat_water_timer
-                        > self.booster_model.heat_water_timer_timeout
-                ):
+                if self.booster_model.heat_water_timer.is_timeout():
                     self.booster_model.try_heat_water = False
-                    self._wait_timer = time.time()
+                    self._wait_timer.update()
         elif all(
                 [
                     any([self.booster_model.pre_heating, self.booster_model.boost]),
-                    time.time() - self._wait_timer > WAITTIMER_TIMEOUT,
+                    self._wait_timer.is_timeout(),
                 ]
         ):
             self.booster_model.try_heat_water = True
-            self.booster_model.heat_water_timer = time.time()
+            self.booster_model.heat_water_timer.update()
             if timer_timeout is not None:
                 self.booster_model.heat_water_timer_timeout = timer_timeout
 

@@ -10,6 +10,7 @@ from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
+from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
 
 _LOGGER = logging.getLogger(__name__)
 HEATBOOST_TIMER = 7200
@@ -20,13 +21,12 @@ LOW_DEGREE_MINUTES = -600
 class HouseHeater(IHeater):
     def __init__(self, hvac):
         self._hvac = hvac
-        self._dm_compressor_start = hvac.hvac_compressor_start
-        self._latest_boost = 0
         self._degree_minutes = 0
         self._current_vent_state: bool = False
-        self._current_offset = 0
-        self._wait_timer_boost = 0
-        self._wait_timer_breach = 0
+        self._current_offset: int = 0
+        self._wait_timer_boost = WaitTimer(timeout=WAITTIMER_TIMEOUT)
+        self._wait_timer_breach = WaitTimer(timeout=WAITTIMER_TIMEOUT)
+        self._latest_boost = WaitTimer(timeout=HEATBOOST_TIMER)
         super().__init__(hvac=hvac)
 
     @property
@@ -63,7 +63,7 @@ class HouseHeater(IHeater):
         return self._get_temp_trend_offset()
 
     def _temporarily_lower_offset(self, input_offset) -> int:
-        if time.time() - self._wait_timer_breach > WAITTIMER_TIMEOUT:
+        if self._wait_timer_breach.is_timeout():
             if any(
                 [self._lower_offset_threshold_breach(), self._temp_lower_offset_addon()]
             ):
@@ -117,7 +117,7 @@ class HouseHeater(IHeater):
     def _temp_lower_offset_addon(self) -> bool:
         if self._hvac.hvac_electrical_addon > 0:
             _LOGGER.debug("Lowering offset because electrical addon is on.")
-            self._wait_timer_breach = time.time()
+            self._wait_timer_breach.update()
             return True
         return False
 
@@ -130,13 +130,13 @@ class HouseHeater(IHeater):
             ]
         ):
             _LOGGER.debug("Lowering offset because of peak about to be breached.")
-            self._wait_timer_breach = time.time()
+            self._wait_timer_breach.update()
             return True
         return False
 
     async def async_get_demand(self) -> Demand:
         _compressor_start = (
-            self._dm_compressor_start if self._dm_compressor_start is not None else -300
+            self._hvac.hvac_compressor_start or -300
         )
         _return_temp = (
             self._hvac.delta_return_temp
@@ -186,7 +186,7 @@ class HouseHeater(IHeater):
         self.current_offset = _offset
 
     def _add_temp_boost(self, pre_offset: int) -> int:
-        if time.time() - self._latest_boost > HEATBOOST_TIMER:
+        if self._latest_boost.is_timeout():
             if all(
                 [
                     self._hvac.hvac_mode == HvacMode.Idle,
@@ -198,12 +198,12 @@ class HouseHeater(IHeater):
                     "adding additional heating since there is no sunwarming happening and house is too cold."
                 )
                 pre_offset += 1
-                self._latest_boost = time.time()
+                self._latest_boost.update()
         else:
             pre_offset += 1
             if self._hvac.hub.sensors.get_tempdiff() > 1:
                 pre_offset -= 1
-                self._latest_boost = 0
+                self._latest_boost.reset()
         return pre_offset
 
     def _get_tempdiff_inverted(self) -> int:
@@ -306,7 +306,7 @@ class HouseHeater(IHeater):
             if all(
                 [
                     self._hvac.hub.sensors.temp_trend_indoors.is_clean,
-                    time.time() - self._wait_timer_boost > WAITTIMER_TIMEOUT,
+                    self._wait_timer_boost.is_timeout(),
                 ]
             ):
                 if self._vent_boost_warmth():
@@ -331,7 +331,7 @@ class HouseHeater(IHeater):
 
     def _vent_boost_start(self, msg) -> None:
         _LOGGER.debug(msg)
-        self._wait_timer_boost = time.time()
+        self._wait_timer_boost.update()
         self._current_vent_state = True
 
     @staticmethod

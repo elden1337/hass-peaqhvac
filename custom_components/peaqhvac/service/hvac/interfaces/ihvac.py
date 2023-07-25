@@ -156,14 +156,17 @@ class IHvac:
             await self.async_request_periodic_updates_water()
         if self.hub.hvac.house_heater.control_module:
             await self.async_request_periodic_updates_heat()
+        await self.async_request_periodic_updates_ventilation()
         return await self._do_periodic_updates()
 
-    async def async_request_periodic_updates_heat(self) -> None:
+    async def async_request_periodic_updates_ventilation(self) -> None:
         _vent_state = int(self.house_heater.vent_boost)
         if _vent_state != self.model.current_vent_boost_state:
             if await self.async_ready_to_update(HvacOperations.VentBoost):
                 self.model.update_list.append((HvacOperations.VentBoost, _vent_state))
                 self.model.current_vent_boost_state = _vent_state
+
+    async def async_request_periodic_updates_heat(self) -> None:
         if await self._hass.async_add_executor_job(self.update_offset):
             if await self.async_ready_to_update(HvacOperations.Offset):
                 self.model.update_list.append(

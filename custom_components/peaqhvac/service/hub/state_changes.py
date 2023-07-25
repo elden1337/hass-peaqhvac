@@ -1,17 +1,18 @@
 import logging
 import time
 
-# from custom_components.peaqhvac.service.models.hvacoperations import HvacOperations
+from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class StateChanges:
-    latest_nordpool_update = 0
+
 
     def __init__(self, hub, hass):
         self._hub = hub
         self._hass = hass
+        self.latest_nordpool_update = WaitTimer(timeout=300)
 
     async def async_initialize_values(self):
         for t in self._hub.trackerentities:
@@ -41,11 +42,11 @@ class StateChanges:
 
         if (
             entity == self._hub.nordpool.nordpool_entity
-            or time.time() - self.latest_nordpool_update > 300
+            or self.latest_nordpool_update.is_timeout()
         ):
             await self._hub.nordpool.async_update_nordpool()
             await self._hass.async_add_executor_job(
                 self._hub.prognosis.update_weather_prognosis
             )
-            self.latest_nordpool_update = time.time()
+            self.latest_nordpool_update.update()
         await self._hub.hvac.async_update_hvac()
