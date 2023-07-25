@@ -216,7 +216,7 @@ class WaterHeater(IHeater):
 
     def _turn_on_boost(self, timer_timeout = None) -> None:
         self.booster_model.try_heat_water = True
-        self.booster_model.heat_water_timer_timeout.update(timer_timeout)
+        self.booster_model.heat_water_timer.update(timer_timeout)
         self._hvac.hub.observer.broadcast("update operation")
 
     def _turn_off_boost(self) -> None:
