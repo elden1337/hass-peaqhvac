@@ -21,7 +21,6 @@ class OffsetCoordinator:
     def __init__(self, hub):
         self._hub = hub
         self.model = OffsetModel(hub)
-        self.internal_preset = None
         self.hours = self._set_hours_type()
         self._prices = None
         self._prices_tomorrow = None
@@ -71,7 +70,6 @@ class OffsetCoordinator:
         self._set_offset()
 
     def _update_preset(self) -> None:
-        self.internal_preset = self._hub.sensors.set_temp_indoors.preset
         self._set_offset()
 
     def _update_prices(self, prices) -> None:

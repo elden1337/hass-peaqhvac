@@ -12,6 +12,13 @@ class OffsetModel:
     tolerance_raw = None
     prognosis = None
 
+    def __init__(self, hub):
+        self.hub = hub
+        self.hub.observer.add("hvac tolerance changed", self.recalculate_tolerance)
+        self.hub.observer.add(
+            "temperature outdoors changed", self.recalculate_tolerance
+        )
+
     @property
     def peaks_today(self) -> list:
         return self._peaks_today
@@ -27,13 +34,6 @@ class OffsetModel:
     @peaks_tomorrow.setter
     def peaks_tomorrow(self, val: list):
         self._peaks_tomorrow = [v for v in val if 0 <= v < 24]
-
-    def __init__(self, hub):
-        self.hub = hub
-        self.hub.observer.add("hvac tolerance changed", self.recalculate_tolerance)
-        self.hub.observer.add(
-            "temperature outdoors changed", self.recalculate_tolerance
-        )
 
     @property
     def tolerance(self) -> int:
@@ -73,14 +73,11 @@ class OffsetModel:
             return -2
         if current_temp <= -5:
             return -1
-        if -5 < current_temp < 5:
+        if -5 < current_temp < 10:
             return 0
-        if 5 <= current_temp < 10:
-            return 1
         if 10 <= current_temp < 13:
-            return 2
-        if current_temp >= 13:
-            return 3
+            return 1
+        return 0
 
     @staticmethod
     def get_boundrary(adjustment, set_tolerance) -> int:
