@@ -196,8 +196,6 @@ class WaterHeater(IHeater):
         offsets = await self._hvac.hub.offset.async_get_raw_offset()
         return offsets[0].get(datetime.now().hour, 0)
 
-
-
     async def async_set_water_heater_operation_away(self):
         self._set_water_heater_operation_away()
 
