@@ -12,6 +12,7 @@ class HouseVentilation:
     def __init__(self, hvac):
         self._hvac = hvac
         self._wait_timer_boost = WaitTimer(timeout=WAITTIMER_TIMEOUT)
+        self._current_vent_state: bool = False
 
     @property
     def vent_boost(self) -> bool:
@@ -82,3 +83,4 @@ class HouseVentilation:
         _LOGGER.debug(msg)
         self._wait_timer_boost.update()
         self._current_vent_state = True
+        self._hvac.hub.observer.broadcast("update operation")

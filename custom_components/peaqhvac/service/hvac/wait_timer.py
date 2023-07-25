@@ -6,6 +6,14 @@ class WaitTimer:
         self._base_timeout = timeout
         self._last_update = 0
 
+    @property
+    def timeout(self) -> int:
+        return self._timeout
+
+    @property
+    def value(self) -> float:
+        return self._last_update
+
     def update(self, override=None) -> None:
         if override is not None:
             self._timeout = override

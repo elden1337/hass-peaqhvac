@@ -6,6 +6,8 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING, Tuple
 
+from custom_components.peaqhvac.service.hvac.house_ventilation import HouseVentilation
+
 if TYPE_CHECKING:
     from custom_components.peaqhvac.service.hub.hub import Hub
 
@@ -48,6 +50,7 @@ class IHvac:
         }
         self.model = IHvacModel()
         self.hub.observer.add("offset recalculation", self.update_offset)
+        self.hub.observer.add("update operation", self.request_periodic_updates)
 
     def update_offset(self) -> bool:  # todo: make async
         if self.hub.sensors.peaqev_installed:

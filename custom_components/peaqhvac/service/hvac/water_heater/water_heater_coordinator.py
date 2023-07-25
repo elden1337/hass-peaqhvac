@@ -45,13 +45,13 @@ class WaterHeater(IHeater):
     @property
     def latest_boost_call(self) -> str:
         """For Lovelace-purposes. Converts and returns epoch-timer to readable datetime-string"""
-        if self.booster_model.heat_water_timer > 0:
-            return ex.dt_from_epoch(self.booster_model.heat_water_timer)
+        if self.booster_model.heat_water_timer.value > 0:
+            return ex.dt_from_epoch(self.booster_model.heat_water_timer.value)
         return "-"
 
     @latest_boost_call.setter
     def latest_boost_call(self, val):
-        self.booster_model.heat_water_timer = val
+        self.booster_model.heat_water_timer.update()
 
     @property
     def current_temperature(self) -> float:
@@ -203,7 +203,7 @@ class WaterHeater(IHeater):
 
     def _toggle_boost(self, timer_timeout: int = None) -> None:
         if self.booster_model.try_heat_water:
-            if self.booster_model.heat_water_timer_timeout > 0:
+            if self.booster_model.heat_water_timer.timeout > 0:
                 if self.booster_model.heat_water_timer.is_timeout():
                     self._turn_off_boost()
         elif all(
@@ -217,7 +217,9 @@ class WaterHeater(IHeater):
     def _turn_on_boost(self, timer_timeout = None) -> None:
         self.booster_model.try_heat_water = True
         self.booster_model.heat_water_timer_timeout.update(timer_timeout)
+        self._hvac.hub.observer.broadcast("update operation")
 
     def _turn_off_boost(self) -> None:
         self.booster_model.try_heat_water = False
         self._wait_timer.update()
+        self._hvac.hub.observer.broadcast("update operation")

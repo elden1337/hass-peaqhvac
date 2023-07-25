@@ -18,9 +18,7 @@ class HouseHeater(IHeater):
     def __init__(self, hvac):
         self._hvac = hvac
         self._degree_minutes = 0
-        self._current_vent_state: bool = False
         self._current_offset: int = 0
-
         self._wait_timer_breach = WaitTimer(timeout=WAITTIMER_TIMEOUT)
         self._latest_boost = WaitTimer(timeout=HEATBOOST_TIMER)
         super().__init__(hvac=hvac)
