@@ -31,7 +31,7 @@ class WaterHeater(IHeater):
             max_age=3600, max_samples=10, precision=0, ignore=0
         )
         self.booster_model = WaterBoosterModel()
-        self._hvac.hub.observer.add("offset recalculation", self.update_operation)
+        self._hvac.hub.observer.add("offset recalculation", self._update_operation)
 
     @property
     def is_initialized(self) -> bool:
@@ -65,7 +65,7 @@ class WaterHeater(IHeater):
                 self._current_temp = float(val)
                 self._temp_trend.add_reading(val=float(val), t=time.time())
                 self._hvac.hub.observer.broadcast("watertemp change")
-                self.update_operation()
+                self._update_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
             self.booster_model.try_heat_water = False
@@ -127,13 +127,9 @@ class WaterHeater(IHeater):
         return _prices
 
     async def async_update_operation(self):
-        if self.is_initialized:
-            if self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
-                await self.async_set_water_heater_operation_home()
-            elif self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
-                await self.async_set_water_heater_operation_away()
+        self._update_operation()
 
-    def update_operation(self):
+    def _update_operation(self):
         if self.is_initialized:
             if self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
                 self._set_water_heater_operation_home()
