@@ -3,7 +3,7 @@ from typing import Tuple
 
 from custom_components.peaqhvac.service.models.enums.hvac_presets import \
     HvacPresets
-from custom_components.peaqhvac.service.observer import ObserverBroadcaster
+from custom_components.peaqhvac.service.observer.observer_broadcaster import ObserverBroadcaster
 
 MINTEMP = 15
 MAXTEMP = 27

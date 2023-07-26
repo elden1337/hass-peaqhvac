@@ -1,7 +1,7 @@
 import logging
 import statistics
 
-from custom_components.peaqhvac.service.observer import ObserverBroadcaster
+from custom_components.peaqhvac.service.observer.observer_broadcaster import ObserverBroadcaster
 
 _LOGGER = logging.getLogger(__name__)
 

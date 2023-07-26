@@ -1,5 +1,7 @@
 import logging
 import time
+from functools import partial
+import inspect
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,3 +57,9 @@ def parse_to_type(value, _type):
 
 def dt_from_epoch(epoch: int) -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(epoch))
+
+
+async def async_iscoroutine(object):
+    while isinstance(object, partial):
+        object = object.func
+    return inspect.iscoroutinefunction(object)

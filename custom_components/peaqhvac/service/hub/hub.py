@@ -12,7 +12,7 @@ from custom_components.peaqhvac.service.hvac.hvacfactory import HvacFactory
 from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import \
     OffsetCoordinator
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
-from custom_components.peaqhvac.service.observer import Observer
+from custom_components.peaqhvac.service.observer.observer_service import Observer
 
 _LOGGER = logging.getLogger(__name__)
 

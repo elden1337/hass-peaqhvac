@@ -57,8 +57,9 @@ class OffsetModel:
                         self.hub.sensors.average_temp_outdoors.value
                     ),
                 )
-            except:
+            except Exception as e:
                 self._tolerance = self.hub.options.hvac_tolerance
+                _LOGGER.warning(f"Error on recalculation of tolerance. Setting default. {e}")
             if any([old_raw != self.tolerance_raw, old_tolerance != self.tolerance]):
                 _LOGGER.debug(
                     f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self.hub.sensors.average_temp_outdoors.value}"
