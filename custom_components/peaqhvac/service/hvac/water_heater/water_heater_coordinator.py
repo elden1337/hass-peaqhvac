@@ -31,7 +31,7 @@ class WaterHeater(IHeater):
             max_age=3600, max_samples=10, precision=0, ignore=0
         )
         self.booster_model = WaterBoosterModel()
-        self._hvac.hub.observer.add("offset recalculation", self._update_operation)
+        self._hvac.hub.observer.add("offsets changed", self._update_operation)
 
     @property
     def is_initialized(self) -> bool:

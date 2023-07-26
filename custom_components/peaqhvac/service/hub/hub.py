@@ -23,13 +23,13 @@ class Hub:
 
     def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
         self._is_initialized = False
-        self._hass = hass
+        self.hass = hass
         self.observer = Observer(self)
         self.options = hub_options
-        self.sensors = HubSensors(self, hub_options, self._hass, self.get_peaqev())
-        self.states = StateChanges(self, self._hass)
-        self.hvac = HvacFactory.create(self._hass, self.options, self)
-        self.nordpool = NordPoolUpdater(self._hass, self)
+        self.sensors = HubSensors(self, hub_options, self.hass, self.get_peaqev())
+        self.states = StateChanges(self, self.hass)
+        self.hvac = HvacFactory.create(self.hass, self.options, self)
+        self.nordpool = NordPoolUpdater(self.hass, self)
         self.prognosis = WeatherPrognosis(self)
         self.offset = OffsetCoordinator(self)
         self.options.hub = self
@@ -45,7 +45,7 @@ class Hub:
         self.trackerentities.extend(self.options.outdoor_tempsensors)
         await self.states.async_initialize_values()
         async_track_state_change(
-            self._hass, self.trackerentities, self.async_state_changed
+            self.hass, self.trackerentities, self.async_state_changed
         )
 
     @property
@@ -74,7 +74,7 @@ class Hub:
 
     def get_peaqev(self):
         try:
-            ret = self._hass.states.get("sensor.peaqev_threshold")
+            ret = self.hass.states.get("sensor.peaqev_threshold")
             if ret is not None:
                 _LOGGER.debug(
                     "Discovered Peaqev-entities, will adhere to peak-shaving."

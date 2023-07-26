@@ -101,13 +101,15 @@ class IHvac(UpdateSystem):
                 return False
         try:
             self.get_offsets()
+            _hvac_offset = self.hvac_offset
             new_offset, force_update = self.house_heater.get_current_offset(
                 self.model.current_offset_dict
             )
             if new_offset != self.current_offset:
                 self.current_offset = new_offset
                 self._force_update = force_update
-            if self.current_offset != self.hvac_offset:
+            if self.current_offset != _hvac_offset:
+                self.hub.observer.broadcast("offsets changed")
                 return True
             return False
         except Exception as e:
@@ -135,7 +137,7 @@ class IHvac(UpdateSystem):
             try:
                 return ex.parse_to_type(ret, return_type)
             except Exception as e:
-                _LOGGER.debug(f"Could not parse {sensor.name} from hvac. {e}")
+                _LOGGER.warning(f"Could not parse {sensor.name} from hvac. {e}")
         return 0
 
     def _handle_sensor(self, sensor: str):

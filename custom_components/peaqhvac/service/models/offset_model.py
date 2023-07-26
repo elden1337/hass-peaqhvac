@@ -64,7 +64,6 @@ class OffsetModel:
                 _LOGGER.debug(
                     f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self.hub.sensors.average_temp_outdoors.value}"
                 )
-                self.hub.observer.broadcast("tolerance changed")
                 self.hub.observer.broadcast("offset recalculation")
 
     @staticmethod

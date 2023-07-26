@@ -28,6 +28,7 @@ class OffsetCoordinator:
         self._hub.observer.add("prognosis changed", self._update_prognosis)
         self._hub.observer.add("hvac preset changed", self._update_preset)
         self._hub.observer.add("set temperature changed", self._set_offset)
+        self._hub.observer.add("hvac tolerance changed", self._set_offset)
 
     @property
     def prices(self) -> list:
@@ -131,7 +132,7 @@ class OffsetCoordinator:
                 self.model.calculated_offsets = self.model.raw_offsets
             self._hub.observer.broadcast("offset recalculation")
         else:
-            _LOGGER.debug("not possible to calculate offset.")
+            _LOGGER.warning("not possible to calculate offset.")
 
     def adjust_to_threshold(self, adjustment: int) -> int:
         if adjustment is None or self._hub.sensors.average_temp_outdoors.value > 13:
