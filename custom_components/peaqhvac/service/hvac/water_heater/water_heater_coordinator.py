@@ -125,26 +125,34 @@ class WaterHeater(IHeater):
                 self._set_water_heater_operation_away()
 
     def _set_water_heater_operation_home(self) -> None:
-        if self._hvac.hub.sensors.peaqev_installed:
-            if all([
-                float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100,
-                self.booster_model.try_heat_water]):
-                _LOGGER.debug("Peak is being breached. Turning off water heating")
-                self._turn_off_boost()
         try:
-            if self._get_water_peak(datetime.now().hour):
-                _LOGGER.debug("Current hour is identified as a good hour to boost water")
-                self.booster_model.boost = True
-                self._toggle_boost(timer_timeout=3600)
-            elif any([
-                self._hvac.hub.offset.current_offset > 0,
-                float(self._hvac.hub.nordpool.state) <= float(self._hvac.hub.sensors.peaqev_facade.min_price)
-            ]):
-                self._toggle_hotwater_boost(HIGHTEMP_THRESHOLD)
+            if self._hvac.hub.sensors.peaqev_installed:
+                if self._is_peak_breached():
+                    _LOGGER.debug("Peak is being breached. Turning off water heating")
+                    self._turn_off_boost()
+
+                elif self._get_water_peak(datetime.now().hour):
+                    _LOGGER.debug("Current hour is identified as a good hour to boost water")
+                    self.booster_model.boost = True
+                    self._toggle_boost(timer_timeout=3600)
+
+                elif any([self._is_below_start_threshold(), self._is_price_below_min_price()]):
+                    self._toggle_hotwater_boost(HIGHTEMP_THRESHOLD)
         except Exception as e:
             _LOGGER.error(
                 f"Could not check water-state: {e}. nordpool-state: {self._hvac.hub.nordpool.state}, min-price: {self._hvac.hub.sensors.peaqev_facade.min_price}")
-            return
+
+    def _is_peak_breached(self) -> bool:
+        return self._hvac.hub.sensors.peaqev_facade.above_stop_threshold and self.booster_model.try_heat_water
+
+    def _is_below_start_threshold(self) -> bool:
+        return all([
+            self._hvac.hub.offset.current_offset > 0,
+            datetime.now().minute >= 30,
+            self._hvac.hub.sensors.peaqev_facade.below_start_threshold])
+
+    def _is_price_below_min_price(self) -> bool:
+        return float(self._hvac.hub.nordpool.state) <= float(self._hvac.hub.sensors.peaqev_facade.min_price)
 
     async def async_set_water_heater_operation_home(self) -> None:
         self._set_water_heater_operation_home()
@@ -154,7 +162,7 @@ class WaterHeater(IHeater):
             if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100:
                 self._turn_off_boost()
         try:
-            if self._hvac.hub.offset.current_offset > 0 and 10 < datetime.now().minute < 50:
+            if self._hvac.hub.offset.current_offset > 0 and 20 < datetime.now().minute < 50:
                 if 0 < self.current_temperature <= LOWTEMP_THRESHOLD:
                     self.booster_model.pre_heating = True
                     self._toggle_boost(timer_timeout=None)

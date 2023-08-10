@@ -55,9 +55,9 @@ class OffsetCoordinator:
 
     def get_offset(self) -> Tuple[dict, dict]:
         """External entrypoint to the class"""
-        if len(self.model.calculated_offsets[0]) == 0:
-            _LOGGER.debug("no offsets available. recalculating")
-            self._set_offset()
+        # if len(self.model.calculated_offsets[0]) == 0:
+        #     _LOGGER.debug("no offsets available. recalculating")
+        self._set_offset()
         return self.model.calculated_offsets
 
     def get_raw_offset(self) -> Tuple[dict, dict]:
