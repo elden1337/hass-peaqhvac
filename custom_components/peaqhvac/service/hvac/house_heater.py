@@ -116,7 +116,7 @@ class HouseHeater(IHeater):
             [
                 self._hvac.hub.sensors.peaqev_installed,
                 30 <= datetime.now().minute < 58,
-                self._hvac.hub.sensors.peaqev_facade.exact_threshold >= 100,
+                self._hvac.hub.sensors.peaqev_facade.above_stop_threshold
             ]
         ):
             _LOGGER.debug("Lowering offset because of peak about to be breached.")

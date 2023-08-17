@@ -41,7 +41,7 @@ class PeaqevFacade:
         try:
             stop = self._peaqevhub.threshold.stop
             current = self.exact_threshold
-            return current > (stop + 5)
+            return current > (stop)
         except:
             return False
 
