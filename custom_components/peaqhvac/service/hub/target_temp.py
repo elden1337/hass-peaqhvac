@@ -3,7 +3,7 @@ from typing import Tuple
 
 from custom_components.peaqhvac.service.models.enums.hvac_presets import \
     HvacPresets
-from custom_components.peaqhvac.service.observer import ObserverBroadcaster
+from custom_components.peaqhvac.service.observer.observer_broadcaster import ObserverBroadcaster
 
 MINTEMP = 15
 MAXTEMP = 27
@@ -63,10 +63,11 @@ class TargetTemp(ObserverBroadcaster):
     @property
     def adjusted_temp(self) -> float:
         """adjust the set temp slightly if below -5C outside"""
+        _frost_temp = -5
         ret = self.value
         _outdoors = self.hub.sensors.average_temp_outdoors.value
-        if _outdoors < -5 and self.preset is not HvacPresets.Normal:
-            ret += round(((int(_outdoors - -5) / 1.5) * 0.1), 1)
+        if _outdoors < _frost_temp and self.preset is not HvacPresets.Normal:
+            ret += round(((int(_outdoors - _frost_temp) / 1.5) * 0.1), 1)
         return max(ret, 15)
 
     def _set_temperature_and_tolerances(self):

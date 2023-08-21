@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Tuple
 
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
@@ -20,7 +21,6 @@ class OffsetCoordinator:
     def __init__(self, hub):
         self._hub = hub
         self.model = OffsetModel(hub)
-        self.internal_preset = None
         self.hours = self._set_hours_type()
         self._prices = None
         self._prices_tomorrow = None
@@ -28,6 +28,7 @@ class OffsetCoordinator:
         self._hub.observer.add("prognosis changed", self._update_prognosis)
         self._hub.observer.add("hvac preset changed", self._update_preset)
         self._hub.observer.add("set temperature changed", self._set_offset)
+        self._hub.observer.add("hvac tolerance changed", self._set_offset)
 
     @property
     def prices(self) -> list:
@@ -47,11 +48,16 @@ class OffsetCoordinator:
             return self.hours.offsets
         return self._hub.sensors.peaqev_facade.offsets
 
+    @property
+    def current_offset(self) -> int:
+        offsets = self.get_raw_offset()
+        return offsets[0].get(datetime.now().hour, 0)
+
     def get_offset(self) -> Tuple[dict, dict]:
         """External entrypoint to the class"""
-        if len(self.model.calculated_offsets[0]) == 0:
-            _LOGGER.debug("no offsets available. recalculating")
-            self._set_offset()
+        # if len(self.model.calculated_offsets[0]) == 0:
+        #     _LOGGER.debug("no offsets available. recalculating")
+        self._set_offset()
         return self.model.calculated_offsets
 
     def get_raw_offset(self) -> Tuple[dict, dict]:
@@ -64,14 +70,10 @@ class OffsetCoordinator:
         self.model.prognosis = self._hub.prognosis.prognosis
         self._set_offset()
 
-    def _update_prices(self, prices):
-        self._update_prices_internal(prices)
-
     def _update_preset(self) -> None:
-        self.internal_preset = self._hub.sensors.set_temp_indoors.preset
         self._set_offset()
 
-    def _update_prices_internal(self, prices) -> None:
+    def _update_prices(self, prices) -> None:
         if not self._hub.sensors.peaqev_installed:
             self.hours.update_prices(prices[0], prices[1])
         else:
@@ -130,7 +132,7 @@ class OffsetCoordinator:
                 self.model.calculated_offsets = self.model.raw_offsets
             self._hub.observer.broadcast("offset recalculation")
         else:
-            _LOGGER.debug("not possible to calculate offset.")
+            _LOGGER.warning("not possible to calculate offset.")
 
     def adjust_to_threshold(self, adjustment: int) -> int:
         if adjustment is None or self._hub.sensors.average_temp_outdoors.value > 13:
@@ -154,5 +156,5 @@ class OffsetCoordinator:
         if not self._hub.sensors.peaqev_installed:
             _LOGGER.debug("initializing an hourselection-instance")
             return Hoursselection()
-        _LOGGER.debug("found peaqev and will not init hourelection")
+        _LOGGER.debug("found peaqev and will not init hourselection")
         return None

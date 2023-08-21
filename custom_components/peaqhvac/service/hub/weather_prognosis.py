@@ -17,7 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 class WeatherPrognosis:
     def __init__(self, hub):
         self._hub = hub
-        self._hass = hub._hass
+        self._hass = hub.hass
         self.prognosis_list: list[WeatherObject] = []
         self._hvac_prognosis_list: list = []
         self._current_temperature = 1000

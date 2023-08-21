@@ -12,6 +12,13 @@ class OffsetModel:
     tolerance_raw = None
     prognosis = None
 
+    def __init__(self, hub):
+        self.hub = hub
+        self.hub.observer.add("hvac tolerance changed", self.recalculate_tolerance)
+        self.hub.observer.add(
+            "temperature outdoors changed", self.recalculate_tolerance
+        )
+
     @property
     def peaks_today(self) -> list:
         return self._peaks_today
@@ -28,13 +35,6 @@ class OffsetModel:
     def peaks_tomorrow(self, val: list):
         self._peaks_tomorrow = [v for v in val if 0 <= v < 24]
 
-    def __init__(self, hub):
-        self.hub = hub
-        self.hub.observer.add("hvac tolerance changed", self.recalculate_tolerance)
-        self.hub.observer.add(
-            "temperature outdoors changed", self.recalculate_tolerance
-        )
-
     @property
     def tolerance(self) -> int:
         if self._tolerance is None:
@@ -46,7 +46,6 @@ class OffsetModel:
         self._tolerance = val
 
     def recalculate_tolerance(self):
-        """need to make this one better. 10c and +5 makes heater heat when too warm inside."""
         if self.hub.options.hvac_tolerance is not None:
             old_tolerance = self._tolerance
             old_raw = self.tolerance_raw
@@ -58,13 +57,13 @@ class OffsetModel:
                         self.hub.sensors.average_temp_outdoors.value
                     ),
                 )
-            except:
+            except Exception as e:
                 self._tolerance = self.hub.options.hvac_tolerance
+                _LOGGER.warning(f"Error on recalculation of tolerance. Setting default. {e}")
             if any([old_raw != self.tolerance_raw, old_tolerance != self.tolerance]):
                 _LOGGER.debug(
                     f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self.hub.sensors.average_temp_outdoors.value}"
                 )
-                self.hub.observer.broadcast("tolerance changed")
                 self.hub.observer.broadcast("offset recalculation")
 
     @staticmethod
@@ -74,14 +73,11 @@ class OffsetModel:
             return -2
         if current_temp <= -5:
             return -1
-        if -5 < current_temp < 5:
+        if -5 < current_temp < 10:
             return 0
-        if 5 <= current_temp < 10:
-            return 1
         if 10 <= current_temp < 13:
-            return 2
-        if current_temp >= 13:
-            return 3
+            return 1
+        return 0
 
     @staticmethod
     def get_boundrary(adjustment, set_tolerance) -> int:

@@ -52,6 +52,13 @@ class NordPoolUpdater:
         if val != self._prices_tomorrow:
             self._prices_tomorrow = [v for v in val if v is not None]
 
+    @property
+    def prices_combined(self) -> list:
+        _prices = self.prices
+        if self.prices_tomorrow is not None:
+            _prices.extend([p for p in self.prices_tomorrow if isinstance(p, (float, int))])
+        return _prices
+
     async def async_update_nordpool(self):
         ret = self._hass.states.get(self.nordpool_entity)
         _result = {}

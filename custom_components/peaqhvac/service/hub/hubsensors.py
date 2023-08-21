@@ -42,3 +42,13 @@ class HubSensors:
             self.peaqev_facade = PeaqevFacade(hass)
         else:
             self.peaqev_installed = False
+
+    def get_tempdiff(self) -> float:
+        _indoors = getattr(self.average_temp_indoors, "value", 0)
+        _set_temp = getattr(self.set_temp_indoors, "adjusted_temp", 0)
+        return _indoors - _set_temp
+
+    def get_tempdiff_in_out(self) -> float:
+        _indoors = getattr(self.average_temp_indoors, "value", 0)
+        _outdoors = getattr(self.average_temp_outdoors, "value", 0)
+        return _indoors - _outdoors

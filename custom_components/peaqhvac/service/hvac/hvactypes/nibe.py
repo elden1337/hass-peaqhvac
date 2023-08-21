@@ -1,7 +1,7 @@
 import logging
 from typing import Tuple
 
-from custom_components.peaqhvac.service.hvac.ihvac import IHvac
+from custom_components.peaqhvac.service.hvac.interfaces.ihvac import IHvac
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 from custom_components.peaqhvac.service.models.enums.hvacoperations import \
     HvacOperations
@@ -43,8 +43,9 @@ class Nibe(IHvac):
     def fan_speed(self) -> float:
         try:
             speed = self.get_sensor(SensorType.FanSpeed)
-            return float(speed)
-        except Exception:
+            return float(self._handle_sensor(speed))
+        except Exception as e:
+            _LOGGER.debug(f"Unable to get fan speed: {e}")
             return 0
 
     @property
@@ -52,13 +53,9 @@ class Nibe(IHvac):
         try:
             temp = self.get_sensor(SensorType.HvacTemp)
             returntemp = self.get_sensor(SensorType.CondenserReturn)
-            return round(
-                float(self._handle_sensor(temp))
-                - float(self._handle_sensor(returntemp)),
-                2,
-            )
-        except Exception:
-            # _LOGGER.debug(f"Unable to calculate delta return: {e}")
+            return round(float(self._handle_sensor(temp)) - float(self._handle_sensor(returntemp)),2,)
+        except Exception as e:
+            _LOGGER.debug(f"Unable to calculate delta return: {e}")
             return 0
 
     @property
@@ -70,24 +67,19 @@ class Nibe(IHvac):
                 return HvacMode.Heat
             elif ret == "idle":
                 return HvacMode.Idle
-        # else:
-        #     _LOGGER.warning("could not get hvac mode from hvac")
         return HvacMode.Unknown
 
     async def _get_operation_value(
         self, operation: HvacOperations, set_val: any = None
     ):
-        _value = None
         match operation:
             case HvacOperations.Offset:
-                _value = await self._set_offset_value(set_val)
-            case HvacOperations.VentBoost:
-                _value = set_val
-            case HvacOperations.WaterBoost:
-                _value = set_val
-        return _value
+                return self._cap_nibe_offset_value(set_val)
+            case HvacOperations.VentBoost | HvacOperations.WaterBoost:
+                return set_val
+        raise ValueError(f"Operation {operation} not supported")
 
-    async def _get_operation_call_parameters(
+    def _get_operation_call_parameters(
         self, operation: HvacOperations, _value: any
     ) -> Tuple[str, dict, str]:
         call_operation = "set_parameter"
@@ -98,7 +90,9 @@ class Nibe(IHvac):
         }
         return call_operation, params, self.domain
 
-    async def _set_offset_value(self, val: int):
+    @staticmethod
+    def _cap_nibe_offset_value(val: int):
+        """Nibe only supports offsets between -10 and 10"""
         if abs(val) <= 10:
             return val
         return 10 if val > 10 else -10
