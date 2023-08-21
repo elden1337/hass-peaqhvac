@@ -66,9 +66,9 @@ class Observer:
     async def async_dequeue_and_broadcast(self, command: Command):
         if await self.async_ok_to_broadcast(command.command):
             async with self._lock:
-                _LOGGER.debug(
-                    f"ready to broadcast: {command.command} with params: {command.argument}"
-                )
+               # _LOGGER.debug(
+               #     f"ready to broadcast: {command.command} with params: {command.argument}"
+              #  )
                 for func in self.model.subscribers[command.command]:
                     if await async_iscoroutine(func):
                         await self.async_call_func(func=func, command=command),

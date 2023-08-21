@@ -147,7 +147,7 @@ class WaterHeater(IHeater):
 
     def _is_below_start_threshold(self) -> bool:
         return all([
-            self._hvac.hub.offset.current_offset > 0,
+            self._hvac.hub.offset.current_offset >= 0,
             datetime.now().minute >= 30,
             self._hvac.hub.sensors.peaqev_facade.below_start_threshold])
 
@@ -159,7 +159,7 @@ class WaterHeater(IHeater):
 
     def _set_water_heater_operation_away(self):
         if self._hvac.hub.sensors.peaqev_installed:
-            if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 95:
+            if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100:
                 self._turn_off_boost()
         try:
             if self._hvac.hub.offset.current_offset > 0 and 20 < datetime.now().minute < 50:

@@ -137,7 +137,7 @@ class IHvac(UpdateSystem):
             try:
                 return ex.parse_to_type(ret, return_type)
             except Exception as e:
-                _LOGGER.warning(f"Could not parse {sensor.name} from hvac. {e}")
+                _LOGGER.debug(f"Could not parse {sensor.name} from hvac. {e}")
         return 0
 
     def _handle_sensor(self, sensor: str):

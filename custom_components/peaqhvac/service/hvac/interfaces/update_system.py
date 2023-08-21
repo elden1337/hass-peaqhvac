@@ -98,7 +98,7 @@ class UpdateSystem:
                     [
                         time.time() - self.periodic_update_timers[operation]
                         > UPDATE_INTERVALS[operation],
-                        self.hub.sensors.peaqev_facade.exact_threshold >= 95,
+                        self.hub.sensors.peaqev_facade.exact_threshold >= 100,
                     ]
                 )
             case HvacOperations.Offset:
@@ -110,7 +110,7 @@ class UpdateSystem:
                         time.time() - self.periodic_update_timers[operation]
                         > UPDATE_INTERVALS[operation],
                         datetime.now().minute == 0,
-                        self.hub.sensors.peaqev_facade.above_stop_threshold,
+                        self.hub.sensors.peaqev_facade.exact_threshold >= 100,
                     ]
                 )
             case _:
