@@ -25,6 +25,8 @@ class WaitTimer:
         self._timeout = self._base_timeout
 
     def is_timeout(self) -> bool:
+        if self._timeout == 0:
+            return False
         if time.time() - self._last_update > self._timeout:
             self._last_update = time.time()
             self._timeout = self._base_timeout
