@@ -10,7 +10,8 @@ from custom_components.peaqhvac.service.models.enums.sensortypes import \
 
 _LOGGER = logging.getLogger(__name__)
 
-
+NIBE_MAX_THRESHOLD = 10
+NIBE_MIN_THRESHOLD = -10
 class Nibe(IHvac):
     domain = "Nibe"
 
@@ -90,9 +91,12 @@ class Nibe(IHvac):
         }
         return call_operation, params, self.domain
 
+
+
+
     @staticmethod
     def _cap_nibe_offset_value(val: int):
         """Nibe only supports offsets between -10 and 10"""
-        if abs(val) <= 10:
+        if abs(val) <= NIBE_MAX_THRESHOLD:
             return val
-        return 10 if val > 10 else -10
+        return NIBE_MAX_THRESHOLD if val > NIBE_MAX_THRESHOLD else NIBE_MIN_THRESHOLD

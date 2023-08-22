@@ -140,19 +140,21 @@ class IHvac(UpdateSystem):
                 _LOGGER.debug(f"Could not parse {sensor.name} from hvac. {e}")
         return 0
 
+
     def _handle_sensor(self, sensor: str):
         sensor_obj = sensor.split("|")
-        if 0 < len(sensor_obj) <= 2:
-            ret = self._hass.states.get(sensor_obj[0])
-            if ret is not None:
-                if len(sensor_obj) == 2:
-                    try:
-                        ret_attr = ret.attributes.get(sensor_obj[1])
-                        return ret_attr
-                    except Exception as e:
-                        _LOGGER.exception(e)
-                else:
-                    return ret.state
+        if not 0 < len(sensor_obj) <= 2:
+            raise ValueError
+        entity_id = sensor_obj[0]
+        state = self._hass.states.get(entity_id)
+        if state is None:
             return None
-        raise ValueError
+        if len(sensor_obj) == 2:
+            attribute = sensor_obj[1]
+            try:
+                return state.attributes.get(attribute)
+            except Exception as e:
+                _LOGGER.exception(e)
+                return None
+        return state.state
 
