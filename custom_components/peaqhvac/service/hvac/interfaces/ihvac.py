@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from homeassistant.core import HomeAssistant
 
 import custom_components.peaqhvac.extensionmethods as ex
-from custom_components.peaqhvac.service.hvac.house_heater import HouseHeater
+from custom_components.peaqhvac.service.hvac.house_heater.house_heater_coordinator import HouseHeaterCoordinator
 from custom_components.peaqhvac.service.hvac.water_heater.water_heater_coordinator import WaterHeater
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
@@ -29,7 +29,7 @@ class IHvac(UpdateSystem):
     def __init__(self, hass: HomeAssistant, hub: Hub):
         self.hub = hub
         self._hass = hass
-        self.house_heater = HouseHeater(hvac=self)
+        self.house_heater = HouseHeaterCoordinator(hvac=self)
         self.water_heater = WaterHeater(hvac=self)
         self.house_ventilation = HouseVentilation(hvac=self)
         self.model = IHvacModel()
