@@ -3,11 +3,7 @@ from typing import TYPE_CHECKING
 import time
 from datetime import datetime
 
-if TYPE_CHECKING:
-    from custom_components.peaqhvac.service.hub.hub import Hub
-    from custom_components.peaqhvac.service.hvac.interfaces.ihvac import IHvac
 
-from homeassistant.core import HomeAssistant
 from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
 import logging
 
@@ -21,21 +17,18 @@ UPDATE_INTERVALS = {
 
 
 class UpdateSystem:
-    def __init__(self, hass: HomeAssistant, hub: Hub, hvac:IHvac):
-        self._hass = hass
-        self.hub = hub
-        self.hvac = hvac
-        self._force_update: bool = False
-        self.current_water_boost_state: int = 0
-        self.current_vent_boost_state: int = 0
-        self.update_list: list = []
-        self.periodic_update_timers: dict = {
-            HvacOperations.Offset:     0,
-            HvacOperations.WaterBoost: 0,
-            HvacOperations.VentBoost:  0,
-        }
+    _force_update: bool = False
+    current_water_boost_state: int = 0
+    current_vent_boost_state: int = 0
+    update_list: list = []
+    periodic_update_timers: dict = {
+        HvacOperations.Offset:     0,
+        HvacOperations.WaterBoost: 0,
+        HvacOperations.VentBoost:  0,
+    }
 
     async def request_periodic_updates(self) -> None:
+        _LOGGER.debug("Requesting periodic updates")
         if self.hub.hvac.water_heater.control_module:
             await self.async_update_water()
         if self.hub.hvac.house_heater.control_module:
@@ -44,30 +37,30 @@ class UpdateSystem:
         await self.async_perform_periodic_updates()
 
     async def async_update_ventilation(self) -> None:
-        _vent_state = int(self.hvac.house_ventilation.vent_boost)
+        _vent_state = int(self.house_ventilation.vent_boost)
         if _vent_state != self.current_vent_boost_state:
             if await self.async_ready_to_update(HvacOperations.VentBoost):
                 self.update_list.append((HvacOperations.VentBoost, _vent_state))
                 self.current_vent_boost_state = _vent_state
 
     async def async_update_heat(self) -> None:
-        if await self._hass.async_add_executor_job(self.hvac.update_offset):
+        if await self._hass.async_add_executor_job(self.update_offset):
             if await self.async_ready_to_update(HvacOperations.Offset):
                 self.update_list.append(
-                    (HvacOperations.Offset, self.hvac.current_offset)
+                    (HvacOperations.Offset, self.current_offset)
                 )
 
     async def async_update_water(self) -> None:
-        if self.hvac.water_heater.water_boost or self.hvac.water_heater.water_heating:
-            if await self.async_ready_to_update(HvacOperations.WaterBoost):
-                if self.current_water_boost_state != int(self.hvac.water_heater.water_boost):
-                    self.update_list.append(
-                        (
-                            HvacOperations.WaterBoost,
-                            int(self.hvac.water_heater.water_boost),
-                        )
+        #if self.water_heater.water_boost or self.water_heater.water_heating:
+        if await self.async_ready_to_update(HvacOperations.WaterBoost):
+            if self.current_water_boost_state != int(self.water_heater.water_boost):
+                self.update_list.append(
+                    (
+                        HvacOperations.WaterBoost,
+                        int(self.water_heater.water_boost),
                     )
-                    self.current_water_boost_state = int(self.hvac.water_heater.water_boost)
+                )
+                self.current_water_boost_state = int(self.water_heater.water_boost)
 
     async def async_perform_periodic_updates(self) -> None:
         for u in self.update_list:
@@ -79,12 +72,12 @@ class UpdateSystem:
         if self.hub.sensors.peaq_enabled.value:
             _value = 0
             if self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5:
-                _value = await self.hvac._get_operation_value(operation, set_val)
+                _value = await self._get_operation_value(operation, set_val)
                 (
                     call_operation,
                     params,
                     domain,
-                ) = self.hvac._get_operation_call_parameters(operation, _value)
+                ) = self._get_operation_call_parameters(operation, _value)
 
                 _LOGGER.debug(
                     f"Requesting to update hvac-{operation.name} with value {set_val}"

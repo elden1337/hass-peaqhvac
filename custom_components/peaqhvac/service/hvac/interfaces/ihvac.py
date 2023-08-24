@@ -33,7 +33,6 @@ class IHvac(UpdateSystem):
         self.water_heater = WaterHeater(hvac=self)
         self.house_ventilation = HouseVentilation(hvac=self)
         self.model = IHvacModel()
-        super().__init__(hass, hub, self)
         self.hub.observer.add("offset recalculation", self.update_offset)
         self.hub.observer.add("update operation", self.request_periodic_updates)
 
