@@ -45,11 +45,11 @@ class HouseHeaterCoordinator(IHeater):
 
     @property
     def current_tempdiff(self):
-        return self._temp_helper.get_tempdiff_inverted()
+        return self._temp_helper.get_tempdiff_inverted(self.current_offset)
 
     @property
     def current_temp_extremas(self):
-        return self._temp_helper.get_temp_extremas()
+        return self._temp_helper.get_temp_extremas(self.current_offset)
 
     @property
     def current_temp_trend_offset(self):

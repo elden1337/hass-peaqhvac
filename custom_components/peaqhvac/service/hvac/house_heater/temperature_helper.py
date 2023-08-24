@@ -4,14 +4,14 @@ class HouseHeaterTemperatureHelper:
     def __init__(self, hub):
         self._hub = hub
 
-    def get_tempdiff_inverted(self) -> int:
+    def get_tempdiff_inverted(self, current_offset) -> int:
         diff = self._hub.sensors.get_tempdiff()
         if diff == 0:
             return 0
-        _tolerance = self._determine_tolerance(diff)
+        _tolerance = self._determine_tolerance(diff, current_offset)
         return int(diff / _tolerance) * -1
 
-    def get_temp_extremas(self) -> float:
+    def get_temp_extremas(self, current_offset) -> float:
         set_temp = self._hub.sensors.set_temp_indoors.adjusted_temp
         diffs = [set_temp - t for t in self._hub.sensors.average_temp_indoors.all_values]
         cold_diffs = [diff for diff in diffs if diff > 0]
@@ -19,7 +19,7 @@ class HouseHeaterTemperatureHelper:
         if len(cold_diffs) == len(hot_diffs):
             return 0
         is_cold = len(cold_diffs) > len(hot_diffs)
-        tolerance = self._determine_tolerance(is_cold)
+        tolerance = self._determine_tolerance(is_cold, current_offset)
         if is_cold:
             ret = mean(cold_diffs) - tolerance
         else:
