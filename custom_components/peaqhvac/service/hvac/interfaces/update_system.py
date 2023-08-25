@@ -28,7 +28,7 @@ class UpdateSystem:
     }
 
     async def request_periodic_updates(self) -> None:
-        _LOGGER.debug("Requesting periodic updates")
+        #_LOGGER.debug("Requesting periodic updates")
         if self.hub.hvac.water_heater.control_module:
             await self.async_update_water()
         if self.hub.hvac.house_heater.control_module:
@@ -41,6 +41,7 @@ class UpdateSystem:
         if _vent_state != self.current_vent_boost_state:
             if await self.async_ready_to_update(HvacOperations.VentBoost):
                 self.update_list.append((HvacOperations.VentBoost, _vent_state))
+                _LOGGER.debug(f"Vent boost state changed to {_vent_state}. Added to update list.")
                 self.current_vent_boost_state = _vent_state
 
     async def async_update_heat(self) -> None:
@@ -51,16 +52,12 @@ class UpdateSystem:
                 )
 
     async def async_update_water(self) -> None:
-        #if self.water_heater.water_boost or self.water_heater.water_heating:
         if await self.async_ready_to_update(HvacOperations.WaterBoost):
-            if self.current_water_boost_state != int(self.water_heater.water_boost):
-                self.update_list.append(
-                    (
-                        HvacOperations.WaterBoost,
-                        int(self.water_heater.water_boost),
-                    )
-                )
-                self.current_water_boost_state = int(self.water_heater.water_boost)
+            _water_state = int(self.water_heater.water_boost)
+            if self.current_water_boost_state != _water_state:
+                self.update_list.append((HvacOperations.WaterBoost, _water_state))
+                _LOGGER.debug(f"Water boost state changed to {_water_state}. Added to update list.")
+                self.current_water_boost_state = _water_state
 
     async def async_perform_periodic_updates(self) -> None:
         for u in self.update_list:
@@ -79,10 +76,10 @@ class UpdateSystem:
                     domain,
                 ) = self._get_operation_call_parameters(operation, _value)
 
-                _LOGGER.debug(
-                    f"Requesting to update hvac-{operation.name} with value {set_val}"
-                )
                 await self._hass.services.async_call(domain, call_operation, params)
+                _LOGGER.debug(
+                    f"Requested to update hvac-{operation.name} with value {set_val}. Actual value: {params} for {call_operation}"
+                )
 
     async def async_ready_to_update(self, operation) -> bool:
         match operation:

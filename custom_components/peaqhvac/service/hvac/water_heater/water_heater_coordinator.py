@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.service.hub.trend import Gradient
@@ -11,6 +11,7 @@ from custom_components.peaqhvac.service.hvac.water_heater.water_peak import get_
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import \
     HvacPresets
+from homeassistant.helpers.event import async_track_time_interval
 from custom_components.peaqhvac.service.hvac.water_heater.models.waterbooster_model import \
     WaterBoosterModel
 
@@ -34,6 +35,9 @@ class WaterHeater(IHeater):
         )
         self.model = WaterBoosterModel()
         self._hvac.hub.observer.add("offsets changed", self._update_operation)
+        async_track_time_interval(
+            self._hvac.hub.hass, self.async_update_operation, timedelta(seconds=30)
+        )
 
     @property
     def is_initialized(self) -> bool:
@@ -113,7 +117,7 @@ class WaterHeater(IHeater):
             return ret
         return False
 
-    async def async_update_operation(self):
+    async def async_update_operation(self, caller=None):
         self._update_operation()
 
     def _update_operation(self) -> None:

@@ -17,8 +17,7 @@ class WaitTimer:
     def update(self, override=None) -> None:
         if override is not None:
             self._timeout = override
-        else:
-            self._last_update = time.time()
+        self._last_update = time.time()
 
     def reset(self) -> None:
         self._last_update = 0
