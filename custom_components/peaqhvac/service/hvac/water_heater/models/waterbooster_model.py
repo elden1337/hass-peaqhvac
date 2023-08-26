@@ -17,7 +17,6 @@ class EventProperty:
     def value(self, val):
         if self._value != val:
             self._value = val
-            #self._hub.sensors.peaqev_facade.publish_observer_message(f"{self.name}_changed", val)
             self._hub.hass.bus.fire(f"peaqhvac.{self.name}_changed", {"new": val})
 
 
