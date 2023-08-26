@@ -7,7 +7,7 @@ _LOGGER = logging.getLogger(__name__)
 def _set_start_dt(demand: int, low_period: int, now_dt=None, delayed: bool = False) -> datetime:
     now_dt = datetime.now() if now_dt is None else now_dt
     start_minute: int = now_dt.minute
-    if _is_low_multiple_hours(low_period, now_dt):
+    if low_period >= 60 - now_dt.minute:
         """delayed start"""
         if not delayed:
             start_minute = max(now_dt.minute, min(60 - int(demand / 2), 59))
@@ -16,11 +16,7 @@ def _set_start_dt(demand: int, low_period: int, now_dt=None, delayed: bool = Fal
     return now_dt.replace(minute=start_minute, second=0, microsecond=0)
 
 
-def _is_low_multiple_hours(low_period, now_dt) -> bool:
-    return low_period >= 60 - now_dt.minute
-
-
-def _get_low_period(prices, now_dt=None) -> int:
+def _get_low_period(prices:list, now_dt=None) -> int:
     now_dt = datetime.now() if now_dt is None else now_dt
     low_period: int = 0
     for i in range(now_dt.hour, len(prices)):
@@ -33,16 +29,18 @@ def _get_low_period(prices, now_dt=None) -> int:
     return low_period
 
 
-def get_next_start(prices, demand, now_dt=None) -> datetime:
+def get_next_start(prices:list, demand:int, now_dt=None) -> datetime:
     now_dt = datetime.now() if now_dt is None else now_dt
     try:
         if prices[now_dt.hour] < mean(prices):
-            return _set_start_dt(demand, _get_low_period(prices, now_dt), now_dt)
+            low_period = _get_low_period(prices, now_dt)
+            return _set_start_dt(demand, low_period, now_dt)
         for i in range(now_dt.hour + 1, len(prices)):
             if prices[i] < mean(prices):
                 delay = (i - now_dt.hour) * 60
                 delayed_dt = now_dt + timedelta(minutes=delay)
-                return _set_start_dt(demand, _get_low_period(prices, delayed_dt), delayed_dt, True)
+                low_period =_get_low_period(prices, delayed_dt)
+                return _set_start_dt(demand, low_period, delayed_dt, True)
     except Exception as e:
         _LOGGER.error(f"Error on getting next start: {e}")
     return datetime.max
