@@ -33,13 +33,16 @@ def _get_low_period(prices, now_dt=None) -> int:
 
 def get_next_start(prices, demand, now_dt=None) -> datetime:
     now_dt = datetime.now() if now_dt is None else now_dt
-    if prices[now_dt.hour] < mean(prices):
-        return _set_start_dt(demand, _get_low_period(prices, now_dt), now_dt)
-    for i in range(now_dt.hour + 1, len(prices)):
-        if prices[i] < mean(prices):
-            delay = (i - now_dt.hour) * 60
-            delayed_dt = now_dt + timedelta(minutes=delay)
-            return _set_start_dt(demand, _get_low_period(prices, delayed_dt), delayed_dt, True)
+    try:
+        if prices[now_dt.hour] < mean(prices):
+            return _set_start_dt(demand, _get_low_period(prices, now_dt), now_dt)
+        for i in range(now_dt.hour + 1, len(prices)):
+            if prices[i] < mean(prices):
+                delay = (i - now_dt.hour) * 60
+                delayed_dt = now_dt + timedelta(minutes=delay)
+                return _set_start_dt(demand, _get_low_period(prices, delayed_dt), delayed_dt, True)
+    except Exception as e:
+        pass
     return datetime.max
 
 

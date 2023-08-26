@@ -1,14 +1,11 @@
-from dataclasses import dataclass
-
 from custom_components.peaqhvac.service.hvac.const import DEFAULT_WATER_BOOST
 from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
 
 
 class EventProperty:
-    """A property that notifies hass.bus when changed"""
-    def __init__(self, name, prop_type: type, hass):
+    def __init__(self, name, prop_type: type, hub):
         self._value = None
-        self._hass = hass
+        self._hub = hub
         self.name = name
         self._prop_type = prop_type
 
@@ -20,7 +17,8 @@ class EventProperty:
     def value(self, val):
         if self._value != val:
             self._value = val
-            self._hass.bus.fire(f"peaqhvac.{self.name}_changed", {"new": val})
+            #self._hub.sensors.peaqev_facade.publish_observer_message(f"{self.name}_changed", val)
+            self._hub.hass.bus.fire(f"peaqhvac.{self.name}_changed", {"new": val})
 
 
 class WaterBoosterModel:

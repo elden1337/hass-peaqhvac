@@ -60,3 +60,7 @@ class PeaqevFacade:
             return self._peaqevhub.nordpool.average_month
         except:
             return 0
+
+
+    def publish_observer_message(self, message: str, *args):
+        self._peaqevhub.observer.broadcast(message, *args)
