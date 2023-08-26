@@ -125,7 +125,7 @@ class WaterHeater(IHeater):
             Demand.MediumDemand: 35,
             Demand.HighDemand:   45
         }
-        if self.water_boost or self.water_heating:
+        if self.water_boost or self.model.pre_heating.value:
             """no need to calculate if we are already heating or trying to heat"""
             return datetime.max
 
