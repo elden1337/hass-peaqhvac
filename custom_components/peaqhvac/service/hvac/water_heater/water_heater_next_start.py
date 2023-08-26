@@ -1,6 +1,8 @@
 from statistics import mean
 from datetime import datetime, timedelta
+import logging
 
+_LOGGER = logging.getLogger(__name__)
 
 def _set_start_dt(demand: int, low_period: int, now_dt=None, delayed: bool = False) -> datetime:
     now_dt = datetime.now() if now_dt is None else now_dt
@@ -42,7 +44,7 @@ def get_next_start(prices, demand, now_dt=None) -> datetime:
                 delayed_dt = now_dt + timedelta(minutes=delay)
                 return _set_start_dt(demand, _get_low_period(prices, delayed_dt), delayed_dt, True)
     except Exception as e:
-        pass
+        _LOGGER.error(f"Error on getting next start: {e}")
     return datetime.max
 
 
