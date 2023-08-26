@@ -6,8 +6,9 @@ from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
 
 class EventProperty:
     """A property that notifies hass.bus when changed"""
-    def __init__(self, name, prop_type: type):
+    def __init__(self, name, prop_type: type, hass):
         self._value = None
+        self._hass = hass
         self.name = name
         self._prop_type = prop_type
 
@@ -15,11 +16,28 @@ class EventProperty:
     def value(self):
         return self._value
 
-@dataclass
+    @value.setter
+    def value(self, val):
+        if self._value != val:
+            self._value = val
+            self._hass.bus.fire(f"peaqhvac.{self.name}_changed", {"new": val})
+
+
 class WaterBoosterModel:
-    try_heat_water: bool = False
-    heat_water_timer = WaitTimer(timeout=DEFAULT_WATER_BOOST)
-    pre_heating: bool = False
-    boost: bool = False
+    def __init__(self, hass):
+        self._hass = hass
+        self.heat_water_timer = WaitTimer(timeout=DEFAULT_WATER_BOOST)
+        self.pre_heating = EventProperty("pre_heating", bool, hass)
+        self.boost = EventProperty("boost", bool, hass)
+        self.currently_heating = EventProperty("currently_heating", bool, hass)
+        self.try_heat_water = EventProperty("try_heat_water", bool, hass)
+
+        self.pre_heating.value = False
+        self.boost.value = False
+        self.currently_heating.value = False
+        self.try_heat_water.value = False
+
+
+
 
     #currently_heating: bool = False
