@@ -108,7 +108,7 @@ class WaterHeater(IHeater):
         if temp is None:
             return Demand.NoDemand
         if 0 < temp < 100:
-            if temp >= 42:
+            if temp >= 40:
                 return Demand.NoDemand
             if temp > 35:
                 return Demand.LowDemand
