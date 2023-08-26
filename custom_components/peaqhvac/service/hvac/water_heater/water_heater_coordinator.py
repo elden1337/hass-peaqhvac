@@ -33,7 +33,7 @@ class WaterHeater(IHeater):
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT)
         self._temp_trend = Gradient(
-            max_age=7200, max_samples=10, precision=0, ignore=0
+            max_age=7200, max_samples=10, precision=1, ignore=0
         )
         self.model = WaterBoosterModel(self._hvac.hub.hass)
         self._hvac.hub.observer.add("offsets changed", self._update_operation)
@@ -78,6 +78,10 @@ class WaterHeater(IHeater):
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
             self.model.try_heat_water.value = False
 
+    @property
+    def demand(self) -> Demand:
+        return self._get_demand()
+
     @IHeater.demand.setter
     def demand(self, val):
         self._demand = val
@@ -94,7 +98,10 @@ class WaterHeater(IHeater):
 
     @property
     def next_water_heater_start(self) -> datetime:
-        return self._get_next_start()
+        next_start = self._get_next_start()
+        if next_start < datetime.now()+timedelta(minutes=10):
+            self._hvac.hub.hass.bus.fire("peaqhvac.upcoming_water_heater_warning", {"new": True})
+        return next_start
 
     def _get_demand(self) -> Demand:
         temp = self.current_temperature
@@ -114,17 +121,21 @@ class WaterHeater(IHeater):
     def _get_next_start(self) -> datetime:
         demand_minutes = {
             Demand.NoDemand:     0,
-            Demand.LowDemand:    20,
-            Demand.MediumDemand: 30,
-            Demand.HighDemand:   40
+            Demand.LowDemand:    26,
+            Demand.MediumDemand: 35,
+            Demand.HighDemand:   45
         }
+        if self.water_boost or self.water_heating:
+            """no need to calculate if we are already heating or trying to heat"""
+            return datetime.max
+
         demand = self._get_demand()
         if demand is Demand.NoDemand:
             return next_predicted_demand(
                 self._hvac.hub.nordpool.prices_combined,
                 demand_minutes[Demand.LowDemand],
                 self.current_temperature,
-                self.temperature_trend,
+                self._temp_trend.gradient_raw,
                 HIGHTEMP_THRESHOLD
             )
         return get_next_start(demand_minutes[demand], self._hvac.hub.nordpool.prices_combined)

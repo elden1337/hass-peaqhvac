@@ -26,6 +26,11 @@ class Gradient:
         return round(self._gradient, self._precision)
 
     @property
+    def gradient_raw(self) -> float:
+        self.set_gradient()
+        return self._gradient
+
+    @property
     def samples(self) -> int:
         return len(self._temp_readings)
 
