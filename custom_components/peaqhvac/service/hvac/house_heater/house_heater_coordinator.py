@@ -129,7 +129,7 @@ class HouseHeaterCoordinator(IHeater):
             return True
         return False
 
-    async def async_get_demand(self) -> Demand:
+    def _get_demand(self) -> Demand:
         _compressor_start = self._hvac.hvac_compressor_start or -300
         _return_temp = self._hvac.delta_return_temp or 1000
         dm = self._hvac.hvac_dm

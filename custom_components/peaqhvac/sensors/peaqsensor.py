@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from custom_components.peaqhvac.const import HEATINGDEMAND, WATERDEMAND
@@ -18,6 +20,7 @@ class PeaqSensor(SensorBase, RestoreEntity):
             self._heat_water = False
             self._water_is_heating = False
             self._latest_boost_call = ""
+            self._next_start: str = ""
 
     @property
     def state(self) -> str:
@@ -33,6 +36,7 @@ class PeaqSensor(SensorBase, RestoreEntity):
             attr_dict["heat_water"] = self._heat_water
             attr_dict["water_is_heating"] = self._water_is_heating
             attr_dict["latest_boost_call"] = self._latest_boost_call
+            attr_dict["next_start"] = self._next_start
 
         return attr_dict
 
@@ -50,6 +54,13 @@ class PeaqSensor(SensorBase, RestoreEntity):
             self._heat_water = self._hub.hvac.water_heater.water_boost
             self._water_is_heating = self._hub.hvac.water_heater.water_heating
             self._latest_boost_call = self._hub.hvac.water_heater.latest_boost_call
+            self._next_start = self._set_next_start(self._hub.hvac.water_heater.next_water_heater_start)
+
+    @staticmethod
+    def _set_next_start(next_start: datetime) -> str:
+        if next_start > datetime.now() + timedelta(days=2):
+            return "-"
+        return next_start.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     async def async_added_to_hass(self):
         state = await super().async_get_last_state()

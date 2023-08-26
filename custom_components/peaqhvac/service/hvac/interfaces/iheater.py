@@ -50,12 +50,12 @@ class IHeater(ABC):
     async def async_update_demand(self):
         if self._latest_update.is_timeout():
             self._latest_update.update()
-            self._demand = await self.async_get_demand()
+            self._demand = self._get_demand()
             if self.control_module:
                 await self.async_update_operation()
 
     @abstractmethod
-    async def async_get_demand(self):
+    def _get_demand(self):
         pass
 
     @abstractmethod
