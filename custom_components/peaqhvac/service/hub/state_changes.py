@@ -1,7 +1,7 @@
 import logging
 import time
 
-from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
+from peaqevcore.common.wait_timer import WaitTimer
 
 _LOGGER = logging.getLogger(__name__)
 

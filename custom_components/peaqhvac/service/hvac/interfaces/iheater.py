@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
+from peaqevcore.common.wait_timer import WaitTimer
 
 if TYPE_CHECKING:
     from custom_components.peaqhvac.service.hvac.interfaces.ihvac import IHvac

@@ -2,7 +2,7 @@ from peaqevcore.models.hub.hubmember import HubMember
 
 from custom_components.peaqhvac.service.hub.average import Average
 from custom_components.peaqhvac.service.hub.target_temp import TargetTemp
-from custom_components.peaqhvac.service.hub.trend import Gradient
+from peaqevcore.common.trend import Gradient
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.peaqev_facade import PeaqevFacade
 

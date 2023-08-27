@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import logging
 from custom_components.peaqhvac.service.hvac.const import LOW_DEGREE_MINUTES, SUMMER_TEMP, NIGHT_HOURS, VERY_COLD_TEMP, \
     WAITTIMER_TIMEOUT
-from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
+from peaqevcore.common.wait_timer import WaitTimer
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 from homeassistant.helpers.event import async_track_time_interval
 

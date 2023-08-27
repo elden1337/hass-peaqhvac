@@ -9,7 +9,7 @@ from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper imp
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
-from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
+from peaqevcore.common.wait_timer import WaitTimer
 
 _LOGGER = logging.getLogger(__name__)
 

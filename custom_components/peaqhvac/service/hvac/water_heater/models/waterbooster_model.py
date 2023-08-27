@@ -1,5 +1,5 @@
 from custom_components.peaqhvac.service.hvac.const import DEFAULT_WATER_BOOST
-from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
+from peaqevcore.common.wait_timer import WaitTimer
 
 
 class EventProperty:

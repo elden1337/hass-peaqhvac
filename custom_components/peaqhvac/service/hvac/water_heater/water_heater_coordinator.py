@@ -3,9 +3,9 @@ import time
 from datetime import datetime, timedelta
 
 import custom_components.peaqhvac.extensionmethods as ex
-from custom_components.peaqhvac.service.hub.trend import Gradient
+from peaqevcore.common.trend import Gradient
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
-from custom_components.peaqhvac.service.hvac.wait_timer import WaitTimer
+from peaqevcore.common.wait_timer import WaitTimer
 from custom_components.peaqhvac.service.hvac.water_heater.const import *
 from custom_components.peaqhvac.service.hvac.water_heater.water_heater_next_start import get_next_start, \
     next_predicted_demand
