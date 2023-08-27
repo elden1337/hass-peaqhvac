@@ -73,12 +73,11 @@ def _set_start_dt_params(now_dt: datetime, i:int, prices:list, demand:int) -> da
 
 def next_predicted_demand(prices:list, min_demand:int, temp:float, temp_trend:float, target_temp:float, now_dt=None) -> datetime:
     now_dt = datetime.now() if now_dt is None else now_dt
-    if temp_trend < 0:
+    try:
         delay = (target_temp - temp) / temp_trend
-        #print(f"delay: {now_dt + timedelta(hours=delay)}")
-        #print(f"mean: {mean(prices)}")
-        return get_next_start(prices, min_demand,now_dt, now_dt + timedelta(hours=delay))
-    return datetime.max
+    except ZeroDivisionError:
+        delay = 48
+    return get_next_start(prices, min_demand,now_dt, now_dt + timedelta(hours=delay))
 
 
 # prices =[0.29,0.27,0.25,0.23,0.23,0.2,0.18,0.23,0.27,0.29,0.29,0.3,0.26,0.29,0.3,0.3,0.34,1.62,1.82,1.96,1.9,1.93,0.43,0.4]
@@ -89,4 +88,4 @@ def next_predicted_demand(prices:list, min_demand:int, temp:float, temp_trend:fl
 # min_demand = 20
 
 # print(f"next start vanilla: {get_next_start(prices_combined, demand, mockdt)}")
-# print(f"next start with delay: {next_predicted_demand(prices_combined, min_demand, 50, -0.3, 40, mockdt)}")
+# print(f"next start with delay: {next_predicted_demand(prices_combined, min_demand, 50, 0, 40, mockdt)}")
