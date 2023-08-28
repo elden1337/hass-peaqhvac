@@ -5,10 +5,11 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import AVERAGESENSORS, DEMANDSENSORS, DOMAIN, TRENDSENSORS
+from .const import AVERAGESENSORS, DEMANDSENSORS, DOMAIN, TRENDSENSORS, NEXT_WATER_START, LATEST_WATER_BOOST
 from .sensors.min_maxsensor import AverageSensor
 from .sensors.offsetsensor import OffsetSensor
 from .sensors.peaqsensor import PeaqSensor
+from .sensors.simple_sensor import PeaqSimpleSensor
 from .sensors.trendsensor import TrendSensor
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,9 +30,6 @@ async def async_setup_entry(
 async def _gather_sensors(hub, config, hass) -> list:
     ret = []
 
-    # temperature input_numbersensor
-    # tolerance (-5 - 5) input_numbersensor
-
     ret.append(OffsetSensor(hub, config.entry_id, "calculated hvac offset"))
     for a in AVERAGESENSORS:
         ret.append(AverageSensor(hub, config.entry_id, a))
@@ -39,5 +37,8 @@ async def _gather_sensors(hub, config, hass) -> list:
         ret.append(TrendSensor(hub, config.entry_id, key, TRENDSENSORS[key]))
     for key in DEMANDSENSORS:
         ret.append(PeaqSensor(hub, config.entry_id, key, DEMANDSENSORS[key]))
+
+    ret.append(PeaqSimpleSensor(hub, config.entry_id, "next water start", NEXT_WATER_START, "mdi:clock-start"))
+    ret.append(PeaqSimpleSensor(hub, config.entry_id, "latest water boost", LATEST_WATER_BOOST, "mdi:clock-end"))
 
     return ret

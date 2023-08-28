@@ -25,3 +25,7 @@ DEMANDSENSORS = {WATERDEMAND: "mdi:water-boiler", HEATINGDEMAND: "mdi:heat-pump"
 HVACBRAND_NIBE = "Nibe"
 HVACBRAND_IVT = "IVT"
 HVACBRAND_THERMIA = "Thermia"
+
+
+LATEST_WATER_BOOST = "latest_water_boost"
+NEXT_WATER_START = "next_water_start"

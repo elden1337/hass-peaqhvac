@@ -2,7 +2,10 @@ import logging
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_state_change
+from functools import partial
+from typing import Callable
 
+from custom_components.peaqhvac.const import LATEST_WATER_BOOST, NEXT_WATER_START
 from custom_components.peaqhvac.service.hub.hubsensors import HubSensors
 from custom_components.peaqhvac.service.hub.nordpool import NordPoolUpdater
 from custom_components.peaqhvac.service.hub.state_changes import StateChanges
@@ -13,7 +16,7 @@ from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import \
     OffsetCoordinator
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.observer.observer_service import Observer
-
+from custom_components.peaqhvac.extensionmethods import async_iscoroutine
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -106,3 +109,17 @@ class Hub:
             self.sensors.average_temp_indoors.value
             + self.sensors.temp_trend_indoors.gradient
         )
+
+
+    async def async_get_internal_sensor(self, entity):
+        lookup = {
+        LATEST_WATER_BOOST: partial(getattr, self.hvac.water_heater, "latest_boost_call"),
+        NEXT_WATER_START: partial(getattr, self.hvac.water_heater, "next_water_heater_start")
+        }
+
+        func: Callable = lookup.get(entity, None)
+        if await async_iscoroutine(func):
+            return await func()
+        else:
+            return func()
+
