@@ -4,10 +4,17 @@ from datetime import datetime
 
 from custom_components.peaqhvac.service.observer.event_property import EventProperty
 
+class BusFireOnceMixin:
+    _event_log = []
 
-class WaterBoosterModel:
+    def bus_fire_once(self, event, data, next_start):
+        if next_start not in self._event_log:            
+            self._hass.bus.fire(event, data)
+            self._event_log.append(next_start)
+
+
+class WaterBoosterModel(BusFireOnceMixin):
     def __init__(self, hass):
-        self._event_log = []
         self._hass = hass
         self.heat_water_timer = WaitTimer(timeout=DEFAULT_WATER_BOOST, init_now=False)
         self.pre_heating = EventProperty("pre_heating", bool, hass, False) #kan vara issuet
@@ -16,8 +23,3 @@ class WaterBoosterModel:
 
         #self.boost = EventProperty("boost", bool, hass, False)
         #self.currently_heating = EventProperty("currently_heating", bool, hass, False)
-
-    def bus_fire_once(self, event, data, next_start):
-        if next_start not in self._event_log:            
-            self._hass.bus.fire(event, data)
-            self._event_log.append(next_start)
