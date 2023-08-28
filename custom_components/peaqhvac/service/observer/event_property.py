@@ -1,6 +1,6 @@
 class EventProperty:
-    def __init__(self, name, prop_type: type, hub):
-        self._value = None
+    def __init__(self, name, prop_type: type, hub, default=None):
+        self._value = default
         self._hub = hub
         self.name = name
         self._prop_type = prop_type

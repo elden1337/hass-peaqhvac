@@ -90,7 +90,7 @@ class WaterHeater(IHeater):
     def water_boost(self) -> bool:
         """Returns true if we should try and heat the water"""
         #return self.model.try_heat_water.value
-        return any([self.next_water_heater_start <= datetime.now(), self.water_heating])
+        return any([self.model.next_water_heater_start <= datetime.now(), self.water_heating])
 
     @property
     def water_heating(self) -> bool:
@@ -101,14 +101,9 @@ class WaterHeater(IHeater):
     def next_water_heater_start(self) -> datetime:
         next_start = self._get_next_start()
         if next_start < datetime.now()+timedelta(minutes=10):
-            self.bus_fire_once("peaqhvac.upcoming_water_heater_warning", {"new": True}, next_start)
+            self.model.bus_fire_once("peaqhvac.upcoming_water_heater_warning", {"new": True}, next_start)
+        self.model.next_water_heater_start = next_start
         return next_start
-
-    #todo: move this elsewhere
-    def bus_fire_once(self, event, data, next_start):
-        if next_start not in self._event_log:            
-            self._hvac.hub.hass.bus.fire(event, data)
-            self._event_log.append(next_start)
 
     def _get_demand(self) -> Demand:
         temp = self.current_temperature
