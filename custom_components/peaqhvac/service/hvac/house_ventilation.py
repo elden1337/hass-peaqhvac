@@ -73,7 +73,8 @@ class HouseVentilation:
 
 
     def _vent_boost_start(self, msg) -> None:
-        _LOGGER.debug(msg)
-        self._wait_timer_boost.update()
-        self._current_vent_state = True
-        self._hvac.hub.observer.broadcast("update operation")
+        if not self._current_vent_state:
+            _LOGGER.debug(msg)
+            self._wait_timer_boost.update()
+            self._current_vent_state = True
+            self._hvac.hub.observer.broadcast("update operation")

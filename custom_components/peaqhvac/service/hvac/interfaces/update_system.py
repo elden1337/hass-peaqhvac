@@ -12,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVALS = {
     HvacOperations.Offset: 900,
     HvacOperations.WaterBoost: 60,
-    HvacOperations.VentBoost: 1800,
+    HvacOperations.VentBoost: 60,
 }
 
 
@@ -37,12 +37,14 @@ class UpdateSystem:
         await self.async_perform_periodic_updates()
 
     async def async_update_ventilation(self) -> None:
-        _vent_state = int(self.house_ventilation.vent_boost)
-        if _vent_state != self.current_vent_boost_state:
-            if await self.async_ready_to_update(HvacOperations.VentBoost):
+        if await self.async_ready_to_update(HvacOperations.VentBoost):
+            _vent_state = int(self.house_ventilation.vent_boost)
+            if _vent_state != self.current_vent_boost_state:
                 self.update_list.append((HvacOperations.VentBoost, _vent_state))
                 _LOGGER.debug(f"Vent boost state changed to {_vent_state}. Added to update list.")
                 self.current_vent_boost_state = _vent_state
+            else:
+                _LOGGER.debug(f"Vent boost state not changed. Not added to update list.")
 
     async def async_update_heat(self) -> None:
         if await self._hass.async_add_executor_job(self.update_offset):
@@ -84,10 +86,11 @@ class UpdateSystem:
     async def async_ready_to_update(self, operation) -> bool:
         match operation:
             case HvacOperations.WaterBoost | HvacOperations.VentBoost:
+                if operation == HvacOperations.VentBoost:
+                    _LOGGER.debug(f"Checking if ready to update ventilation. {self.periodic_update_timers[operation]}, {UPDATE_INTERVALS[operation]}, {time.time() - self.periodic_update_timers[operation]}")
                 return any(
                     [
-                        time.time() - self.periodic_update_timers[operation]
-                        > UPDATE_INTERVALS[operation],
+                        time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation],
                         self.hub.sensors.peaqev_facade.exact_threshold >= 100,
                     ]
                 )

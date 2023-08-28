@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant
 import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.service.hvac.house_heater.house_heater_coordinator import HouseHeaterCoordinator
 from custom_components.peaqhvac.service.hvac.water_heater.water_heater_coordinator import WaterHeater
+from custom_components.peaqhvac.service.hvac.house_ventilation import HouseVentilation
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
 from custom_components.peaqhvac.service.models.enums.sensortypes import SensorType
