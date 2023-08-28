@@ -89,7 +89,8 @@ class WaterHeater(IHeater):
     @property
     def water_boost(self) -> bool:
         """Returns true if we should try and heat the water"""
-        return self.model.try_heat_water.value
+        #return self.model.try_heat_water.value
+        return any([self.next_water_heater_start <= datetime.now(), self.water_heating])
 
     @property
     def water_heating(self) -> bool:
@@ -100,8 +101,14 @@ class WaterHeater(IHeater):
     def next_water_heater_start(self) -> datetime:
         next_start = self._get_next_start()
         if next_start < datetime.now()+timedelta(minutes=10):
-            self._hvac.hub.hass.bus.fire("peaqhvac.upcoming_water_heater_warning", {"new": True})
+            self.bus_fire_once("peaqhvac.upcoming_water_heater_warning", {"new": True}, next_start)
         return next_start
+
+    #todo: move this elsewhere
+    def bus_fire_once(self, event, data, next_start):
+        if next_start not in self._event_log:            
+            self._hvac.hub.hass.bus.fire(event, data)
+            self._event_log.append(next_start)
 
     def _get_demand(self) -> Demand:
         temp = self.current_temperature
@@ -168,12 +175,6 @@ class WaterHeater(IHeater):
                 if all([self._hvac.hub.sensors.peaqev_facade.above_stop_threshold,self.model.try_heat_water.value, 10 <= datetime.now().minute < 55]):
                     _LOGGER.debug("Peak is being breached. Turning off water heating")
                     self._set_boost(False)
-
-                # elif self._get_water_peak(datetime.now().hour):
-                #     _LOGGER.debug("Current hour is identified as a good hour to boost water")
-                #     self.model.boost = True
-                #     self._toggle_boost(timer_timeout=3600)
-
                 elif self._is_below_start_threshold():
                     if self._get_next_start() <= datetime.now():
                         self.model.pre_heating.value = True
@@ -181,9 +182,8 @@ class WaterHeater(IHeater):
                     else:
                         self.model.pre_heating.value = False
         except Exception as e:
-            # _LOGGER.error(
-            #     f"Could not check water-state: {e}. nordpool-state: {self._hvac.hub.nordpool.state}, min-price: {self._hvac.hub.sensors.peaqev_facade.min_price}")
-            pass
+            _LOGGER.error(
+                f"Could not check water-state: {e}. nordpool-state: {self._hvac.hub.nordpool.state}, min-price: {self._hvac.hub.sensors.peaqev_facade.min_price}")            
 
     def _is_below_start_threshold(self) -> bool:
         return all([
@@ -214,7 +214,8 @@ class WaterHeater(IHeater):
                 self._set_boost(False)
         elif all(
                 [
-                    any([self.model.pre_heating.value, self.model.boost.value]),
+                    # any([self.model.pre_heating.value, self.model.boost.value]),
+                    self.model.pre_heating.value,
                     self._wait_timer.is_timeout(),
                 ]
         ):
