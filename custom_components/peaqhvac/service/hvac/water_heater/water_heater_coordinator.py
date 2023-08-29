@@ -35,7 +35,7 @@ class WaterHeater(IHeater):
         self._temp_trend = Gradient(
             max_age=900, max_samples=10, precision=1, ignore=0
         )
-        self.model = WaterBoosterModel(self._hvac.hub)
+        self.model = WaterBoosterModel(self._hvac.hub.hass)
         self._hvac.hub.observer.add("offsets changed", self._update_operation)
         async_track_time_interval(
             self._hvac.hub.hass, self.async_update_operation, timedelta(seconds=30)
