@@ -34,11 +34,11 @@ class PeaqSimpleSensor(SensorBase, RestoreEntity):
     def _set_next_start(next_start: datetime) -> str:
         if next_start > datetime.now() + timedelta(days=2):
             return "-"
-        return next_start.strftime("%Y-%m-%dT%H:%M:%S.%f")
+        return next_start.strftime("%Y-%m-%d %H:%M")
 
     async def async_added_to_hass(self):
         state = await super().async_get_last_state()
         if state:
             self._state = state.state
         else:
-            self._state = ""
+            self._state = "-"

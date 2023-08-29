@@ -54,7 +54,7 @@ class WaterHeater(IHeater):
     def latest_boost_call(self) -> str:
         """For Lovelace-purposes. Converts and returns epoch-timer to readable datetime-string"""
         if self.model.heat_water_timer.value > 0:
-            return ex.dt_from_epoch(self.model.heat_water_timer.value)
+            return time.strftime("%Y-%m-%d %H:%M", time.localtime(self.model.heat_water_timer.value))
         return "-"
 
     @latest_boost_call.setter
