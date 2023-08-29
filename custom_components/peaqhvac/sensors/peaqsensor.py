@@ -29,7 +29,7 @@ class PeaqSensor(SensorBase, RestoreEntity):
         attr_dict = {}
 
         if self._sensorname == WATERDEMAND:
-            attr_dict["watertemp_trend"] = self._watertemp_trend
+            attr_dict["watertemp_trend °/h"] = self._watertemp_trend
             attr_dict["current_temperature"] = self._current_water_temperature
             attr_dict["heat_water"] = self._heat_water
             attr_dict["water_is_heating"] = self._water_is_heating
