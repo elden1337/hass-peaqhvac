@@ -43,8 +43,8 @@ class UpdateSystem:
                 self.update_list.append((HvacOperations.VentBoost, _vent_state))
                 _LOGGER.debug(f"Vent boost state changed to {_vent_state}. Added to update list.")
                 self.current_vent_boost_state = _vent_state
-            else:
-                _LOGGER.debug(f"Vent boost state not changed. Not added to update list.")
+            # else:
+            #     _LOGGER.debug(f"Vent boost state not changed. Not added to update list.")
 
     async def async_update_heat(self) -> None:
         if await self._hass.async_add_executor_job(self.update_offset):
@@ -86,8 +86,8 @@ class UpdateSystem:
     async def async_ready_to_update(self, operation) -> bool:
         match operation:
             case HvacOperations.WaterBoost | HvacOperations.VentBoost:
-                if operation == HvacOperations.VentBoost:
-                    _LOGGER.debug(f"Checking if ready to update ventilation. {self.periodic_update_timers[operation]}, {UPDATE_INTERVALS[operation]}, {time.time() - self.periodic_update_timers[operation]}")
+                # if operation == HvacOperations.VentBoost:
+                #     _LOGGER.debug(f"Checking if ready to update ventilation. {self.periodic_update_timers[operation]}, {UPDATE_INTERVALS[operation]}, {time.time() - self.periodic_update_timers[operation]}")
                 return any(
                     [
                         time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation],
