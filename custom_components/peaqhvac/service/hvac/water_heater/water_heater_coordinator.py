@@ -33,7 +33,7 @@ class WaterHeater(IHeater):
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._temp_trend = Gradient(
-            max_age=1800, max_samples=10, precision=1, ignore=0
+            max_age=900, max_samples=10, precision=1, ignore=0
         )
         self.model = WaterBoosterModel(self._hvac.hub)
         self._hvac.hub.observer.add("offsets changed", self._update_operation)
@@ -89,8 +89,8 @@ class WaterHeater(IHeater):
     @property
     def water_boost(self) -> bool:
         """Returns true if we should try and heat the water"""
-        #return self.model.try_heat_water.value
-        return any([self.model.next_water_heater_start <= datetime.now(), self.water_heating])
+        return self.model.try_heat_water.value
+        #return any([self.model.next_water_heater_start <= datetime.now(), self.water_heating])
 
     @property
     def water_heating(self) -> bool:
@@ -142,17 +142,17 @@ class WaterHeater(IHeater):
             )
         return get_next_start(demand=demand_minutes[demand], prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow)
 
-    def _get_water_peak(self, hour: int) -> bool:
-        if self._wait_timer_peak.is_timeout() and self._hvac.hub.is_initialized:
-            _prices = self._hvac.hub.nordpool.prices_combined
-            avg_monthly = None
-            if self._hvac.hub.sensors.peaqev_installed:
-                avg_monthly = self._hvac.hub.sensors.peaqev_facade.average_this_month
-            ret = get_water_peak(hour, _prices, avg_monthly)
-            if ret:
-                self._wait_timer_peak.update()
-            return ret
-        return False
+    # def _get_water_peak(self, hour: int) -> bool:
+    #     if self._wait_timer_peak.is_timeout() and self._hvac.hub.is_initialized:
+    #         _prices = self._hvac.hub.nordpool.prices_combined
+    #         avg_monthly = None
+    #         if self._hvac.hub.sensors.peaqev_installed:
+    #             avg_monthly = self._hvac.hub.sensors.peaqev_facade.average_this_month
+    #         ret = get_water_peak(hour, _prices, avg_monthly)
+    #         if ret:
+    #             self._wait_timer_peak.update()
+    #         return ret
+    #     return False
 
     async def async_update_operation(self, caller=None):
         self._update_operation()
@@ -172,6 +172,7 @@ class WaterHeater(IHeater):
                     self._set_boost(False)
                 elif self._is_below_start_threshold():
                     if self._get_next_start() <= datetime.now():
+                        #_LOGGER.debug(f"Good idea to try heat water. next start indicates: {self._get_next_start()}")
                         self.model.pre_heating.value = True
                         self._toggle_boost(timer_timeout=None)
                     else:
