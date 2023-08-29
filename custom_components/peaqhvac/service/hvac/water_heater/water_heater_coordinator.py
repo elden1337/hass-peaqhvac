@@ -33,7 +33,7 @@ class WaterHeater(IHeater):
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._temp_trend = Gradient(
-            max_age=7200, max_samples=10, precision=1, ignore=0
+            max_age=1800, max_samples=10, precision=1, ignore=0
         )
         self.model = WaterBoosterModel(self._hvac.hub)
         self._hvac.hub.observer.add("offsets changed", self._update_operation)
