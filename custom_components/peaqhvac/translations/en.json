@@ -21,5 +21,25 @@
     "abort": {
       "already_configured": "This integration has already been configured"
     }
+  },
+  "services": {
+    "enable": {
+      "name": "Enable Peaqhvac",
+      "description": "Enables Peaqhvac"
+    },
+    "disable": {
+      "name": "Disable Peaqhvac",
+      "description": "Disables Peaqhvac"
+    },
+    "set_mode": {
+      "name": "Set house-mode",
+      "description": "Sets the house in modes and can have peaqhvac act accordingly.",
+      "fields": {
+        "mode": {
+          "name": "Mode",
+          "description": "The mode you wish to set."
+        }
+      }
+    }
   }
 }
