@@ -4,88 +4,133 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-def _set_start_dt(demand: int, low_period: int, now_dt=None, delayed: bool = False) -> datetime:
-    now_dt = datetime.now() if now_dt is None else now_dt
-    start_minute: int = now_dt.minute
-    if low_period >= 60 - now_dt.minute:
-        """delayed start"""
-        if not delayed:
-            start_minute = max(now_dt.minute, min(60 - int(demand / 2), 59))
-        else:
-            start_minute = min(60 - int(demand / 2), 59)
-    return now_dt.replace(minute=start_minute, second=0, microsecond=0)
+HOUR_LIMIT = 18
+DELAY_LIMIT = 48
 
 
-def _get_low_period(prices:list, now_dt=None) -> int:
-    now_dt = datetime.now() if now_dt is None else now_dt
-    low_period: int = 0
-    for i in range(now_dt.hour, len(prices)):
-        if prices[i] > mean(prices):
-            break
-        if i == now_dt.hour:
-            low_period = 60 - now_dt.minute
-        else:
-            low_period += 60
-    return low_period
+class NextWaterBoost:
+    prices: list = []
+    now_dt: datetime = datetime.max
+    floating_mean: float = 0
 
+    @staticmethod
+    def next_predicted_demand(prices: list, min_demand: int, temp: float, temp_trend: float, target_temp: float,
+                              now_dt=None) -> datetime:
+        NextWaterBoost._init_vars(prices, now_dt)
+        try:
+            delay = (target_temp - temp) / temp_trend
+        except ZeroDivisionError:
+            delay = DELAY_LIMIT
+        return NextWaterBoost.get_next_start(prices, min_demand, NextWaterBoost.now_dt,
+                                             NextWaterBoost.now_dt + timedelta(hours=delay), cold=False)
 
-def get_next_start(prices:list, demand:int, now_dt=None, delay_dt=None) -> datetime:
-    now_dt = datetime.now() if now_dt is None else now_dt
-    last_known_price = now_dt.replace(hour=0,minute=0,second=0) + timedelta(hours=len(prices)-1)
-    if delay_dt is None or delay_dt < last_known_price:
-        """There should be a low period ahead."""
-        return _calculate_next_start(now_dt, demand, prices)
-    elif last_known_price - now_dt > timedelta(hours=18):
-        """There are too many expensive hours ahead. We should pre-heat to avoid expensive hours."""
-        return _calculate_last_start(now_dt, demand, prices)
-    return datetime.max
+    @staticmethod
+    def get_next_start(prices: list, demand: int, now_dt=None, delay_dt=None, cold=True) -> datetime:
+        NextWaterBoost._init_vars(prices, now_dt)
+        last_known_price = now_dt.replace(hour=0, minute=0, second=0) + timedelta(hours=len(prices) - 1)
+        if last_known_price - now_dt > timedelta(hours=18) and not cold:
+            print("case A")
+            return NextWaterBoost._calculate_last_start(demand)
+        _next_dt = NextWaterBoost._calculate_next_start(demand)
+        if not delay_dt:
+            print("case B")
+            return _next_dt
+        if _next_dt < delay_dt:
+            print("case C")
+            return NextWaterBoost._calculate_last_start(demand)
+        print("case D")
+        return _next_dt
 
+    @staticmethod
+    def _init_vars(prices: list, now_dt: datetime) -> None:
+        NextWaterBoost.prices = prices
+        NextWaterBoost._set_now_dt(now_dt)
+        NextWaterBoost._set_floating_mean()
 
-def _calculate_next_start(now_dt:datetime, demand:int, prices:list):
-    try:
-        if prices[now_dt.hour] < mean(prices):
-            low_period = _get_low_period(prices, now_dt)
-            return _set_start_dt(demand, low_period, now_dt)
-        for i in range(now_dt.hour, len(prices)-1):
-            if prices[i] < mean(prices) and prices[i+1] < mean(prices):
-                return _set_start_dt_params(now_dt, i, prices, demand)
-    except Exception as e:
-        _LOGGER.error(f"Error on getting next start: {e}")
-        return datetime.max
+    @staticmethod
+    def _set_now_dt(now_dt=None) -> None:
+        NextWaterBoost.now_dt = datetime.now() if now_dt is None else now_dt
+        NextWaterBoost._set_floating_mean()
 
+    @staticmethod
+    def _set_floating_mean(now_dt=None) -> float:
+        NextWaterBoost.floating_mean = mean(NextWaterBoost.prices[NextWaterBoost.now_dt.hour:])
 
-def _calculate_last_start(now_dt:datetime, demand:int, prices:list):
-    try:
-        for i in reversed(range(now_dt.hour, min(len(prices)-1, now_dt.hour + 18))):
-            if prices[i] < mean(prices) and prices[i+1] < mean(prices):
-                return _set_start_dt_params(now_dt, i, prices, demand)
-    except Exception as e:
-        _LOGGER.error(f"Error on getting last start: {e}")
-        return datetime.max
+    @staticmethod
+    def _set_start_dt(demand: int, low_period: int, delayed_dt: datetime = None, delayed: bool = False) -> datetime:
+        now_dt = NextWaterBoost.now_dt if delayed_dt is None else delayed_dt
+        start_minute: int = now_dt.minute
+        if low_period >= 60 - now_dt.minute:
+            """delayed start"""
+            if not delayed:
+                start_minute = max(now_dt.minute, min(60 - int(demand / 2), 59))
+            else:
+                start_minute = min(60 - int(demand / 2), 59)
+        return now_dt.replace(minute=start_minute, second=0, microsecond=0)
 
+    @staticmethod
+    def _get_low_period(override_dt=None) -> int:
+        dt = NextWaterBoost.now_dt if override_dt is None else override_dt
+        low_period: int = 0
+        for i in range(dt.hour, len(NextWaterBoost.prices)):
+            if NextWaterBoost.prices[i] > NextWaterBoost.floating_mean:
+                break
+            if i == dt.hour:
+                low_period = 60 - dt.minute
+            else:
+                low_period += 60
+        return low_period
 
-def _set_start_dt_params(now_dt: datetime, i:int, prices:list, demand:int) -> datetime:
-    delay = (i - now_dt.hour)
-    delayed_dt = now_dt + timedelta(hours=delay)
-    low_period =_get_low_period(prices, delayed_dt)
-    return _set_start_dt(demand, low_period, delayed_dt, True)
+    @staticmethod
+    def _values_are_good(i) -> bool:
+        return all([
+            NextWaterBoost.prices[i] < NextWaterBoost.floating_mean,
+            NextWaterBoost.prices[i + 1] < NextWaterBoost.floating_mean])
 
+    @staticmethod
+    def _calculate_next_start(demand: int) -> datetime:
+        try:
+            if NextWaterBoost.prices[NextWaterBoost.now_dt.hour] < NextWaterBoost.floating_mean:
+                low_period = NextWaterBoost._get_low_period()
+                return NextWaterBoost._set_start_dt(demand, low_period)
+            for i in range(NextWaterBoost.now_dt.hour, len(NextWaterBoost.prices) - 1):
+                if NextWaterBoost._values_are_good(i):
+                    return NextWaterBoost._set_start_dt_params(i, demand)
+        except Exception as e:
+            _LOGGER.error(f"Error on getting next start: {e}")
+            return datetime.max
 
-def next_predicted_demand(prices:list, min_demand:int, temp:float, temp_trend:float, target_temp:float, now_dt=None) -> datetime:
-    now_dt = datetime.now() if now_dt is None else now_dt
-    try:
-        delay = (target_temp - temp) / temp_trend
-    except ZeroDivisionError:
-        delay = 48
-    return get_next_start(prices, min_demand,now_dt, now_dt + timedelta(hours=delay))
+    @staticmethod
+    def _calculate_last_start(demand: int) -> datetime:
+        try:
+            _param_i = None
+            for i in range(NextWaterBoost.now_dt.hour,
+                           min(len(NextWaterBoost.prices) - 1, NextWaterBoost.now_dt.hour + HOUR_LIMIT)):
+                if NextWaterBoost._values_are_good(i):
+                    _param_i = i
+                else:
+                    break
+            if _param_i is None:
+                return NextWaterBoost._calculate_last_start_reverse(demand)
+            return NextWaterBoost._set_start_dt_params(_param_i, demand)
+        except Exception as e:
+            _LOGGER.error(f"Error on getting last close start: {e}")
+            return datetime.max
 
+    @staticmethod
+    def _calculate_last_start_reverse(demand: int):
+        try:
+            for i in reversed(range(NextWaterBoost.now_dt.hour,
+                                    min(len(NextWaterBoost.prices) - 1, NextWaterBoost.now_dt.hour + HOUR_LIMIT))):
+                if NextWaterBoost._values_are_good(i):
+                    return NextWaterBoost._set_start_dt_params(i, demand)
+        except Exception as e:
+            _LOGGER.error(f"Error on getting last start: {e}")
+            return datetime.max
 
-# prices =[0.29,0.27,0.25,0.23,0.23,0.2,0.18,0.23,0.27,0.29,0.29,0.3,0.26,0.29,0.3,0.3,0.34,1.62,1.82,1.96,1.9,1.93,0.43,0.4]
-# prices_tomorrow =[0.44,0.43,0.45,0.46,0.52,1.44,1.74,2.17,2.25,1.94,1.82,1.79,1.65,1.57,1.54,1.79,1.82,2.32,2.51,2.69,2.57,2.15,0.67,0.49]
-# prices_combined = prices + prices_tomorrow
-# mockdt = datetime(2023,8,26,18,43,0)
-# demand = 80 #derived from demand_enum
-# min_demand = 20
-
-# print(f"next start vanilla: {get_next_start(prices_combined, demand, mockdt)}")
-# print(f"next start with delay: {next_predicted_demand(prices_combined, min_demand, 50, 0, 40, mockdt)}")
+    @staticmethod
+    def _set_start_dt_params(i: int, demand: int) -> datetime:
+        delay = (i - NextWaterBoost.now_dt.hour)
+        delayed_dt = NextWaterBoost.now_dt + timedelta(hours=delay)
+        low_period = NextWaterBoost._get_low_period(delayed_dt)
+        return NextWaterBoost._set_start_dt(demand, low_period, delayed_dt, True)

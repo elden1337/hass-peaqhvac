@@ -7,9 +7,7 @@ from peaqevcore.common.trend import Gradient
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from peaqevcore.common.wait_timer import WaitTimer
 from custom_components.peaqhvac.service.hvac.water_heater.const import *
-from custom_components.peaqhvac.service.hvac.water_heater.water_heater_next_start import get_next_start, \
-    next_predicted_demand
-from custom_components.peaqhvac.service.hvac.water_heater.water_peak import get_water_peak
+from custom_components.peaqhvac.service.hvac.water_heater.water_heater_next_start import NextWaterBoost
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import \
     HvacPresets
@@ -133,14 +131,14 @@ class WaterHeater(IHeater):
 
         demand = self._get_demand()
         if demand is Demand.NoDemand:
-            return next_predicted_demand(
+            return NextWaterBoost.next_predicted_demand(
                 prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow,
                 min_demand=demand_minutes[Demand.LowDemand],
                 temp=self.current_temperature,
                 temp_trend=self._temp_trend.gradient_raw,
                 target_temp=HIGHTEMP_THRESHOLD
             )
-        return get_next_start(demand=demand_minutes[demand], prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow)
+        return NextWaterBoost.get_next_start(demand=demand_minutes[demand], prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow)
 
     # def _get_water_peak(self, hour: int) -> bool:
     #     if self._wait_timer_peak.is_timeout() and self._hvac.hub.is_initialized:

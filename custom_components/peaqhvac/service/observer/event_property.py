@@ -1,7 +1,7 @@
 class EventProperty:
-    def __init__(self, name, prop_type: type, hub, default=None):
+    def __init__(self, name, prop_type: type, hass, default=None):
         self._value = default
-        self._hub = hub
+        self._hass = hass
         self.name = name
         self._prop_type = prop_type
 
@@ -13,4 +13,4 @@ class EventProperty:
     def value(self, val):
         if self._value != val:
             self._value = val
-            self._hub.hass.bus.fire(f"peaqhvac.{self.name}_changed", {"new": val})
+            self._hass.bus.fire(f"peaqhvac.{self.name}_changed", {"new": val})
