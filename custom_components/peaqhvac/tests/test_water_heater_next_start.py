@@ -9,30 +9,31 @@ MIN_DEMAND = 26
 def test_start_time_water_is_cold():
     prices = P230830 + P230831
     now_dt = datetime(2023,8,26,18,43,0)
-    tt = NextWaterBoost.get_next_start(prices=prices, demand=80, now_dt=now_dt)
+    wb = NextWaterBoost()
+    tt = wb.get_next_start(prices=prices, demand=80, now_dt=now_dt)
     assert tt == datetime(2023, 8, 26, 23, 20, 0)
 
 def test_delayed_start_water_not_cooling():
     prices = P230830 + P230831
     now_dt = datetime(2023,8,26,18,43,0)
-    tt = NextWaterBoost.next_predicted_demand(prices=prices, min_demand=MIN_DEMAND, temp=50, temp_trend=0,target_temp=40, now_dt=now_dt)
+    wb = NextWaterBoost()
+    tt = wb.next_predicted_demand(prices=prices, min_demand=MIN_DEMAND, temp=50, temp_trend=0,target_temp=40, now_dt=now_dt)
     assert tt == datetime(2023, 8, 27, 11, 47, 0)
 
 def test_delayed_start_expensive_single_day():
     now_dt = datetime(2023,8,31,12,29,0)
-    tt = NextWaterBoost.next_predicted_demand(prices=P230831, min_demand=MIN_DEMAND, temp=47.3, temp_trend=0, target_temp=40, now_dt=now_dt)
+    wb = NextWaterBoost()
+    tt = wb.next_predicted_demand(prices=P230831, min_demand=MIN_DEMAND, temp=47.3, temp_trend=0, target_temp=40, now_dt=now_dt)
     assert tt == datetime(2023,8,31,16,47,0)
 
 def test_delayed_start_expensive():
     prices = P230830 + P230831
     now_dt = datetime(2023,8,30,23,5,0)
-    tt = NextWaterBoost.next_predicted_demand(prices=prices, min_demand=MIN_DEMAND, temp=46.6, temp_trend=-0.9, target_temp=40, now_dt=now_dt)
+    wb = NextWaterBoost()
+    tt = wb.next_predicted_demand(prices=prices, min_demand=MIN_DEMAND, temp=46.6, temp_trend=-0.9, target_temp=40, now_dt=now_dt)
     assert tt == datetime(2023,8,31,4,47,0)
-#
-#
-#
-# Water 46.6
-# Trend -0.9
-# Time 23:05
-# Next start 23:47.
-# Expected 03:47
+
+def test_get_next_start_real_dt():
+    wb = NextWaterBoost()
+    tt = wb.get_next_start(prices=P230830 + P230831, demand=MIN_DEMAND)
+    assert tt.minute == 47

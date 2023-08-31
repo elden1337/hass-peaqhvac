@@ -34,6 +34,7 @@ class WaterHeater(IHeater):
             max_age=900, max_samples=10, precision=1, ignore=0
         )
         self.model = WaterBoosterModel(self._hvac.hub.hass)
+        self.booster = NextWaterBoost()
         self._hvac.hub.observer.add("offsets changed", self._update_operation)
         async_track_time_interval(
             self._hvac.hub.hass, self.async_update_operation, timedelta(seconds=30)
@@ -131,26 +132,17 @@ class WaterHeater(IHeater):
 
         demand = self._get_demand()
         if demand is Demand.NoDemand:
-            return NextWaterBoost.next_predicted_demand(
+            #_LOGGER.debug(f"pushing next predicted with demand: {demand_minutes[Demand.LowDemand]}, temp: {self.current_temperature}, temp_trend: {self._temp_trend.gradient_raw}, target_temp: {HIGHTEMP_THRESHOLD}")
+            return self.booster.next_predicted_demand(
                 prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow,
                 min_demand=demand_minutes[Demand.LowDemand],
                 temp=self.current_temperature,
                 temp_trend=self._temp_trend.gradient_raw,
                 target_temp=HIGHTEMP_THRESHOLD
             )
-        return NextWaterBoost.get_next_start(demand=demand_minutes[demand], prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow)
-
-    # def _get_water_peak(self, hour: int) -> bool:
-    #     if self._wait_timer_peak.is_timeout() and self._hvac.hub.is_initialized:
-    #         _prices = self._hvac.hub.nordpool.prices_combined
-    #         avg_monthly = None
-    #         if self._hvac.hub.sensors.peaqev_installed:
-    #             avg_monthly = self._hvac.hub.sensors.peaqev_facade.average_this_month
-    #         ret = get_water_peak(hour, _prices, avg_monthly)
-    #         if ret:
-    #             self._wait_timer_peak.update()
-    #         return ret
-    #     return False
+        nextt =self.booster.get_next_start(prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow, demand=demand_minutes[demand])
+        #_LOGGER.debug(f"pushing next start with demand: {demand_minutes[demand]}. result {nextt}")
+        return nextt
 
     async def async_update_operation(self, caller=None):
         self._update_operation()
