@@ -144,5 +144,4 @@ class NextWaterBoost:
         delay = (i - self.now_dt.hour)
         delayed_dt = self.now_dt + timedelta(hours=delay)
         low_period = self._get_low_period(override_dt=delayed_dt)
-        _LOGGER.debug(f"delay: {delay}, low_period: {low_period}, delayed_dt: {delayed_dt}. now_dt = {self.now_dt}")
         return self._set_start_dt(demand, low_period, delayed_dt, True)

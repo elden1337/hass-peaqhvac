@@ -121,27 +121,42 @@ class WaterHeater(IHeater):
 
     def _get_next_start(self) -> datetime:
         demand_minutes = {
-            Demand.NoDemand:     0,
-            Demand.LowDemand:    26,
-            Demand.MediumDemand: 35,
-            Demand.HighDemand:   45
+            HvacPresets.Normal: {
+                Demand.NoDemand:     0,
+                Demand.LowDemand:    26,
+                Demand.MediumDemand: 35,
+                Demand.HighDemand:   45
+            },
+            HvacPresets.Eco: {
+                Demand.NoDemand:     0,
+                Demand.LowDemand:    26,
+                Demand.MediumDemand: 35,
+                Demand.HighDemand:   45
+            },
+            HvacPresets.Away: {
+                Demand.NoDemand:     0,
+                Demand.LowDemand:    0,
+                Demand.MediumDemand: 26,
+                Demand.HighDemand:   26
+            }
         }
         if self.water_boost or self.model.pre_heating.value:
             """no need to calculate if we are already heating or trying to heat"""
             return datetime.max
 
         demand = self._get_demand()
+        preset = self._hvac.hub.sensors.set_temp_indoors.preset
         if demand is Demand.NoDemand:
             #_LOGGER.debug(f"pushing next predicted with demand: {demand_minutes[Demand.LowDemand]}, temp: {self.current_temperature}, temp_trend: {self._temp_trend.gradient_raw}, target_temp: {HIGHTEMP_THRESHOLD}")
             return self.booster.next_predicted_demand(
                 prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow,
-                min_demand=demand_minutes[Demand.LowDemand],
+                min_demand=demand_minutes[preset][Demand.LowDemand],
                 temp=self.current_temperature,
                 temp_trend=self._temp_trend.gradient_raw,
                 target_temp=HIGHTEMP_THRESHOLD
             )
-        nextt =self.booster.get_next_start(prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow, demand=demand_minutes[demand])
-        #_LOGGER.debug(f"pushing next start with demand: {demand_minutes[demand]}. result {nextt}")
+        nextt =self.booster.get_next_start(prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow, demand=demand_minutes[preset][demand])
+        _LOGGER.debug(f"pushing next start with demand: {demand_minutes[preset][demand]}. result {nextt}")
         return nextt
 
     async def async_update_operation(self, caller=None):
@@ -200,7 +215,6 @@ class WaterHeater(IHeater):
                 self._set_boost(False)
         elif all(
                 [
-                    # any([self.model.pre_heating.value, self.model.boost.value]),
                     self.model.pre_heating.value,
                     self._wait_timer.is_timeout(),
                 ]
@@ -211,6 +225,7 @@ class WaterHeater(IHeater):
         self.model.try_heat_water.value = value
         if value:
             self.model.heat_water_timer.update(timer_timeout)
+            self.model.try_heat_water.timeout(datetime.now())
         else:
             self._wait_timer.update()
         self._hvac.hub.observer.broadcast("update operation")
