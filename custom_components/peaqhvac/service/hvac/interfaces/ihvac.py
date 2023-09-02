@@ -93,6 +93,7 @@ class IHvac(UpdateSystem):
     async def async_update_hvac(self) -> None:
         await self.house_heater.async_update_demand()
         await self.water_heater.async_update_demand()
+        await self.house_ventilation.async_check_vent_boost()
         await self.request_periodic_updates()
 
     def update_offset(self) -> bool:  # todo: make async

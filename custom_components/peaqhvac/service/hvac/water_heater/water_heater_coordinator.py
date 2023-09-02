@@ -156,7 +156,7 @@ class WaterHeater(IHeater):
                 target_temp=HIGHTEMP_THRESHOLD
             )
         nextt =self.booster.get_next_start(prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow, demand=demand_minutes[preset][demand])
-        _LOGGER.debug(f"pushing next start with demand: {demand_minutes[preset][demand]}. result {nextt}")
+        #_LOGGER.debug(f"pushing next start with demand: {demand_minutes[preset][demand]}. result {nextt}")
         return nextt
 
     async def async_update_operation(self, caller=None):
@@ -184,7 +184,7 @@ class WaterHeater(IHeater):
                         self.model.pre_heating.value = False
         except Exception as e:
             _LOGGER.error(
-                f"Could not check water-state: {e}. nordpool-state: {self._hvac.hub.nordpool.state}, min-price: {self._hvac.hub.sensors.peaqev_facade.min_price}")            
+                f"Could not check water-state: {e}. params: facade.above_stop_threshold: {self._hvac.hub.sensors.peaqev_facade.above_stop_threshold}, self.model.try_heat_water.value: {self.model.try_heat_water.value}, self.model.pre_heating.value: {self.model.pre_heating.value}, self._is_below_start_threshold() {self._is_below_start_threshold()}, self.model.try_heat_water.value: {self.model.try_heat_water.value}")
 
     def _is_below_start_threshold(self) -> bool:
         return all([
