@@ -95,7 +95,7 @@ class OffsetCoordinator:
             d = self.offsets
             if weather_adjusted_today is None:
                 today = offset_per_day(
-                    day_values=d.get("today"),
+                    day_values=d.get("today", {}),
                     tolerance=self.model.tolerance,
                     indoors_preset=self._hub.sensors.set_temp_indoors.preset,
                 )
@@ -104,7 +104,7 @@ class OffsetCoordinator:
             tomorrow = []
             if len(d.get("tomorrow", {})) > 0:
                 tomorrow = offset_per_day(
-                    day_values=d.get("tomorrow"),
+                    day_values=d.get("tomorrow", {}),
                     tolerance=self.model.tolerance,
                     indoors_preset=self._hub.sensors.set_temp_indoors.preset,
                 )

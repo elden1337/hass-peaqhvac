@@ -13,9 +13,9 @@ def offset_per_day(
     indoors_preset: HvacPresets = HvacPresets.Normal,
 ) -> list:
     ret = {}
-    _max_today = max(day_values.values())
-    _min_today = min(day_values.values())
-    if tolerance is not None:
+    _max_today = max(day_values.values(), default=0)
+    _min_today = min(day_values.values(), default=0)
+    if tolerance is not None and _max_today != 0 and _max_today != _min_today:
         try:
             factor = max(abs(_max_today), abs(_min_today)) / tolerance
         except ZeroDivisionError:
@@ -27,7 +27,7 @@ def offset_per_day(
             ret[k] = int(round((day_values[k] / factor) * -1, 0))
             if indoors_preset is HvacPresets.Away:
                 ret[k] -= 1
-    return ret.values()
+    return list(ret.values())
 
 
 def max_price_lower_internal(tempdiff: float, peaks_today: list) -> bool:
