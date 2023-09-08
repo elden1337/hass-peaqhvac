@@ -43,15 +43,10 @@ class HouseVentilation:
     def _vent_boost_warmth(self) -> bool:
         return all(
                     [
-                        self._hvac.hub.sensors.get_tempdiff() > 1,
+                        self._hvac.hub.sensors.get_tempdiff() > 3,
                         self._hvac.hub.sensors.temp_trend_indoors.gradient >= 0,
-                        any([
-                            self._hvac.hub.sensors.average_temp_outdoors.value >= SUMMER_TEMP,
-                            all([
-                                self._hvac.hub.sensors.temp_trend_outdoors.gradient >= 0,
-                                self._hvac.hub.sensors.average_temp_outdoors.value >= 0,
-                                 ])
-                        ]),
+                        self._hvac.hub.sensors.temp_trend_outdoors.gradient >= 0,
+                        self._hvac.hub.sensors.average_temp_outdoors.value >= SUMMER_TEMP,
                         self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away,
                     ]
                 )
