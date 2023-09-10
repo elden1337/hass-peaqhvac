@@ -28,6 +28,7 @@ class WaterHeater(IHeater):
         self._hvac = hvac
         super().__init__(hvac=hvac)
         self._current_temp = None
+        self._boost_non_hours: list[int] = [7, 11, 12, 15, 16, 17] #todo make this an option in the config
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._temp_trend = Gradient(
@@ -153,9 +154,10 @@ class WaterHeater(IHeater):
                 min_demand=demand_minutes[preset][Demand.LowDemand],
                 temp=self.current_temperature,
                 temp_trend=self._temp_trend.gradient_raw,
-                target_temp=HIGHTEMP_THRESHOLD
+                target_temp=HIGHTEMP_THRESHOLD,
+                non_hours=self._boost_non_hours
             )
-        nextt =self.booster.get_next_start(prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow, demand=demand_minutes[preset][demand])
+        nextt =self.booster.get_next_start(prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow, demand=demand_minutes[preset][demand], non_hours=self._boost_non_hours)
         #_LOGGER.debug(f"pushing next start with demand: {demand_minutes[preset][demand]}. result {nextt}")
         return nextt
 
@@ -177,7 +179,6 @@ class WaterHeater(IHeater):
                     self._set_boost(False)
                 elif self._is_below_start_threshold():
                     if self._get_next_start() <= datetime.now():
-                        #_LOGGER.debug(f"Good idea to try heat water. next start indicates: {self._get_next_start()}")
                         self.model.pre_heating.value = True
                         self._toggle_boost(timer_timeout=None)
                     else:

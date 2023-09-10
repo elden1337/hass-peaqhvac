@@ -53,3 +53,16 @@ def test_water_warm_should_wait_over_night():
     now_dt = datetime(2023, 9, 2, 13, 40, 0)
     tt = wb.next_predicted_demand(prices=P230902 + P230903, min_demand=MIN_DEMAND, temp=48, temp_trend=0, target_temp=40, now_dt=now_dt)
     assert tt == datetime(2023,9,3,5,47,0)
+
+def test_water_warm_should_wait_over_night_non_hour():
+    wb = NextWaterBoost()
+    now_dt = datetime(2023, 9, 2, 13, 40, 0)
+    tt = wb.next_predicted_demand(prices=P230902 + P230903, min_demand=MIN_DEMAND, temp=48, temp_trend=0, target_temp=40, now_dt=now_dt, non_hours=[5])
+    assert tt == datetime(2023,9,3,3,47,0)
+
+def test_start_time_water_is_cold_non_hour():
+    prices = P230830 + P230831
+    now_dt = datetime(2023,8,26,18,43,0)
+    wb = NextWaterBoost()
+    tt = wb.get_next_start(prices=prices, demand=80, now_dt=now_dt, non_hours=[23])
+    assert tt == datetime(2023, 8, 27, 0, 20, 0)

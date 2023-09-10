@@ -11,6 +11,7 @@ DELAY_LIMIT = 48
 class NextWaterBoost:
     def __init__(self):
         self.prices = []
+        self.non_hours: list = []
         self.now_dt: datetime|None = None
         self.floating_mean: float|None = None
 
@@ -21,23 +22,25 @@ class NextWaterBoost:
             temp: float,
             temp_trend: float,
             target_temp: float,
-            now_dt=None
+            now_dt=None,
+            non_hours=[]
     ) -> datetime:
-        self._init_vars(prices, now_dt)
+        self._init_vars(prices, non_hours, now_dt)
         try:
             delay = (target_temp - temp) / temp_trend
         except ZeroDivisionError:
             delay = DELAY_LIMIT
         return self.get_next_start(
-            self.prices,
-            min_demand,
-            self.now_dt,
-            self.now_dt + timedelta(hours=delay),
+            prices=self.prices,
+            demand=min_demand,
+            non_hours=non_hours,
+            now_dt=self.now_dt,
+            delay_dt=self.now_dt + timedelta(hours=delay),
             cold=False
         )
 
-    def get_next_start(self, prices: list, demand: int, now_dt=None, delay_dt=None, cold=True) -> datetime:
-        self._init_vars(prices, now_dt)
+    def get_next_start(self, prices: list, demand: int, non_hours:list=[], now_dt=None, delay_dt=None, cold=True) -> datetime:
+        self._init_vars(prices, non_hours, now_dt)
         try:
             last_known_price = self.now_dt.replace(hour=0, minute=0, second=0) + timedelta(hours=len(self.prices) - 1)
         except Exception as e:
@@ -57,8 +60,9 @@ class NextWaterBoost:
         print("case D")
         return _next_dt
 
-    def _init_vars(self, prices: list, now_dt=None) -> None:
+    def _init_vars(self, prices: list, non_hours: list, now_dt=None) -> None:
         self.prices = prices
+        self.non_hours = non_hours
         self._set_now_dt(now_dt)
         self._set_floating_mean()
 
@@ -98,7 +102,13 @@ class NextWaterBoost:
     def _values_are_good(self, i) -> bool:
         return all([
             self.prices[i] < self.floating_mean,
-            self.prices[i + 1] < self.floating_mean])
+            self.prices[i + 1] < self.floating_mean,
+            [i, i + 1, i-23, i-24] not in self.non_hours,
+            # i not in self.non_hours,
+            # i+1 not in self.non_hours,
+            # i - 24 not in self.non_hours,
+            # i - 23 not in self.non_hours
+        ])
 
     def _calculate_next_start(self, demand: int) -> datetime:
         try:
