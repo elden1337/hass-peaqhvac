@@ -74,7 +74,7 @@ class UpdateSystem:
                     call_operation,
                     params,
                     domain,
-                ) = self._get_operation_call_parameters(operation, _value)
+                ) = self._set_operation_call_parameters(operation, _value)
 
                 await self._hass.services.async_call(domain, call_operation, params)
                 _LOGGER.debug(

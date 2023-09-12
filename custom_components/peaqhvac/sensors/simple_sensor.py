@@ -26,10 +26,7 @@ class PeaqSimpleSensor(SensorBase, RestoreEntity):
     async def async_update(self) -> None:
         ret = await self._hub.async_get_internal_sensor(self._internal_entity)
         if ret is not None:
-            if self._internal_entity == NEXT_WATER_START:
-                self._state = self._set_next_start(ret)
-            else:
-                self._state = ret
+            self._state = self._set_next_start(ret)
     @staticmethod
     def _set_next_start(next_start: datetime) -> str:
         if next_start > datetime.now() + timedelta(days=2):

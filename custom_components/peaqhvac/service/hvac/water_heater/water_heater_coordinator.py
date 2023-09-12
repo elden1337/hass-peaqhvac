@@ -51,15 +51,9 @@ class WaterHeater(IHeater):
         return self._temp_trend.gradient
 
     @property
-    def latest_boost_call(self) -> str:
+    def latest_boost_call(self) -> datetime:
         """For Lovelace-purposes. Converts and returns epoch-timer to readable datetime-string"""
-        if self.model.heat_water_timer.value > 0:
-            return time.strftime("%Y-%m-%d %H:%M", time.localtime(self.model.heat_water_timer.value))
-        return "-"
-
-    @latest_boost_call.setter
-    def latest_boost_call(self, val):
-        self.model.heat_water_timer.update()
+        return self.model.latest_boost_call
 
     @property
     def current_temperature(self) -> float:
@@ -233,6 +227,7 @@ class WaterHeater(IHeater):
         self.model.try_heat_water.value = value
         if value:
             if timer_timeout:
+                self.model.latest_boost_call = datetime.now()
                 self.model.heat_water_timer.update(timer_timeout)
             self.model.try_heat_water.timeout(datetime.now())
         else:

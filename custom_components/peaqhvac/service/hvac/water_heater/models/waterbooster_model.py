@@ -19,7 +19,8 @@ class WaterBoosterModel(BusFireOnceMixin):
         self.heat_water_timer = WaitTimer(timeout=DEFAULT_WATER_BOOST, init_now=False)
         self.pre_heating = EventProperty("pre_heating", bool, hass, False) #kan vara issuet
         self.try_heat_water = EventProperty("try_heat_water", bool, hass, False)
-        self.next_water_heater_start: datetime = datetime.max        
+        self.next_water_heater_start: datetime = datetime.max
+        self.latest_boost_call: datetime = datetime.max
 
         #self.boost = EventProperty("boost", bool, hass, False)
         #self.currently_heating = EventProperty("currently_heating", bool, hass, False)

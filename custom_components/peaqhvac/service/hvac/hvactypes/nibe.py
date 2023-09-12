@@ -80,19 +80,16 @@ class Nibe(IHvac):
                 return set_val
         raise ValueError(f"Operation {operation} not supported")
 
-    def _get_operation_call_parameters(
+    def _set_operation_call_parameters(
         self, operation: HvacOperations, _value: any
     ) -> Tuple[str, dict, str]:
         call_operation = "set_parameter"
         params = {
             "system": int(self.hub.options.systemid),
             "parameter": self._servicecall_types[operation],
-            "value": _value,
+            "value": int(_value),
         }
         return call_operation, params, self.domain
-
-
-
 
     @staticmethod
     def _cap_nibe_offset_value(val: int):

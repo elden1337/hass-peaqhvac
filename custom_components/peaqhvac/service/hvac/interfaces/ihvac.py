@@ -57,7 +57,7 @@ class IHvac(UpdateSystem):
         pass
 
     @abstractmethod
-    def _get_operation_call_parameters(
+    def _set_operation_call_parameters(
         self, operation: HvacOperations, _value: any
     ) -> Tuple[str, dict, str]:
         pass
