@@ -32,7 +32,7 @@ class WaterHeater(IHeater):
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._temp_trend = Gradient(
-            max_age=900, max_samples=10, precision=1, ignore=0
+            max_age=3600, max_samples=10, precision=1, ignore=0
         )
         self.model = WaterBoosterModel(self._hvac.hub.hass)
         self.booster = NextWaterBoost()
@@ -69,9 +69,9 @@ class WaterHeater(IHeater):
     @current_temperature.setter
     def current_temperature(self, val):
         try:
+            self._temp_trend.add_reading(val=float(val), t=time.time())
             if self._current_temp != float(val):
                 self._current_temp = float(val)
-                self._temp_trend.add_reading(val=float(val), t=time.time())
                 self._hvac.hub.observer.broadcast("watertemp change")
                 self._update_operation()
         except ValueError as E:
