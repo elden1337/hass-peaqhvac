@@ -62,5 +62,5 @@ class PeaqevFacade:
             return 0
 
 
-    def publish_observer_message(self, message: str, *args):
-        self._peaqevhub.observer.broadcast(message, *args)
+    # def publish_observer_message(self, message: str, *args):
+    #     self._peaqevhub.observer.broadcast(message, *args)
