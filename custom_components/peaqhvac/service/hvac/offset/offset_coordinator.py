@@ -26,7 +26,7 @@ class OffsetCoordinator:
         self._prices_tomorrow = None
         self._hub.observer.add("prices changed", self._update_prices)
         self._hub.observer.add("prognosis changed", self._update_prognosis)
-        self._hub.observer.add("hvac preset changed", self._update_preset)
+        self._hub.observer.add("hvac preset changed", self._set_offset)
         self._hub.observer.add("set temperature changed", self._set_offset)
         self._hub.observer.add("hvac tolerance changed", self._set_offset)
 
@@ -55,22 +55,14 @@ class OffsetCoordinator:
 
     def get_offset(self) -> Tuple[dict, dict]:
         """External entrypoint to the class"""
-        # if len(self.model.calculated_offsets[0]) == 0:
-        #     _LOGGER.debug("no offsets available. recalculating")
         self._set_offset()
         return self.model.calculated_offsets
 
     def get_raw_offset(self) -> Tuple[dict, dict]:
         return self.model.raw_offsets
 
-    async def async_get_raw_offset(self) -> Tuple[dict, dict]:
-        return self.model.raw_offsets
-
     def _update_prognosis(self) -> None:
         self.model.prognosis = self._hub.prognosis.prognosis
-        self._set_offset()
-
-    def _update_preset(self) -> None:
         self._set_offset()
 
     def _update_prices(self, prices) -> None:
@@ -88,34 +80,32 @@ class OffsetCoordinator:
         """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
         return max_price_lower_internal(tempdiff, self.model.peaks_today)
 
-    def _update_offset(
-        self, weather_adjusted_today: dict | None = None
-    ) -> Tuple[dict, dict]:
+    def _update_offset(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
         try:
             d = self.offsets
-            if weather_adjusted_today is None:
-                today = offset_per_day(
-                    day_values=d.get("today", {}),
-                    tolerance=self.model.tolerance,
-                    indoors_preset=self._hub.sensors.set_temp_indoors.preset,
-                )
-            else:
-                today = weather_adjusted_today.values()
-            tomorrow = []
-            if len(d.get("tomorrow", {})) > 0:
-                tomorrow = offset_per_day(
-                    day_values=d.get("tomorrow", {}),
-                    tolerance=self.model.tolerance,
-                    indoors_preset=self._hub.sensors.set_temp_indoors.preset,
-                )
+            today_values = d.get("today", {})
+            tomorrow_values = d.get("tomorrow", {})
+            today = self._calculate_offset_per_day(today_values, weather_adjusted_today)
+            tomorrow = self._calculate_offset_per_day(tomorrow_values)
             return smooth_transitions(
-                today=list(today),
-                tomorrow=list(tomorrow),
+                today=today,
+                tomorrow=tomorrow,
                 tolerance=self.model.tolerance,
             )
         except Exception as e:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
+
+    def _calculate_offset_per_day(self, day_values: dict, weather_adjusted_today: dict | None = None) -> list:
+        if weather_adjusted_today is None:
+            indoors_preset = self._hub.sensors.set_temp_indoors.preset
+            return offset_per_day(
+                day_values=day_values,
+                tolerance=self.model.tolerance,
+                indoors_preset=indoors_preset,
+            )
+        else:
+            return list(weather_adjusted_today.values())
 
     def _set_offset(self) -> None:
         if all([self.prices is not None, self.model.prognosis is not None]):

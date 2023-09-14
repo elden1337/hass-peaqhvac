@@ -22,6 +22,27 @@ we shouldnt need two booleans to tell if we are heating or trying to heat.
 make the signaling less complicated, just calculate the need and check whether heating is already happening.
 """
 
+DEMAND_MINUTES = {
+    HvacPresets.Normal: {
+        Demand.NoDemand:     0,
+        Demand.LowDemand:    26,
+        Demand.MediumDemand: 35,
+        Demand.HighDemand:   45
+    },
+    HvacPresets.Eco: {
+        Demand.NoDemand:     0,
+        Demand.LowDemand:    26,
+        Demand.MediumDemand: 35,
+        Demand.HighDemand:   45
+    },
+    HvacPresets.Away: {
+        Demand.NoDemand:     0,
+        Demand.LowDemand:    0,
+        Demand.MediumDemand: 26,
+        Demand.HighDemand:   26
+    }
+}
+
 
 class WaterHeater(IHeater):
     def __init__(self, hvac):
@@ -51,9 +72,11 @@ class WaterHeater(IHeater):
         return self._temp_trend.gradient
 
     @property
-    def latest_boost_call(self) -> datetime:
+    def latest_boost_call(self) -> str:
         """For Lovelace-purposes. Converts and returns epoch-timer to readable datetime-string"""
-        return self.model.latest_boost_call
+        if self.model.latest_boost_call > 0:
+            return time.strftime("%Y-%m-%d %H:%M", time.localtime(self.model.latest_boost_call))
+        return "-"
 
     @property
     def current_temperature(self) -> float:
@@ -115,45 +138,26 @@ class WaterHeater(IHeater):
         return Demand.NoDemand
 
     def _get_next_start(self) -> datetime:
-        demand_minutes = {
-            HvacPresets.Normal: {
-                Demand.NoDemand:     0,
-                Demand.LowDemand:    26,
-                Demand.MediumDemand: 35,
-                Demand.HighDemand:   45
-            },
-            HvacPresets.Eco: {
-                Demand.NoDemand:     0,
-                Demand.LowDemand:    26,
-                Demand.MediumDemand: 35,
-                Demand.HighDemand:   45
-            },
-            HvacPresets.Away: {
-                Demand.NoDemand:     0,
-                Demand.LowDemand:    0,
-                Demand.MediumDemand: 26,
-                Demand.HighDemand:   26
-            }
-        }
+
         if self.water_boost or self.model.pre_heating.value:
             """no need to calculate if we are already heating or trying to heat"""
             return datetime.max
-
-        demand = self._get_demand()
+        demand = self.demand
         preset = self._hvac.hub.sensors.set_temp_indoors.preset
         if demand is Demand.NoDemand:
-            #_LOGGER.debug(f"pushing next predicted with demand: {demand_minutes[Demand.LowDemand]}, temp: {self.current_temperature}, temp_trend: {self._temp_trend.gradient_raw}, target_temp: {HIGHTEMP_THRESHOLD}")
             return self.booster.next_predicted_demand(
                 prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow,
-                min_demand=demand_minutes[preset][Demand.LowDemand],
+                min_demand=DEMAND_MINUTES[preset][Demand.LowDemand],
                 temp=self.current_temperature,
                 temp_trend=self._temp_trend.gradient_raw,
                 target_temp=HIGHTEMP_THRESHOLD,
                 non_hours=self._boost_non_hours
             )
-        nextt =self.booster.get_next_start(prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow, demand=demand_minutes[preset][demand], non_hours=self._boost_non_hours)
-        #_LOGGER.debug(f"pushing next start with demand: {demand_minutes[preset][demand]}. result {nextt}")
-        return nextt
+        return self.booster.get_next_start(
+            prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow,
+            demand=DEMAND_MINUTES[preset][demand],
+            non_hours=self._boost_non_hours
+        )
 
     async def async_update_operation(self, caller=None):
         self._update_operation()
@@ -180,8 +184,6 @@ class WaterHeater(IHeater):
                         if self._get_next_start() <= datetime.now():
                             self.model.pre_heating.value = True
                             self._toggle_boost(timer_timeout=None)
-                        else:
-                            self.model.pre_heating.value = False
                     except Exception as e:
                         ee = f"2: {e}"
         except Exception as e:
@@ -223,14 +225,15 @@ class WaterHeater(IHeater):
         ):
             self._set_boost(True, timer_timeout)
 
-    def _set_boost(self, value:bool, timer_timeout = None) -> None:
-        self.model.try_heat_water.value = value
-        if value:
+    def _set_boost(self, set_boost_value:bool, timer_timeout = None) -> None:
+        self.model.try_heat_water.value = set_boost_value
+        if set_boost_value:
+            self.model.latest_boost_call = time.time()
             if timer_timeout:
-                self.model.latest_boost_call = datetime.now()
                 self.model.heat_water_timer.update(timer_timeout)
             self.model.try_heat_water.timeout(datetime.now())
         else:
             self._wait_timer.update()
+            self.model.pre_heating.value = False
         self._hvac.hub.observer.broadcast("update operation")
 
