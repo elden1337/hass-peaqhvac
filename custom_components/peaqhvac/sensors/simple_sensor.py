@@ -4,7 +4,10 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 from custom_components.peaqhvac.const import HEATINGDEMAND, WATERDEMAND, NEXT_WATER_START
 from custom_components.peaqhvac.sensors.sensorbase import SensorBase
+from custom_components.peaqhvac.service.hvac.water_heater.models.group import Group
+import logging
 
+_LOGGER = logging.getLogger(__name__)
 
 class PeaqSimpleSensor(SensorBase, RestoreEntity):
     def __init__(self, hub, entry_id, name: str, internal_entity: str, icon: str = "mdi:clock-end"):
@@ -14,6 +17,7 @@ class PeaqSimpleSensor(SensorBase, RestoreEntity):
         super().__init__(hub, self._attr_name, entry_id)
         self._internal_entity = internal_entity
         self._state = ""
+        self._groups = {}
 
     @property
     def state(self) -> str:
@@ -28,8 +32,36 @@ class PeaqSimpleSensor(SensorBase, RestoreEntity):
         if ret is not None:
             if self._internal_entity == NEXT_WATER_START:
                 self._state = self._set_next_start(ret)
+                self._groups = self._create_groups_display(self._hub.hvac.water_heater.booster.groups)
             else:
                 self._state = ret
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        attr_dict = {}
+
+        if self._internal_entity == NEXT_WATER_START:
+            attr_dict["groups"] = self._groups
+        return attr_dict
+
+    @staticmethod
+    def _create_groups_display(groups: list[Group]) -> dict:
+        def __set_group_hours(hours: list) -> list:
+            _ret = []
+            for h in hours:
+                if h > 23:
+                    _ret.append(f"{h-24:02d}:00⁺¹")
+                else:
+                    _ret.append(f"{h:02d}:00")
+            return _ret
+
+        ret = {}
+        for idx, g in enumerate(groups):
+            _LOGGER.debug(f"Group {idx}: {g.group_type.value.capitalize()}: {__set_group_hours(g.hours)}")
+            ret[idx+1]: (g.group_type.value.capitalize(), __set_group_hours(g.hours))
+            #ret.append(f"{g.group_type.value.capitalize()}: {__set_group_hours(g.hours)}")
+        return ret
+
     @staticmethod
     def _set_next_start(next_start: datetime) -> str:
         if next_start > datetime.now() + timedelta(days=2):

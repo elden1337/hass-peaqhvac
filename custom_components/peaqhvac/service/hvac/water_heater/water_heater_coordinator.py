@@ -146,7 +146,8 @@ class WaterHeater(IHeater):
         preset = self._hvac.hub.sensors.set_temp_indoors.preset
         if demand is Demand.NoDemand:
             return self.booster.next_predicted_demand(
-                prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow,
+                prices_today=self._hvac.hub.nordpool.prices,
+                prices_tomorrow=self._hvac.hub.nordpool.prices_tomorrow,
                 min_demand=DEMAND_MINUTES[preset][Demand.LowDemand],
                 temp=self.current_temperature,
                 temp_trend=self._temp_trend.gradient_raw,
@@ -154,7 +155,8 @@ class WaterHeater(IHeater):
                 non_hours=self._boost_non_hours
             )
         return self.booster.get_next_start(
-            prices=self._hvac.hub.nordpool.prices + self._hvac.hub.nordpool.prices_tomorrow,
+            prices_today=self._hvac.hub.nordpool.prices,
+            prices_tomorrow=self._hvac.hub.nordpool.prices_tomorrow,
             demand=DEMAND_MINUTES[preset][demand],
             non_hours=self._boost_non_hours
         )

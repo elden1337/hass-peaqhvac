@@ -1,7 +1,7 @@
 from enum import Enum
 
 class GroupType(Enum):
-    LOW = 1
-    MID = 2
-    HIGH = 3
-    UNKNOWN = 4
+    LOW = "cheap"
+    MID = "medium"
+    HIGH = "expensive"
+    UNKNOWN = "unknown"

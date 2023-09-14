@@ -21,7 +21,8 @@ class NextWaterBoost:
 
     def next_predicted_demand(
             self,
-            prices: list,
+            prices_today: list,
+            prices_tomorrow: list,
             min_demand: int,
             temp: float,
             temp_trend: float,
@@ -29,13 +30,13 @@ class NextWaterBoost:
             now_dt=None,
             non_hours=[]
     ) -> datetime:
-        self._init_vars(prices, non_hours, now_dt)
+        self._init_vars(prices_today, prices_tomorrow, non_hours, now_dt)
         try:
             delay = (target_temp - temp) / temp_trend
         except ZeroDivisionError:
             delay = DELAY_LIMIT
         return self.get_next_start(
-            prices=self.prices,
+            prices_today=prices_today, prices_tomorrow=prices_tomorrow,
             demand=min_demand,
             non_hours=non_hours,
             now_dt=self.now_dt,
@@ -43,11 +44,12 @@ class NextWaterBoost:
             cold=False
         )
 
-    def get_next_start(self, prices: list, demand: int, non_hours=None, now_dt=None, delay_dt=None,
+    def get_next_start(self, prices_today: list,
+            prices_tomorrow: list, demand: int, non_hours=None, now_dt=None, delay_dt=None,
                        cold=True) -> datetime:
         if non_hours is None:
             non_hours = []
-        self._init_vars(prices, non_hours, now_dt)
+        self._init_vars(prices_today, prices_tomorrow, non_hours, now_dt)
         try:
             last_known_price = self.now_dt.replace(hour=0, minute=0, second=0) + timedelta(hours=len(self.prices) - 1)
         except Exception as e:
@@ -70,12 +72,12 @@ class NextWaterBoost:
         print("case D")
         return _next_dt
 
-    def _init_vars(self, prices: list, non_hours: list, now_dt=None) -> None:
-        self.prices = prices
+    def _init_vars(self, prices_today: list, prices_tomorrow: list, non_hours: list, now_dt=None) -> None:
+        self.prices = prices_today + prices_tomorrow
         self.non_hours = non_hours
         self._set_now_dt(now_dt)
         self._set_floating_mean()
-        self._group_prices()
+        self._group_prices(prices_today, prices_tomorrow)
 
     def _set_now_dt(self, now_dt=None) -> None:
         self.now_dt = datetime.now() if now_dt is None else now_dt
@@ -164,8 +166,11 @@ class NextWaterBoost:
         low_period = self._get_low_period(override_dt=delayed_dt)
         return self._set_start_dt(demand, low_period, delayed_dt, True)
 
-    def _group_prices(self) -> None:
+    def _group_prices(self, prices_today: list, prices_tomorrow: list) -> None:
+        today_len = len(prices_today)
         std_dev = stdev(self.prices)
+        if len(prices_tomorrow):
+            std_dev_tomorrow = stdev(prices_tomorrow)
         continuous_groups = []
         current_group = [0]
 
@@ -178,15 +183,15 @@ class NextWaterBoost:
                 return GroupType.MID
 
         for i in range(1, len(self.prices)):
+            if i == today_len:
+                std_dev = std_dev_tomorrow
             if abs(self.prices[i] - self.prices[current_group[-1]]) <= std_dev and self.prices[i] not in self.non_hours:
                 current_group.append(i)
             else:
-                avg_price = mean([self.prices[j] for j in current_group])
-                group_type = __set_group_type(avg_price, std_dev)
+                group_type = __set_group_type(mean([self.prices[j] for j in current_group]), std_dev)
                 continuous_groups.append(Group(group_type, current_group))
                 current_group = [i]
-        avg_price = mean([self.prices[j] for j in current_group])
-        group_type = __set_group_type(avg_price, std_dev)
+        group_type = __set_group_type(mean([self.prices[j] for j in current_group]), std_dev)
         continuous_groups.append(Group(group_type, current_group))
         self.groups = continuous_groups
 
@@ -196,11 +201,14 @@ class NextWaterBoost:
                 return group
         return Group(GroupType.UNKNOWN, [])
 
-#
+
 # prices = [0.24, 0.24, 0.24, 0.24, 0.25, 0.27, 0.31, 1.42, 2.39, 1.84, 1.52, 1.45, 1.44, 1.42, 1.39, 1.42, 1.48, 1.82,
 #           2.66, 3.52, 2.85, 2.07, 1.78, 0.29]
+# prices_tomorrow = [0.29,0.29,0.28,0.26,0.27,0.26,0.29,0.51,1.95,1.64,0.82,0.51,0.41,0.32,0.31,0.31,0.32,0.33,0.31,0.28,0.26,0.25,0.21,0.17]
 # nwb = NextWaterBoost()
-# tt = nwb.next_predicted_demand(prices, min_demand=26, temp=42, temp_trend=0, target_temp=40,
-#                                now_dt=datetime.now().replace(hour=2, minute=23), non_hours=[7, 11, 12, 15, 16, 17])
+# tt = nwb.next_predicted_demand(prices, prices_tomorrow, min_demand=26, temp=42, temp_trend=0, target_temp=40,
+#                                now_dt=datetime.now().replace(hour=2, minute=23))#, non_hours=[7, 11, 12, 15, 16, 17])
 # print(tt)
-# # 5:47
+# for x in nwb.groups:
+#     print(x.group_type, x.hours)
+# # # 5:47
