@@ -81,6 +81,12 @@ class WaterHeater(IHeater):
     def demand(self) -> Demand:
         return self._get_demand()
 
+    def _get_demand(self):
+        temp = self.current_temperature
+        ret = get_demand(temp)
+        _LOGGER.debug(f"Current demand is {ret} for temp {temp}")
+        return ret
+
     @IHeater.demand.setter
     def demand(self, val):
         self._demand = val
@@ -103,10 +109,6 @@ class WaterHeater(IHeater):
             self.model.bus_fire_once("peaqhvac.upcoming_water_heater_warning", {"new": True}, next_start)
         self.model.next_water_heater_start = next_start
         return next_start
-
-    def _get_demand(self) -> Demand:
-        temp = self.current_temperature
-        return get_demand(temp)
 
     def _get_next_start(self) -> datetime:
         if self.water_boost or self.model.pre_heating.value:

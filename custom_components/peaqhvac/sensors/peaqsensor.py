@@ -39,7 +39,7 @@ class PeaqSensor(SensorBase, RestoreEntity):
     def icon(self) -> str:
         return self._icon
 
-    def update(self) -> None:
+    async def async_update(self) -> None:
         if self._sensorname == HEATINGDEMAND:
             self._state = self._hub.hvac.house_heater.demand.value
         elif self._sensorname == WATERDEMAND:

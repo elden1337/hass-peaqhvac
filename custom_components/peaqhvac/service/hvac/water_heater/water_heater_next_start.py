@@ -6,6 +6,8 @@ from custom_components.peaqhvac.service.hvac.water_heater.models.group import Gr
 from custom_components.peaqhvac.service.models.enums.group_type import GroupType
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
+from custom_components.peaqhvac.service.hvac.water_heater.const import *
+
 
 # from enum import Enum
 
@@ -88,6 +90,8 @@ class NextWaterBoost:
         self.preset: HvacPresets = HvacPresets.Normal
         self.now_dt: datetime = None  # type: ignore
         self.floating_mean: float = None  # type: ignore
+        self.temp_trend: float = None  # type: ignore
+        self.current_temp: float = None  # type: ignore
 
     def next_predicted_demand(
             self,
@@ -102,15 +106,7 @@ class NextWaterBoost:
             non_hours=None,
             high_demand_hours=None
     ) -> datetime:
-        self._init_vars(
-            prices_today,
-            prices_tomorrow,
-            preset,
-            non_hours,
-            high_demand_hours,
-            now_dt)
-        self.temp_trend = DEFAULT_TEMP_TREND if temp_trend == 0 else temp_trend
-        self.current_temp = temp
+        self._init_vars(temp,temp_trend, prices_today, prices_tomorrow, preset, non_hours, high_demand_hours, now_dt)
         try:
             if target_temp - temp > 0:
                 delay = 0
@@ -121,10 +117,10 @@ class NextWaterBoost:
         return self._get_next_start(
             demand=demand,
             delay_dt=None if delay == 0 else self.now_dt + timedelta(hours=delay),
-            cold=False
+            cold=self.current_temp < HIGHTEMP_THRESHOLD
         )
 
-    def _init_vars(self, prices_today: list, prices_tomorrow: list, preset: HvacPresets, non_hours: list=None, high_demand_hours: dict=None, now_dt=None) -> None:
+    def _init_vars(self, temp, temp_trend, prices_today: list, prices_tomorrow: list, preset: HvacPresets, non_hours: list=None, high_demand_hours: dict=None, now_dt=None) -> None:
         if non_hours is None:
             non_hours = []
         if high_demand_hours is None:
@@ -136,6 +132,8 @@ class NextWaterBoost:
         self._set_floating_mean()
         self._group_prices(prices_today, prices_tomorrow)
         self.preset = preset
+        self.temp_trend = DEFAULT_TEMP_TREND if temp_trend == 0 else temp_trend
+        self.current_temp = temp
 
     def _get_next_start(self, demand: int, delay_dt=None, cold=True) -> datetime:
         try:
@@ -146,6 +144,7 @@ class NextWaterBoost:
             return datetime.max
         if last_known_price - self.now_dt > timedelta(hours=18) and not cold:
             print("case A")
+            _LOGGER.debug(f"case A: {last_known_price} - {self.now_dt} > {timedelta(hours=18)}")
             group = self._find_group(self.now_dt.hour)
             if group.group_type == GroupType.LOW:
                 return self._calculate_last_start(demand, group.hours)
@@ -153,11 +152,14 @@ class NextWaterBoost:
         _next_dt = self._calculate_next_start(demand)
         if not delay_dt:
             print("case B")
+            _LOGGER.debug("case B")
             return _next_dt
         if _next_dt < delay_dt:
             print("case C")
+            _LOGGER.debug("case C")
             return self._calculate_last_start(demand)
         print("case D")
+        _LOGGER.debug("case D")
         return _next_dt
 
     def _set_now_dt(self, now_dt=None) -> None:

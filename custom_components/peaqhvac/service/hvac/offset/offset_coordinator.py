@@ -122,7 +122,8 @@ class OffsetCoordinator:
                 self.model.calculated_offsets = self.model.raw_offsets
             self._hub.observer.broadcast("offset recalculation")
         else:
-            _LOGGER.warning("not possible to calculate offset.")
+            #_LOGGER.warning("not possible to calculate offset.")
+            pass
 
     def adjust_to_threshold(self, adjustment: int) -> int:
         if adjustment is None or self._hub.sensors.average_temp_outdoors.value > 13:
