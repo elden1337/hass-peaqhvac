@@ -1,4 +1,4 @@
-from custom_components.peaqhvac.service.hvac.water_heater.models.group_type import GroupType
+from custom_components.peaqhvac.service.models.enums.group_type import GroupType
 
 
 class Group:

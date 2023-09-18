@@ -17,7 +17,7 @@ class PeaqSimpleSensor(SensorBase, RestoreEntity):
         super().__init__(hub, self._attr_name, entry_id)
         self._internal_entity = internal_entity
         self._state = ""
-        self._groups = {}
+        self._groups = None
 
     @property
     def state(self) -> str:
@@ -39,7 +39,6 @@ class PeaqSimpleSensor(SensorBase, RestoreEntity):
     @property
     def extra_state_attributes(self) -> dict:
         attr_dict = {}
-
         if self._internal_entity == NEXT_WATER_START:
             attr_dict["groups"] = self._groups
         return attr_dict
@@ -57,9 +56,9 @@ class PeaqSimpleSensor(SensorBase, RestoreEntity):
 
         ret = {}
         for idx, g in enumerate(groups):
-            _LOGGER.debug(f"Group {idx}: {g.group_type.value.capitalize()}: {__set_group_hours(g.hours)}")
-            ret[idx+1]: (g.group_type.value.capitalize(), __set_group_hours(g.hours))
-            #ret.append(f"{g.group_type.value.capitalize()}: {__set_group_hours(g.hours)}")
+            val = (g.group_type.value.capitalize(), __set_group_hours(g.hours))
+            #_LOGGER.debug(f"Group {idx}: {val}")
+            ret[idx]= val
         return ret
 
     @staticmethod

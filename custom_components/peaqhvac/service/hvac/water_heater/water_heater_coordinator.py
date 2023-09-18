@@ -7,7 +7,8 @@ from peaqevcore.common.trend import Gradient
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from peaqevcore.common.wait_timer import WaitTimer
 from custom_components.peaqhvac.service.hvac.water_heater.const import *
-from custom_components.peaqhvac.service.hvac.water_heater.water_heater_next_start import NextWaterBoost
+from custom_components.peaqhvac.service.hvac.water_heater.water_heater_next_start import NextWaterBoost, get_demand, \
+    DEMAND_MINUTES
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import \
     HvacPresets
@@ -22,26 +23,7 @@ we shouldnt need two booleans to tell if we are heating or trying to heat.
 make the signaling less complicated, just calculate the need and check whether heating is already happening.
 """
 
-DEMAND_MINUTES = {
-    HvacPresets.Normal: {
-        Demand.NoDemand:     0,
-        Demand.LowDemand:    26,
-        Demand.MediumDemand: 35,
-        Demand.HighDemand:   45
-    },
-    HvacPresets.Eco: {
-        Demand.NoDemand:     0,
-        Demand.LowDemand:    26,
-        Demand.MediumDemand: 35,
-        Demand.HighDemand:   45
-    },
-    HvacPresets.Away: {
-        Demand.NoDemand:     0,
-        Demand.LowDemand:    0,
-        Demand.MediumDemand: 26,
-        Demand.HighDemand:   26
-    }
-}
+
 
 
 class WaterHeater(IHeater):
@@ -124,40 +106,22 @@ class WaterHeater(IHeater):
 
     def _get_demand(self) -> Demand:
         temp = self.current_temperature
-        if temp is None:
-            return Demand.NoDemand
-        if 0 < temp < 100:
-            if temp >= 40:
-                return Demand.NoDemand
-            if temp > 35:
-                return Demand.LowDemand
-            if temp >= 25:
-                return Demand.MediumDemand
-            if temp < 25:
-                return Demand.HighDemand
-        return Demand.NoDemand
+        return get_demand(temp)
 
     def _get_next_start(self) -> datetime:
-
         if self.water_boost or self.model.pre_heating.value:
             """no need to calculate if we are already heating or trying to heat"""
             return datetime.max
         demand = self.demand
         preset = self._hvac.hub.sensors.set_temp_indoors.preset
-        if demand is Demand.NoDemand:
-            return self.booster.next_predicted_demand(
-                prices_today=self._hvac.hub.nordpool.prices,
-                prices_tomorrow=self._hvac.hub.nordpool.prices_tomorrow,
-                min_demand=DEMAND_MINUTES[preset][Demand.LowDemand],
-                temp=self.current_temperature,
-                temp_trend=self._temp_trend.gradient_raw,
-                target_temp=HIGHTEMP_THRESHOLD,
-                non_hours=self._boost_non_hours
-            )
-        return self.booster.get_next_start(
+        return self.booster.next_predicted_demand(
             prices_today=self._hvac.hub.nordpool.prices,
             prices_tomorrow=self._hvac.hub.nordpool.prices_tomorrow,
             demand=DEMAND_MINUTES[preset][demand],
+            preset=preset,
+            temp=self.current_temperature,
+            temp_trend=self._temp_trend.gradient_raw,
+            target_temp=HIGHTEMP_THRESHOLD,
             non_hours=self._boost_non_hours
         )
 

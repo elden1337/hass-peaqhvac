@@ -5,3 +5,4 @@ class GroupType(Enum):
     MID = "medium"
     HIGH = "expensive"
     UNKNOWN = "unknown"
+    FLAT = "flat"
