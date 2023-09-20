@@ -30,7 +30,7 @@ class HouseVentilation:
             elif self._vent_boost_low_dm():
                 self._vent_boost_start("Vent boosting because of low degree minutes.")
             else:
-                _LOGGER.debug("all vent boost conditions returned false")
+                #_LOGGER.debug("all vent boost conditions returned false")
                 self._current_vent_state = False
         # else:
         #     self._current_vent_state = False
