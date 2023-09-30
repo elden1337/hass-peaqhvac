@@ -139,7 +139,7 @@ class WaterHeater(IHeater):
         ee = None
         try:
             if self._hvac.hub.sensors.peaqev_installed:
-                if all([self._hvac.hub.sensors.peaqev_facade.above_stop_threshold,self.model.try_heat_water.value, 10 <= datetime.now().minute < 55]):
+                if all([self._hvac.hub.sensors.peaqev_facade.above_stop_threshold,self.model.try_heat_water.value, 20 <= datetime.now().minute < 55]):
                     _LOGGER.debug("Peak is being breached. Turning off water heating")
                     try:
                         self._set_boost(False)
