@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Tuple
 
 from custom_components.peaqhvac.service.hvac.const import LOW_DEGREE_MINUTES, WAITTIMER_TIMEOUT, HEATBOOST_TIMER
@@ -76,8 +76,8 @@ class HouseHeaterCoordinator(IHeater):
             self._hvac.hub.offset.max_price_lower(self._hvac.hub.sensors.get_tempdiff())]):
             return OFFSET_MIN_VALUE, True
 
-        desired_offset = self._set_calculated_offset(offsets)
         _force_update: bool = False
+        desired_offset = self._set_calculated_offset(offsets, _force_update)
 
         if desired_offset <= 0 and self.current_tempdiff <= 0:
             return self._get_lower_offset(), _force_update
@@ -90,6 +90,8 @@ class HouseHeaterCoordinator(IHeater):
             desired_offset = lowered_offset
             _force_update = True
 
+        if _force_update:
+            self._hvac.hub.observer.broadcast("update operation")
         return self._hvac.hub.offset.adjust_to_threshold(desired_offset), _force_update
 
     def _get_lower_offset(self) -> int:
@@ -149,8 +151,8 @@ class HouseHeaterCoordinator(IHeater):
             )
             return Demand.NoDemand
 
-    def _set_calculated_offset(self, offsets: dict) -> int:
-        self._update_current_offset(offsets=offsets)
+    def _set_calculated_offset(self, offsets: dict, _force_update: bool) -> int:
+        self._check_next_hour_offset(offsets=offsets, force_update=_force_update)
         ret = sum(
             [
                 self.current_offset,
@@ -161,10 +163,10 @@ class HouseHeaterCoordinator(IHeater):
         )
         return int(round(ret, 0))
 
-    def _update_current_offset(self, offsets: dict) -> None:
-        hour = datetime.now().hour
-        if datetime.now().hour < 23 and datetime.now().minute >= 50:
-            hour = datetime.now().hour + 1
+    def _check_next_hour_offset(self, offsets: dict, force_update: bool) -> None:
+        hour = datetime.now().replace(minute=0, second=0, microsecond=0)
+        if datetime.now().minute >= 40:
+            hour += timedelta(hours=1)
         try:
             _offset = offsets[hour]
         except:
@@ -172,28 +174,9 @@ class HouseHeaterCoordinator(IHeater):
                 "No Price-offsets have been calculated. Setting base-offset to 0."
             )
             _offset = 0
-        self.current_offset = _offset
-
-    # def _add_temp_boost(self, pre_offset: int) -> int:
-    #     if self._latest_boost.is_timeout():
-    #         if all(
-    #             [
-    #                 self._hvac.hvac_mode == HvacMode.Idle,
-    #                 self._hvac.hub.sensors.get_tempdiff() < 0,
-    #                 self._hvac.hub.sensors.temp_trend_indoors.gradient <= 0.3,
-    #             ]
-    #         ):
-    #             _LOGGER.debug(
-    #                 "adding additional heating since there is no sunwarming happening and house is too cold."
-    #             )
-    #             pre_offset += 1
-    #             self._latest_boost.update()
-    #     else:
-    #         pre_offset += 1
-    #         if self._hvac.hub.sensors.get_tempdiff() > 1:
-    #             pre_offset -= 1
-    #             self._latest_boost.reset()
-    #     return pre_offset
+        if self.current_offset != _offset:
+            force_update = True
+            self.current_offset = _offset
 
     def _add_temp_boost(self, pre_offset: int) -> int:
         if not self._latest_boost.is_timeout():

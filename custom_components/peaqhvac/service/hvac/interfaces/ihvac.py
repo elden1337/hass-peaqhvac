@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from abc import abstractmethod
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Tuple
 
 from custom_components.peaqhvac.service.hvac.house_ventilation import HouseVentilation
@@ -104,7 +105,7 @@ class IHvac(UpdateSystem):
             self.get_offsets()
             _hvac_offset = self.hvac_offset
             new_offset, force_update = self.house_heater.get_current_offset(
-                self.model.current_offset_dict
+                self.model.current_offset_dict_combined
             )
             if new_offset != self.current_offset:
                 self.current_offset = new_offset
@@ -122,6 +123,14 @@ class IHvac(UpdateSystem):
         if ret is not None:
             self.model.current_offset_dict = ret[0]
             self.model.current_offset_dict_tomorrow = ret[1]
+            self.model.current_offset_dict_combined = self.set_combined_offsets(ret[0], ret[1])
+
+    def set_combined_offsets(self, today: dict, tomorrow: dict) -> dict:
+        ret:dict[datetime, int] = {}
+        for hour in range(0, 24):
+            ret[datetime.now().replace(hour=hour, minute=0, second=0, microsecond=0)] = today.get(hour, 0)
+            ret[datetime.now().replace(hour=hour, minute=0, second=0,microsecond=0) + timedelta(days=1)] = tomorrow.get(hour, 0)
+        return ret
 
     @staticmethod
     def _get_sensors_for_callback(types: dict) -> list:
