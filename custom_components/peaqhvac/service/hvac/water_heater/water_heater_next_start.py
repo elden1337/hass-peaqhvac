@@ -246,8 +246,8 @@ class NextWaterBoost:
         delayed_dt = self.now_dt + timedelta(hours=delay)
         low_period = self._get_low_period(override_dt=delayed_dt)
         excepted_temp = self.current_temp + (delay * self.temp_trend)
-        new_demand = get_demand(excepted_temp)
-        return self._set_start_dt(DEMAND_MINUTES[self.preset][new_demand], low_period, delayed_dt, True)
+        new_demand = max(DEMAND_MINUTES[self.preset][get_demand(excepted_temp)],DEMAND_MINUTES[self.preset][Demand.LowDemand])
+        return self._set_start_dt(new_demand, low_period, delayed_dt, True)
 
     def _group_prices(self, prices_today: list, prices_tomorrow: list) -> None:
         today_len = len(prices_today)
