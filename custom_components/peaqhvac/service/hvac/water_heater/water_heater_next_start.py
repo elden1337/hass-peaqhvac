@@ -84,6 +84,7 @@ def get_demand(temp) -> Demand:
 class NextWaterBoost:
     def __init__(self):
         self.prices = []
+        self.min_price: float = None  # type: ignore
         self.groups = []
         self.non_hours: list = []
         self.demand_hours: dict = {}
@@ -97,6 +98,7 @@ class NextWaterBoost:
             self,
             prices_today: list,
             prices_tomorrow: list,
+            min_price: float,
             temp: float,
             temp_trend: float,
             target_temp: float,
@@ -106,7 +108,9 @@ class NextWaterBoost:
             non_hours=None,
             high_demand_hours=None
     ) -> datetime:
-        self._init_vars(temp,temp_trend, prices_today, prices_tomorrow, preset, non_hours, high_demand_hours, now_dt)
+        if len(prices_today) < 1:
+            return datetime.max
+        self._init_vars(temp,temp_trend, prices_today, prices_tomorrow, preset, min_price, non_hours, high_demand_hours, now_dt)
         try:
             if target_temp - temp > 0:
                 delay = 0
@@ -120,11 +124,12 @@ class NextWaterBoost:
             cold=self.current_temp < HIGHTEMP_THRESHOLD
         )
 
-    def _init_vars(self, temp, temp_trend, prices_today: list, prices_tomorrow: list, preset: HvacPresets, non_hours: list=None, high_demand_hours: dict=None, now_dt=None) -> None:
+    def _init_vars(self, temp, temp_trend, prices_today: list, prices_tomorrow: list, preset: HvacPresets, min_price: float, non_hours: list=None, high_demand_hours: dict=None, now_dt=None) -> None:
         if non_hours is None:
             non_hours = []
         if high_demand_hours is None:
             high_demand_hours = {}
+        self.min_price = min_price
         self.prices = prices_today + prices_tomorrow
         self.non_hours = non_hours
         self.demand_hours = high_demand_hours
@@ -143,23 +148,23 @@ class NextWaterBoost:
                 f"Error on getting last known price with {self.now_dt} and len prices {len(self.prices)}: {e}")
             return datetime.max
         if last_known_price - self.now_dt > timedelta(hours=18) and not cold:
-            print("case A")
-            _LOGGER.debug(f"case A: {last_known_price} - {self.now_dt} > {timedelta(hours=18)}")
+            #print("case A")
+            #_LOGGER.debug(f"case A: {last_known_price} - {self.now_dt} > {timedelta(hours=18)}")
             group = self._find_group(self.now_dt.hour)
             if group.group_type == GroupType.LOW:
                 return self._calculate_last_start(demand, group.hours)
             return self._calculate_last_start(demand)
         _next_dt = self._calculate_next_start(demand)
         if not delay_dt:
-            print("case B")
-            _LOGGER.debug("case B")
+            #print("case B")
+            #_LOGGER.debug("case B")
             return _next_dt
         if _next_dt < delay_dt:
-            print("case C")
-            _LOGGER.debug("case C")
+            #print("case C")
+            #_LOGGER.debug("case C")
             return self._calculate_last_start(demand)
-        print("case D")
-        _LOGGER.debug("case D")
+        #print("case D")
+        #_LOGGER.debug("case D")
         return _next_dt
 
     def _set_now_dt(self, now_dt=None) -> None:
@@ -196,8 +201,8 @@ class NextWaterBoost:
 
     def _values_are_good(self, i) -> bool:
         return all([
-            self.prices[i] < self.floating_mean,
-            self.prices[i + 1] < self.floating_mean,
+            self.prices[i] < self.floating_mean or self.prices[i] < self.min_price,
+            self.prices[i + 1] < self.floating_mean or self.prices[i + 1] < self.min_price,
             [i, i + 1, i - 23, i - 24] not in self.non_hours,
         ])
 
@@ -253,6 +258,8 @@ class NextWaterBoost:
         today_len = len(prices_today)
         std_dev = stdev(self.prices)
         average = mean(self.prices)
+        std_dev_tomorrow: float = None #type: ignore
+        average_tomorrow: float = None #type:ignore
         if len(prices_tomorrow):
             std_dev_tomorrow = stdev(prices_tomorrow)
             average_tomorrow = mean(prices_tomorrow)
@@ -262,7 +269,7 @@ class NextWaterBoost:
         def __set_group_type(_average, flat, average):
             if flat:
                 return GroupType.FLAT
-            if _average < average:
+            if _average < average or _average < self.min_price:
                 return GroupType.LOW
             elif _average > 1.5 * average:
                 return GroupType.HIGH

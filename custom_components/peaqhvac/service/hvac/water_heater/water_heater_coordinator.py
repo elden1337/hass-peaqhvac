@@ -2,7 +2,6 @@ import logging
 import time
 from datetime import datetime, timedelta
 
-import custom_components.peaqhvac.extensionmethods as ex
 from peaqevcore.common.trend import Gradient
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from peaqevcore.common.wait_timer import WaitTimer
@@ -31,7 +30,6 @@ class WaterHeater(IHeater):
         self._hvac = hvac
         super().__init__(hvac=hvac)
         self._current_temp = None
-        self._boost_non_hours: list[int] = [7, 11, 12, 15, 16, 17] #todo make this an option in the config
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._temp_trend = Gradient(
@@ -119,12 +117,13 @@ class WaterHeater(IHeater):
         return self.booster.next_predicted_demand(
             prices_today=self._hvac.hub.nordpool.prices,
             prices_tomorrow=self._hvac.hub.nordpool.prices_tomorrow,
+            min_price=self._hvac.hub.sensors.peaqev_facade.min_price,
             demand=DEMAND_MINUTES[preset][demand],
             preset=preset,
             temp=self.current_temperature,
             temp_trend=self._temp_trend.gradient_raw,
             target_temp=HIGHTEMP_THRESHOLD,
-            non_hours=self._boost_non_hours
+            non_hours=self._hvac.hub.options.heating_options.non_hours_water_boost
         )
 
     async def async_update_operation(self, caller=None):

@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 import logging
-from custom_components.peaqhvac.service.hvac.const import LOW_DEGREE_MINUTES, SUMMER_TEMP, NIGHT_HOURS, VERY_COLD_TEMP, \
-    WAITTIMER_TIMEOUT, WAITTIMER_VENT
+from custom_components.peaqhvac.service.hvac.const import WAITTIMER_TIMEOUT, WAITTIMER_VENT
 from peaqevcore.common.wait_timer import WaitTimer
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 from homeassistant.helpers.event import async_track_time_interval
@@ -34,9 +33,9 @@ class HouseVentilation:
                 self._current_vent_state = False
         # else:
         #     self._current_vent_state = False
-        if self._hvac.hvac_dm < LOW_DEGREE_MINUTES + 100 or self._hvac.hub.sensors.average_temp_outdoors.value < VERY_COLD_TEMP:
+        if self._hvac.hvac_dm < self._hvac.hub.options.heating_options.low_degree_minutes + 100 or self._hvac.hub.sensors.average_temp_outdoors.value < self._hvac.hub.options.heating_options.very_cold_temp:
             # If HVAC degree minutes are high or outdoor temperature is very cold, stop vent boosting
-            _LOGGER.debug(f"low dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} < {LOW_DEGREE_MINUTES + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
+            _LOGGER.debug(f"low dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} < {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
             self._current_vent_state = False
             self._hvac.hub.observer.broadcast("update operation")
 
@@ -46,7 +45,7 @@ class HouseVentilation:
                         self._hvac.hub.sensors.get_tempdiff() > 3,
                         self._hvac.hub.sensors.temp_trend_indoors.gradient >= 0,
                         self._hvac.hub.sensors.temp_trend_outdoors.gradient >= 0,
-                        self._hvac.hub.sensors.average_temp_outdoors.value >= SUMMER_TEMP,
+                        self._hvac.hub.sensors.average_temp_outdoors.value >= self._hvac.hub.options.heating_options.summer_temp,
                         self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away,
                     ]
                 )
@@ -55,8 +54,8 @@ class HouseVentilation:
         return all(
                     [
                         self._hvac.hub.sensors.get_tempdiff_in_out() > 4,
-                        self._hvac.hub.sensors.average_temp_outdoors.value >= SUMMER_TEMP,
-                        datetime.now().hour in NIGHT_HOURS,
+                        self._hvac.hub.sensors.average_temp_outdoors.value >= self._hvac.hub.options.heating_options.summer_temp,
+                        datetime.now().hour in self._hvac.hub.options.heating_options.night_hours,
                         self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away,
                     ]
                 )
@@ -65,8 +64,8 @@ class HouseVentilation:
     def _vent_boost_low_dm(self) -> bool:
         return all(
                     [
-                        self._hvac.hvac_dm <= LOW_DEGREE_MINUTES,
-                        self._hvac.hub.sensors.average_temp_outdoors.value >= VERY_COLD_TEMP,
+                        self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes,
+                        self._hvac.hub.sensors.average_temp_outdoors.value >= self._hvac.hub.options.heating_options.very_cold_temp,
                     ]
                 )
 

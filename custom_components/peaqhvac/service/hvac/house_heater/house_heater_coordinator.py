@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Tuple
 
-from custom_components.peaqhvac.service.hvac.const import LOW_DEGREE_MINUTES, WAITTIMER_TIMEOUT, HEATBOOST_TIMER
+from custom_components.peaqhvac.service.hvac.const import WAITTIMER_TIMEOUT, HEATBOOST_TIMER
 from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper import HouseHeaterTemperatureHelper
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
@@ -14,7 +14,6 @@ from peaqevcore.common.wait_timer import WaitTimer
 _LOGGER = logging.getLogger(__name__)
 
 OFFSET_MIN_VALUE = -10
-OUTDOOR_TEMP_STOP_HEATING = 13
 
 class HouseHeaterCoordinator(IHeater):
     def __init__(self, hvac):
@@ -63,16 +62,14 @@ class HouseHeaterCoordinator(IHeater):
                 _LOGGER.debug("Lowering offset -2.")
                 input_offset -= 2
         elif self._hvac.hub.sensors.peaqev_installed:
-            if self._hvac.hvac_dm <= LOW_DEGREE_MINUTES:
+            if self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes:
                 _LOGGER.debug("Lowering offset -1.")
                 input_offset -= 1
         return input_offset
 
-
-
     def get_current_offset(self, offsets: dict) -> Tuple[int, bool]:
         if any([
-            self._hvac.hub.sensors.average_temp_outdoors.value > OUTDOOR_TEMP_STOP_HEATING,
+            self._hvac.hub.sensors.average_temp_outdoors.value > self._hvac.hub.options.heating_options.outdoor_temp_stop_heating,
             self._hvac.hub.offset.max_price_lower(self._hvac.hub.sensors.get_tempdiff())]):
             return OFFSET_MIN_VALUE, True
 
@@ -168,7 +165,10 @@ class HouseHeaterCoordinator(IHeater):
         if datetime.now().minute >= 40:
             hour += timedelta(hours=1)
         try:
-            _offset = offsets[hour]
+            if self._hvac.hub.price_below_min(hour):
+                _offset = max(offsets[hour],0)
+            else:
+                _offset = offsets[hour]
         except:
             _LOGGER.warning(
                 "No Price-offsets have been calculated. Setting base-offset to 0."

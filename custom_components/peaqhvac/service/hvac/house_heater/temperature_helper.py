@@ -11,38 +11,40 @@ class HouseHeaterTemperatureHelper:
         _tolerance = self._determine_tolerance(diff, current_offset)
         return int(diff / _tolerance) * -1
 
+    # def get_temp_extremas(self, current_offset) -> float:
+    #     set_temp = self._hub.sensors.set_temp_indoors.adjusted_temp
+    #     diffs = [set_temp - t for t in self._hub.sensors.average_temp_indoors.all_values]
+    #     cold_diffs = [diff for diff in diffs if diff > 0]
+    #     hot_diffs = [diff for diff in diffs if diff < 0]
+    #     if len(cold_diffs) == len(hot_diffs):
+    #         return 0
+    #     is_cold = len(cold_diffs) > len(hot_diffs)
+    #     tolerance = self._determine_tolerance(is_cold, current_offset)
+    #     if is_cold:
+    #         ret = mean(cold_diffs) - tolerance
+    #     else:
+    #         ret = mean(hot_diffs) + tolerance
+    #     return round(ret, 2)
+
     def get_temp_extremas(self, current_offset) -> float:
         set_temp = self._hub.sensors.set_temp_indoors.adjusted_temp
         diffs = [set_temp - t for t in self._hub.sensors.average_temp_indoors.all_values]
-        cold_diffs = [diff for diff in diffs if diff > 0]
-        hot_diffs = [diff for diff in diffs if diff < 0]
-        if len(cold_diffs) == len(hot_diffs):
+        cold_diffs, hot_diffs = [d for d in diffs if d > 0] + [0], [d for d in diffs if d < 0] + [0]
+        hot_large = abs(min(hot_diffs))
+        cold_large = abs(max(cold_diffs))
+        if hot_large == cold_large:
             return 0
-        is_cold = len(cold_diffs) > len(hot_diffs)
+        is_cold = cold_large > hot_large
         tolerance = self._determine_tolerance(is_cold, current_offset)
         if is_cold:
-            ret = mean(cold_diffs) - tolerance
-        else:
-            ret = mean(hot_diffs) + tolerance
-        return round(ret, 2)
+            return self.temp_extremas_return(cold_diffs, tolerance)
+        return self.temp_extremas_return(hot_diffs, tolerance)
 
-    # def get_temp_trend_offset(self, current_offset) -> float:
-    #     if self._hub.sensors.temp_trend_indoors.is_clean:
-    #         if -0.1 < self._hub.sensors.temp_trend_indoors.gradient < 0.1:
-    #             return 0
-    #         new_temp_diff = (
-    #                 self._hub.predicted_temp
-    #                 - self._hub.sensors.set_temp_indoors.adjusted_temp
-    #         )
-    #         _tolerance = self._determine_tolerance(new_temp_diff, current_offset)
-    #         if abs(new_temp_diff) >= _tolerance:
-    #             ret = self._get_offset_steps(_tolerance)
-    #             if new_temp_diff > 0:
-    #                 ret = ret * -1
-    #             if ret == 0:
-    #                 return 0
-    #             return ret
-    #     return 0
+    @staticmethod
+    def temp_extremas_return(diffs, tolerance) -> float:
+        div = len(diffs) - 1
+        ret = (mean(diffs) - tolerance) * div
+        return round(ret / div, 2)
 
     def get_temp_trend_offset(self, current_offset) -> float:
         if not self._hub.sensors.temp_trend_indoors.is_clean:

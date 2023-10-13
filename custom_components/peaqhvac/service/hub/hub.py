@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_state_change
@@ -50,6 +51,13 @@ class Hub:
         async_track_state_change(
             self.hass, self.trackerentities, self.async_state_changed
         )
+
+    def price_below_min(self, hour:datetime) -> bool:
+        try:
+            return self.nordpool.prices[hour.hour] <= self.sensors.peaqev_facade.min_price
+        except:
+            _LOGGER.warning(f"Unable to get price for hour {hour}. min_price: {self.sensors.peaqev_facade.min_price}, num_prices_today: {len(self.nordpool.prices)}")
+            return False
 
     @property
     def is_initialized(self) -> bool:
