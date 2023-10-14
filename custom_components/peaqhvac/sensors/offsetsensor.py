@@ -30,7 +30,7 @@ class OffsetSensor(SensorBase):
     def icon(self) -> str:
         return "mdi:stairs"
 
-    def update(self) -> None:
+    async def async_update(self) -> None:
         self._state = self._hub.hvac.current_offset
         self._offsets = self._offset_dict_to_list(
             self._hub.hvac.model.current_offset_dict

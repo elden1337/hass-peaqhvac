@@ -112,7 +112,7 @@ class OffsetCoordinator:
             self.model.raw_offsets = self._update_offset()
             try:
                 _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(
-                    self.model.raw_offsets
+                    self.model.raw_offsets, self._hub.sensors.peaqev_facade.min_price
                 )
                 self.model.calculated_offsets = self._update_offset(_weather_dict[0])
             except Exception as e:

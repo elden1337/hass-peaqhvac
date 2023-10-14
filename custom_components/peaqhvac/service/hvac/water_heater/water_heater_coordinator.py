@@ -82,7 +82,6 @@ class WaterHeater(IHeater):
     def _get_demand(self):
         temp = self.current_temperature
         ret = get_demand(temp)
-        _LOGGER.debug(f"Current demand is {ret} for temp {temp}")
         return ret
 
     @IHeater.demand.setter

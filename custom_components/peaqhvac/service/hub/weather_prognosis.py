@@ -123,7 +123,7 @@ class WeatherPrognosis:
         self._hvac_prognosis_list = ret
         return ret
 
-    def get_weatherprognosis_adjustment(self, offsets) -> Tuple[dict, dict]:
+    def get_weatherprognosis_adjustment(self, offsets, min_price) -> Tuple[dict, dict]:
         self.update_weather_prognosis()
         ret = {}, offsets[1]
         for k, v in offsets[0].items():
