@@ -15,7 +15,7 @@ def offset_per_day(
     ret = {}
     _max_today = max(day_values.values(), default=0)
     _min_today = min(day_values.values(), default=0)
-    if tolerance is not None and _max_today != 0 and _max_today != _min_today:
+    if tolerance is not None and _max_today != _min_today:
         try:
             factor = max(abs(_max_today), abs(_min_today)) / tolerance
         except ZeroDivisionError:
