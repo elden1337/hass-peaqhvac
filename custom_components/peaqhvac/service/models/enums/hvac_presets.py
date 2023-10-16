@@ -22,7 +22,7 @@ class HvacPresets(Enum):
     @staticmethod
     def get_tolerances(preset):
         types = {
-            HvacPresets.Normal: (0.2, 0.3),
+            HvacPresets.Normal: (0.2, 0.5),
             HvacPresets.Eco: (0.2, 0.2),
             HvacPresets.Away: (0.5, 0.2),
             HvacPresets.ExtendedAway: (0.7, 0),
