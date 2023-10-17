@@ -27,7 +27,8 @@ class HouseHeaterTemperatureHelper:
 
     @staticmethod
     def temp_extremas_return(diffs, tolerance) -> float:
-        div = len(diffs) - 1
+        diffs.pop()
+        div = len(diffs)
         ret = (mean(diffs) - tolerance) * div
         return round(ret / div, 2)
 
