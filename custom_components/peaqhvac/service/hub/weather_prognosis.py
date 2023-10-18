@@ -138,7 +138,7 @@ class WeatherPrognosis:
         if _next_prognosis is not None and int(k) >= now.hour:
             divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
             adj = (
-                int(round((_next_prognosis.delta_temp_from_now / 2.5) * divisor, 0))
+                int(round((_next_prognosis.delta_temp_from_now / 3) * divisor, 0))
                 * -1
             )
             if adj != 0:

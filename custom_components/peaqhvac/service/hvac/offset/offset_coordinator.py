@@ -6,6 +6,7 @@ from typing import Tuple
 
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
 
+from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffset
 from custom_components.peaqhvac.service.hvac.offset.offset_utils import (
     max_price_lower_internal, offset_per_day)
 from custom_components.peaqhvac.service.hvac.offset.peakfinder import (
@@ -125,7 +126,8 @@ class OffsetCoordinator:
             #_LOGGER.warning("not possible to calculate offset.")
             pass
 
-    def adjust_to_threshold(self, adjustment: int) -> int:
+    def adjust_to_threshold(self, offsetdata: CalculatedOffset) -> int:
+        adjustment = offsetdata.sum_values()
         if adjustment is None or self._hub.sensors.average_temp_outdoors.value > 13:
             return 0
         if self.model.tolerance is None:

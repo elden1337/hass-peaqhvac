@@ -181,6 +181,8 @@ class NextWaterBoost:
             start_minute = max(now_dt.minute, min(60 - int(demand / 2), 59))
         else:
             start_minute = min(60 - int(demand / 2), 59)
+        if start_minute < now_dt.minute and not delayed:
+            start_minute = now_dt.minute
         return now_dt.replace(minute=start_minute, second=0, microsecond=0)
 
     def _get_low_period(self, override_dt=None) -> int:

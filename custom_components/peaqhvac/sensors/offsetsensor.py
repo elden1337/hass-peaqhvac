@@ -1,4 +1,6 @@
 from custom_components.peaqhvac.sensors.sensorbase import SensorBase
+from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffset
+from custom_components.peaqhvac.service.models.offsets_exportmodel import OffsetsExportModel
 
 
 class OffsetSensor(SensorBase):
@@ -16,6 +18,7 @@ class OffsetSensor(SensorBase):
         self._tempextremas_offset = None
         self._temptrend_offset = None
         self._peaks_today = []
+        self._peaks_tomorrow = []
         self._prognosis = []
 
     @property
@@ -31,22 +34,22 @@ class OffsetSensor(SensorBase):
         return "mdi:stairs"
 
     async def async_update(self) -> None:
-        self._state = self._hub.hvac.current_offset
-        self._offsets = self._offset_dict_to_list(
-            self._hub.hvac.model.current_offset_dict
-        )
-        self._offsets_tomorrow = self._offset_dict_to_list(
-            self._hub.hvac.model.current_offset_dict_tomorrow
-        )
-        self._current_offset = self._hub.hvac.house_heater.current_offset
-        self._tempdiff_offset = self._hub.hvac.house_heater.current_tempdiff
-        self._tempextremas_offset = self._hub.hvac.house_heater.current_temp_extremas
-        self._temptrend_offset = self._hub.hvac.house_heater.current_temp_trend_offset
-        self._raw_offsets = self._offset_dict_to_list(
-            self._hub.offset.model.raw_offsets[0]
-        )
-        self._peaks_today = self._hub.offset.model.peaks_today
-        self._peaks_tomorrow = self._hub.offset.model.peaks_tomorrow
+        self._state = self._hub.hvac.house_heater.current_adjusted_offset
+
+        offsetsmodel: OffsetsExportModel = await self._hub.async_offset_export_model()
+        data: CalculatedOffset = self._hub.hvac.house_heater.get_calculated_offsetdata()
+
+        self._offsets = offsetsmodel.current_offset
+        self._offsets_tomorrow = offsetsmodel.current_offset_tomorrow
+        self._raw_offsets = offsetsmodel.raw_offsets
+        self._peaks_today, self._peaks_tomorrow = offsetsmodel.peaks
+
+        self._current_offset = data.current_offset
+        self._tempdiff_offset = data.current_tempdiff
+        self._tempextremas_offset = data.current_temp_extremas
+        self._temptrend_offset = data.current_temp_trend_offset
+
+
 
     def _offset_dict_to_list(self, _input: dict) -> list:
         return [i for i in _input.values()]

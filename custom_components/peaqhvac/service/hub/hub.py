@@ -16,6 +16,7 @@ from custom_components.peaqhvac.service.hvac.hvacfactory import HvacFactory
 from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import \
     OffsetCoordinator
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
+from custom_components.peaqhvac.service.models.offsets_exportmodel import OffsetsExportModel
 from custom_components.peaqhvac.service.observer.observer_service import Observer
 from custom_components.peaqhvac.extensionmethods import async_iscoroutine
 _LOGGER = logging.getLogger(__name__)
@@ -130,4 +131,12 @@ class Hub:
             return await func()
         else:
             return func()
+
+    async def async_offset_export_model(self) -> OffsetsExportModel:
+        ret = OffsetsExportModel(
+        (self.offset.model.peaks_today, self.offset.model.peaks_tomorrow))
+        ret.raw_offsets = self.offset.model.raw_offsets[0]
+        ret.current_offset = self.hvac.model.current_offset_dict
+        ret.current_offset_tomorrow = self.hvac.model.current_offset_dict_tomorrow
+        return ret
 
