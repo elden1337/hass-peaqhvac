@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Tuple
 
 from custom_components.peaqhvac.service.hvac.const import WAITTIMER_TIMEOUT, HEATBOOST_TIMER
-from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffset
+from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
 from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper import HouseHeaterTemperatureHelper
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.models.enums.demand import Demand
@@ -112,14 +112,14 @@ class HouseHeaterCoordinator(IHeater):
                 temp_trend=self.current_temp_trend_offset,
             )
 
-    def _should_adjust_offset(self, offsetdata: CalculatedOffset) -> bool:
+    def _should_adjust_offset(self, offsetdata: CalculatedOffsetModel) -> bool:
         return (
                 self._hvac.hub.offset.model.raw_offsets
                 != self._hvac.hub.offset.model.calculated_offsets
                 and offsetdata.sum_values() < 0
         )
 
-    def _adjust_offset(self, offsetdata: CalculatedOffset) -> int:
+    def _adjust_offset(self, offsetdata: CalculatedOffsetModel) -> int:
         return self._hvac.hub.offset.adjust_to_threshold(offsetdata)
 
     def _lower_offset_addon(self) -> bool:
@@ -162,12 +162,12 @@ class HouseHeaterCoordinator(IHeater):
             )
             return Demand.NoDemand
 
-    def get_calculated_offsetdata(self, _force_update: bool = False) -> CalculatedOffset:
+    def get_calculated_offsetdata(self, _force_update: bool = False) -> CalculatedOffsetModel:
         self._check_next_hour_offset(force_update=_force_update)
-        return CalculatedOffset(self.current_offset,
-                self.current_tempdiff,
-                self.current_temp_extremas,
-                self.current_temp_trend_offset)
+        return CalculatedOffsetModel(self.current_offset,
+                                     self.current_tempdiff,
+                                     self.current_temp_extremas,
+                                     self.current_temp_trend_offset)
 
     def _check_next_hour_offset(self, force_update: bool) -> None:
         if not len(self._offsets):

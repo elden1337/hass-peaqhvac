@@ -1,5 +1,5 @@
 from custom_components.peaqhvac.sensors.sensorbase import SensorBase
-from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffset
+from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
 from custom_components.peaqhvac.service.models.offsets_exportmodel import OffsetsExportModel
 
 
@@ -37,7 +37,7 @@ class OffsetSensor(SensorBase):
         self._state = self._hub.hvac.house_heater.current_adjusted_offset
 
         offsetsmodel: OffsetsExportModel = await self._hub.async_offset_export_model()
-        data: CalculatedOffset = self._hub.hvac.house_heater.get_calculated_offsetdata()
+        data: CalculatedOffsetModel = self._hub.hvac.house_heater.get_calculated_offsetdata()
 
         self._offsets = offsetsmodel.current_offset
         self._offsets_tomorrow = offsetsmodel.current_offset_tomorrow

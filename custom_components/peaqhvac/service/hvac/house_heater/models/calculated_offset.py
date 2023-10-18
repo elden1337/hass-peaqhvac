@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 @dataclass
-class CalculatedOffset:
+class CalculatedOffsetModel:
     current_offset: int
     current_tempdiff: float
     current_temp_extremas: float
