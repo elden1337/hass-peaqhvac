@@ -122,10 +122,10 @@ class OffsetCoordinator:
                     f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
                 )
                 self.model.calculated_offsets = self.model.raw_offsets
-            self._hub.observer.broadcast("offset recalculation")
         else:
             #_LOGGER.warning("not possible to calculate offset.")
             pass
+        self._hub.observer.broadcast("offset recalculation")
 
     def adjust_to_threshold(self, offsetdata: CalculatedOffsetModel) -> int:
         adjustment = offsetdata.sum_values()

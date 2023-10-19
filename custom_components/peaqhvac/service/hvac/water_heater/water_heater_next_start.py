@@ -121,7 +121,7 @@ class NextWaterBoost:
         return self._get_next_start(
             demand=demand,
             delay_dt=None if delay == 0 else self.now_dt + timedelta(hours=delay),
-            cold=self.current_temp < HIGHTEMP_THRESHOLD
+            cold=self.current_temp < 42
         )
 
     def _init_vars(self, temp, temp_trend, prices_today: list, prices_tomorrow: list, preset: HvacPresets, min_price: float, non_hours: list=None, high_demand_hours: dict=None, now_dt=None) -> None:
@@ -147,25 +147,26 @@ class NextWaterBoost:
             _LOGGER.error(
                 f"Error on getting last known price with {self.now_dt} and len prices {len(self.prices)}: {e}")
             return datetime.max
-        if last_known_price - self.now_dt > timedelta(hours=18) and not cold:
-            #print("case A")
-            #_LOGGER.debug(f"case A: {last_known_price} - {self.now_dt} > {timedelta(hours=18)}")
+        if last_known_price - self.now_dt > timedelta(hours=HOUR_LIMIT) and not cold:
             group = self._find_group(self.now_dt.hour)
             if group.group_type == GroupType.LOW:
                 return self._calculate_last_start(demand, group.hours)
             return self._calculate_last_start(demand)
         _next_dt = self._calculate_next_start(demand)
         if not delay_dt:
-            #print("case B")
-            #_LOGGER.debug("case B")
-            return _next_dt
+            if self.range_not_in_nonhours(_next_dt):
+                return _next_dt.replace(minute=self._set_minute_start(demand, _next_dt))
+            return self._get_next_start(demand, delay_dt=_next_dt+timedelta(hours=1), cold=cold)
         if _next_dt < delay_dt:
-            #print("case C")
-            #_LOGGER.debug("case C")
             return self._calculate_last_start(demand)
-        #print("case D")
-        #_LOGGER.debug("case D")
-        return _next_dt
+        return _next_dt.replace(minute=self._set_minute_start(demand, _next_dt))
+
+    def range_not_in_nonhours(self, _next_dt) -> bool:
+        if _next_dt.hour in self.non_hours:
+            return False
+        if _next_dt.hour + 1 in self.non_hours:
+            return False
+        return True
 
     def _set_now_dt(self, now_dt=None) -> None:
         self.now_dt = datetime.now() if now_dt is None else now_dt
@@ -173,16 +174,16 @@ class NextWaterBoost:
     def _set_floating_mean(self, now_dt=None) -> float:
         self.floating_mean = mean(self.prices[self.now_dt.hour:])
 
-    def _set_start_dt(self, demand: int, low_period: int, delayed_dt: datetime = None,
-                      delayed: bool = False) -> datetime:
-        now_dt = self.now_dt if delayed_dt is None else delayed_dt
-        start_minute: int = now_dt.minute
+    def _set_minute_start(self, demand, now_dt, low_period = 0, delayed = False) -> int:
         if low_period >= 60 - now_dt.minute and not delayed:
             start_minute = max(now_dt.minute, min(60 - int(demand / 2), 59))
         else:
             start_minute = min(60 - int(demand / 2), 59)
-        if start_minute < now_dt.minute and not delayed:
-            start_minute = now_dt.minute
+        return start_minute
+
+    def _set_start_dt(self, demand: int, low_period: int, delayed_dt: datetime = None,delayed: bool = False) -> datetime:
+        now_dt = self.now_dt if delayed_dt is None else delayed_dt
+        start_minute: int = self._set_minute_start(demand, now_dt, low_period, delayed)
         return now_dt.replace(minute=start_minute, second=0, microsecond=0)
 
     def _get_low_period(self, override_dt=None) -> int:
@@ -210,10 +211,14 @@ class NextWaterBoost:
 
     def _calculate_next_start(self, demand: int) -> datetime:
         try:
-            if self.prices[self.now_dt.hour] < self.floating_mean:
+            if self.prices[self.now_dt.hour] < self.floating_mean and not any(
+                [self.now_dt.hour in self.non_hours,
+                 self.now_dt.hour + 1 in self.non_hours]
+                 ):
                 """This hour is cheap enough to start"""
                 low_period = self._get_low_period()
                 return self._set_start_dt(demand=demand, low_period=low_period)
+            print("checking A")
             for i in range(self.now_dt.hour, len(self.prices) - 1):
                 """Search forward for other hours to start"""
                 if self._values_are_good(i):
@@ -228,6 +233,7 @@ class NextWaterBoost:
             _range = range(self.now_dt.hour, min(len(self.prices) - 1, self.now_dt.hour + HOUR_LIMIT))
             if len(group) > 1:
                 _range = range(self.now_dt.hour, max(group))
+            print("checking B", group)
             for i in _range:
                 if self._values_are_good(i):
                     _param_i = i
@@ -240,8 +246,8 @@ class NextWaterBoost:
 
     def _calculate_last_start_reverse(self, demand: int):
         try:
-            for i in reversed(range(self.now_dt.hour,
-                                    min(len(self.prices) - 1, self.now_dt.hour + HOUR_LIMIT))):
+            print("checking C")
+            for i in reversed(range(self.now_dt.hour,min(len(self.prices) - 1, self.now_dt.hour + HOUR_LIMIT))):
                 if self._values_are_good(i):
                     return self._set_start_dt_params(i, demand)
         except Exception as e:
@@ -260,8 +266,6 @@ class NextWaterBoost:
         today_len = len(prices_today)
         std_dev = stdev(self.prices)
         average = mean(self.prices)
-        std_dev_tomorrow: float = None #type: ignore
-        average_tomorrow: float = None #type:ignore
         if len(prices_tomorrow):
             std_dev_tomorrow = stdev(prices_tomorrow)
             average_tomorrow = mean(prices_tomorrow)

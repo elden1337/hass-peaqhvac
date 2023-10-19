@@ -90,13 +90,13 @@ class HouseHeaterCoordinator(IHeater):
         if offsetdata.sum_values() <= 0 and self.current_tempdiff <= 0:
             ret = self._get_lower_offset()
             self.current_adjusted_offset = ret
-            _LOGGER.debug("offset return case 1")
+            #_LOGGER.debug("offset return case 1")
             return ret, _force_update
 
         if self._should_adjust_offset(offsetdata):
             ret = self._adjust_offset(offsetdata)
             self.current_adjusted_offset = ret
-            _LOGGER.debug("offset return case 2")
+            #_LOGGER.debug("offset return case 2")
             return ret, _force_update
 
         lowered_offset = self._temporarily_lower_offset(offsetdata)
@@ -109,7 +109,7 @@ class HouseHeaterCoordinator(IHeater):
 
         ret = self._hvac.hub.offset.adjust_to_threshold(offsetdata)
         self.current_adjusted_offset = ret
-        _LOGGER.debug("offset return case 3")
+        #_LOGGER.debug("offset return case 3")
         return ret, _force_update
 
     def _get_lower_offset(self) -> int:

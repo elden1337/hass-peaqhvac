@@ -62,7 +62,3 @@ class HouseHeaterTemperatureHelper:
             if (determinator > 0 or determinator is True)
             else tolerances[1]
         )
-
-    def _get_offset_steps(self, tolerance) -> int:
-        ret = abs(self._hub.sensors.temp_trend_indoors.gradient) / tolerance
-        return int(ret)

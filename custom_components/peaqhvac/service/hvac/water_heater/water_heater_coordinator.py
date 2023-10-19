@@ -22,9 +22,6 @@ we shouldnt need two booleans to tell if we are heating or trying to heat.
 make the signaling less complicated, just calculate the need and check whether heating is already happening.
 """
 
-
-
-
 class WaterHeater(IHeater):
     def __init__(self, hvac, hub):
         self._hub = hub
@@ -69,6 +66,8 @@ class WaterHeater(IHeater):
             self._temp_trend.add_reading(val=float(val), t=time.time())
             if self._current_temp != float(val):
                 self._current_temp = float(val)
+                self.demand = self._current_temp
+                _LOGGER.debug(f"Water temp changed to {val}. demand is now {self.demand}")
                 self._hub.observer.broadcast("watertemp change")
                 self._update_operation()
         except ValueError as E:
@@ -77,16 +76,24 @@ class WaterHeater(IHeater):
 
     @property
     def demand(self) -> Demand:
-        return self._get_demand()
+        return self._demand
+
+    @demand.setter
+    def demand(self, temp):
+        # ret = get_demand(temp)
+        # _LOGGER.debug(f"current water temp is {temp} yields {ret}")
+        self._demand = self._get_demand()
 
     def _get_demand(self):
-        temp = self.current_temperature
-        ret = get_demand(temp)
+        ret = get_demand(self.current_temperature)
+        _LOGGER.debug(f"current water temp is {self.current_temperature} yields {ret}")
         return ret
 
-    @IHeater.demand.setter
-    def demand(self, val):
-        self._demand = val
+
+
+    # @IHeater.demand.setter
+    # def demand(self, val):
+    #     self._demand = val
 
     @property
     def water_boost(self) -> bool:
