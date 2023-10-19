@@ -20,7 +20,7 @@ jobs:
       - name: ZIP peaqhvac Dir
         run: |
           cd ${{ github.workspace }}/custom_components/peaqhvac
-          zip peaqev.zip -r ./
+          zip peaqhvac.zip -r ./
       - name: Upload zip to release
         uses: svenstaro/upload-release-action@2.7.0
         with:
