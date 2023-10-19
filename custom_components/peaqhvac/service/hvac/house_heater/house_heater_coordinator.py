@@ -22,11 +22,20 @@ class HouseHeaterCoordinator(IHeater):
         self._degree_minutes = 0
         self._current_offset: int = 0
         self._offsets: dict = {}
-        self.current_adjusted_offset: int = 0
+        self._current_adjusted_offset: int = 0
         self._wait_timer_breach = WaitTimer(timeout=WAITTIMER_TIMEOUT)
         self._latest_boost = WaitTimer(timeout=HEATBOOST_TIMER)
         self._temp_helper = HouseHeaterTemperatureHelper(hub=hvac.hub)
         super().__init__(hvac=hvac)
+
+    @property
+    def current_adjusted_offset(self) -> int:
+        return int(self._current_adjusted_offset)
+
+    @current_adjusted_offset.setter
+    def current_adjusted_offset(self, val) -> None:
+        if isinstance(val, (float, int)):
+            self._current_adjusted_offset = val
 
     @property
     def is_initialized(self) -> bool:
@@ -50,25 +59,22 @@ class HouseHeaterCoordinator(IHeater):
         return self._temp_helper.get_tempdiff_inverted(self.current_offset)
 
     @property
-    def current_temp_extremas(self):
-        return self._temp_helper.get_temp_extremas(self.current_offset)
-
-    @property
     def current_temp_trend_offset(self):
-        return self._temp_helper.get_temp_trend_offset(self.current_offset)
+        return self._temp_helper.get_temp_trend_offset()
 
     def _temporarily_lower_offset(self, input_offset) -> int:
+        ret = input_offset.current_offset * 1
         if self._wait_timer_breach.is_timeout():
             if any(
                 [self._lower_offset_threshold_breach(), self._lower_offset_addon()]
             ):
                 _LOGGER.debug("Lowering offset -2.")
-                input_offset -= 2
+                ret -= 2
         elif self._hvac.hub.sensors.peaqev_installed:
             if self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes:
                 _LOGGER.debug("Lowering offset -1.")
-                input_offset -= 1
-        return input_offset
+                ret -= 1
+        return ret
 
     def get_current_offset(self, offsets: dict) -> Tuple[int, bool]:
         _force_update: bool = False
@@ -84,16 +90,18 @@ class HouseHeaterCoordinator(IHeater):
         if offsetdata.sum_values() <= 0 and self.current_tempdiff <= 0:
             ret = self._get_lower_offset()
             self.current_adjusted_offset = ret
+            _LOGGER.debug("offset return case 1")
             return ret, _force_update
 
         if self._should_adjust_offset(offsetdata):
             ret = self._adjust_offset(offsetdata)
             self.current_adjusted_offset = ret
+            _LOGGER.debug("offset return case 2")
             return ret, _force_update
 
         lowered_offset = self._temporarily_lower_offset(offsetdata)
         if lowered_offset < offsetdata.sum_values():
-            offsetdata = lowered_offset
+            offsetdata.current_offset = lowered_offset
             _force_update = True
 
         if _force_update:
@@ -101,9 +109,8 @@ class HouseHeaterCoordinator(IHeater):
 
         ret = self._hvac.hub.offset.adjust_to_threshold(offsetdata)
         self.current_adjusted_offset = ret
+        _LOGGER.debug("offset return case 3")
         return ret, _force_update
-
-
 
     def _get_lower_offset(self) -> int:
         return self._set_lower_offset_strong(
@@ -166,7 +173,7 @@ class HouseHeaterCoordinator(IHeater):
         self._check_next_hour_offset(force_update=_force_update)
         return CalculatedOffsetModel(self.current_offset,
                                      self.current_tempdiff,
-                                     self.current_temp_extremas,
+                                     self._temp_helper.get_temp_extremas(self.current_offset),
                                      self.current_temp_trend_offset)
 
     def _check_next_hour_offset(self, force_update: bool) -> None:

@@ -26,8 +26,8 @@ make the signaling less complicated, just calculate the need and check whether h
 
 
 class WaterHeater(IHeater):
-    def __init__(self, hvac):
-        self._hvac = hvac
+    def __init__(self, hvac, hub):
+        self._hub = hub
         super().__init__(hvac=hvac)
         self._current_temp = None
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
@@ -35,11 +35,11 @@ class WaterHeater(IHeater):
         self._temp_trend = Gradient(
             max_age=3600, max_samples=10, precision=1, ignore=0
         )
-        self.model = WaterBoosterModel(self._hvac.hub.hass)
+        self.model = WaterBoosterModel(self._hub.hass)
         self.booster = NextWaterBoost()
-        self._hvac.hub.observer.add("offsets changed", self._update_operation)
+        self._hub.observer.add("offsets changed", self._update_operation)
         async_track_time_interval(
-            self._hvac.hub.hass, self.async_update_operation, timedelta(seconds=30)
+            self._hub.hass, self.async_update_operation, timedelta(seconds=30)
         )
 
     @property
@@ -69,7 +69,7 @@ class WaterHeater(IHeater):
             self._temp_trend.add_reading(val=float(val), t=time.time())
             if self._current_temp != float(val):
                 self._current_temp = float(val)
-                self._hvac.hub.observer.broadcast("watertemp change")
+                self._hub.observer.broadcast("watertemp change")
                 self._update_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
@@ -112,17 +112,17 @@ class WaterHeater(IHeater):
             """no need to calculate if we are already heating or trying to heat"""
             return datetime.max
         demand = self.demand
-        preset = self._hvac.hub.sensors.set_temp_indoors.preset
+        preset = self._hub.sensors.set_temp_indoors.preset
         return self.booster.next_predicted_demand(
-            prices_today=self._hvac.hub.nordpool.prices,
-            prices_tomorrow=self._hvac.hub.nordpool.prices_tomorrow,
-            min_price=self._hvac.hub.sensors.peaqev_facade.min_price,
+            prices_today=self._hub.nordpool.prices,
+            prices_tomorrow=self._hub.nordpool.prices_tomorrow,
+            min_price=self._hub.sensors.peaqev_facade.min_price,
             demand=DEMAND_MINUTES[preset][demand],
             preset=preset,
             temp=self.current_temperature,
             temp_trend=self._temp_trend.gradient_raw,
             target_temp=HIGHTEMP_THRESHOLD,
-            non_hours=self._hvac.hub.options.heating_options.non_hours_water_boost
+            non_hours=self._hub.options.heating_options.non_hours_water_boost
         )
 
     async def async_update_operation(self, caller=None):
@@ -130,16 +130,16 @@ class WaterHeater(IHeater):
 
     def _update_operation(self) -> None:
         if self.is_initialized:
-            if self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
+            if self._hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
                 self._set_water_heater_operation_home()
-            elif self._hvac.hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
+            elif self._hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
                 self._set_water_heater_operation_away()
 
     def _set_water_heater_operation_home(self) -> None:
         ee = None
         try:
-            if self._hvac.hub.sensors.peaqev_installed:
-                if all([self._hvac.hub.sensors.peaqev_facade.above_stop_threshold,self.model.try_heat_water.value, 20 <= datetime.now().minute < 55]):
+            if self._hub.sensors.peaqev_installed:
+                if all([self._hub.sensors.peaqev_facade.above_stop_threshold,self.model.try_heat_water.value, 20 <= datetime.now().minute < 55]):
                     _LOGGER.debug("Peak is being breached. Turning off water heating")
                     try:
                         self._set_boost(False)
@@ -158,19 +158,19 @@ class WaterHeater(IHeater):
 
     def _is_below_start_threshold(self) -> bool:
         return all([
-            self._hvac.hub.offset.current_offset >= 0,
+            self._hub.offset.current_offset >= 0,
             datetime.now().minute >= 30,
-            self._hvac.hub.sensors.peaqev_facade.below_start_threshold])
+            self._hub.sensors.peaqev_facade.below_start_threshold])
 
     def _is_price_below_min_price(self) -> bool:
-        return float(self._hvac.hub.nordpool.state) <= float(self._hvac.hub.sensors.peaqev_facade.min_price)
+        return float(self._hub.nordpool.state) <= float(self._hub.sensors.peaqev_facade.min_price)
 
     def _set_water_heater_operation_away(self):
-        if self._hvac.hub.sensors.peaqev_installed:
-            if float(self._hvac.hub.sensors.peaqev_facade.exact_threshold) >= 100:
+        if self._hub.sensors.peaqev_installed:
+            if float(self._hub.sensors.peaqev_facade.exact_threshold) >= 100:
                 self._set_boost(False)
         try:
-            if self._hvac.hub.offset.current_offset > 0 and 20 < datetime.now().minute < 50:
+            if self._hub.offset.current_offset > 0 and 20 < datetime.now().minute < 50:
                 if 0 < self.current_temperature <= LOWTEMP_THRESHOLD:
                     self.model.pre_heating.value = True
                     self._toggle_boost(timer_timeout=None)
@@ -201,5 +201,5 @@ class WaterHeater(IHeater):
         else:
             self._wait_timer.update()
             self.model.pre_heating.value = False
-        self._hvac.hub.observer.broadcast("update operation")
+        self._hub.observer.broadcast("update operation")
 

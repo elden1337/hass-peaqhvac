@@ -49,11 +49,6 @@ class OffsetSensor(SensorBase):
         self._tempextremas_offset = data.current_temp_extremas
         self._temptrend_offset = data.current_temp_trend_offset
 
-
-
-    def _offset_dict_to_list(self, _input: dict) -> list:
-        return [i for i in _input.values()]
-
     @property
     def extra_state_attributes(self) -> dict:
         return {

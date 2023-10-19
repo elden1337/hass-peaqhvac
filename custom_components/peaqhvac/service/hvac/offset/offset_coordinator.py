@@ -7,6 +7,7 @@ from typing import Tuple
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
 
 from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
+from custom_components.peaqhvac.service.hvac.offset.models.offsets_model import OffsetsModel
 from custom_components.peaqhvac.service.hvac.offset.offset_utils import (
     max_price_lower_internal, offset_per_day)
 from custom_components.peaqhvac.service.hvac.offset.peakfinder import (
@@ -31,13 +32,13 @@ class OffsetCoordinator:
         self._hub.observer.add("set temperature changed", self._set_offset)
         self._hub.observer.add("hvac tolerance changed", self._set_offset)
 
-    @property
+    @property #todo: move to hub
     def prices(self) -> list:
         if not self._hub.sensors.peaqev_installed:
             return self.hours.prices
         return self._prices
 
-    @property
+    @property #todo: move to hub
     def prices_tomorrow(self) -> list:
         if not self._hub.sensors.peaqev_installed:
             return self.hours.prices_tomorrow
@@ -51,16 +52,16 @@ class OffsetCoordinator:
 
     @property
     def current_offset(self) -> int:
-        offsets = self.get_raw_offset()
-        return offsets[0].get(datetime.now().hour, 0)
+        offsets = self.get_offset()
+        return offsets.raw_offsets[0].get(datetime.now().hour, 0)
 
-    def get_offset(self) -> Tuple[dict, dict]:
+    def get_offset(self) -> OffsetsModel:
         """External entrypoint to the class"""
         self._set_offset()
-        return self.model.calculated_offsets
-
-    def get_raw_offset(self) -> Tuple[dict, dict]:
-        return self.model.raw_offsets
+        return OffsetsModel(
+            self.model.calculated_offsets,
+            self.model.raw_offsets
+        )
 
     def _update_prognosis(self) -> None:
         self.model.prognosis = self._hub.prognosis.prognosis
