@@ -80,8 +80,6 @@ class WaterHeater(IHeater):
 
     @demand.setter
     def demand(self, temp):
-        # ret = get_demand(temp)
-        # _LOGGER.debug(f"current water temp is {temp} yields {ret}")
         self._demand = self._get_demand()
 
     def _get_demand(self):
@@ -89,17 +87,10 @@ class WaterHeater(IHeater):
         _LOGGER.debug(f"current water temp is {self.current_temperature} yields {ret}")
         return ret
 
-
-
-    # @IHeater.demand.setter
-    # def demand(self, val):
-    #     self._demand = val
-
     @property
     def water_boost(self) -> bool:
         """Returns true if we should try and heat the water"""
         return self.model.try_heat_water.value
-        #return any([self.model.next_water_heater_start <= datetime.now(), self.water_heating])
 
     @property
     def water_heating(self) -> bool:
