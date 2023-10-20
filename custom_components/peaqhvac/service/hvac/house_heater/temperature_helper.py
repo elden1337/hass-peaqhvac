@@ -35,7 +35,7 @@ class HouseHeaterTemperatureHelper:
 
     @staticmethod
     def temp_extremas_return(diffs, tolerance) -> float:
-        avg_diff = mean(diffs[:-1])
+        avg_diff = max(diffs[:-1])
         dev = 1 if avg_diff >= 0 else -1
         ret = (abs(avg_diff) - tolerance) * dev
         ret = max(ret, 0) if dev == 1 else min(ret, 0)
