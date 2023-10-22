@@ -58,10 +58,6 @@ class HouseHeaterCoordinator(IHeater):
     def current_tempdiff(self):
         return self._temp_helper.get_tempdiff_inverted(self.current_offset)
 
-    @property
-    def current_temp_trend_offset(self):
-        return self._temp_helper.get_temp_trend_offset()
-
     def _temporarily_lower_offset(self, input_offset) -> int:
         ret = input_offset.current_offset * 1
         if self._wait_timer_breach.is_timeout():
@@ -115,8 +111,8 @@ class HouseHeaterCoordinator(IHeater):
     def _get_lower_offset(self) -> int:
         return self._set_lower_offset_strong(
                 current_offset=self._current_offset,
-                temp_diff=self.current_tempdiff,
-                temp_trend=self.current_temp_trend_offset,
+                temp_diff=self._temp_helper.get_tempdiff_inverted(self.current_offset),
+                temp_trend=self._temp_helper.get_temp_trend_offset(),
             )
 
     def _should_adjust_offset(self, offsetdata: CalculatedOffsetModel) -> bool:
@@ -172,9 +168,9 @@ class HouseHeaterCoordinator(IHeater):
     def get_calculated_offsetdata(self, _force_update: bool = False) -> CalculatedOffsetModel:
         self._check_next_hour_offset(force_update=_force_update)
         return CalculatedOffsetModel(self.current_offset,
-                                     self.current_tempdiff,
+                                     self._temp_helper.get_tempdiff_inverted(self.current_offset),
                                      self._temp_helper.get_temp_extremas(self.current_offset),
-                                     self.current_temp_trend_offset)
+                                     self._temp_helper.get_temp_trend_offset())
 
     def _check_next_hour_offset(self, force_update: bool) -> None:
         if not len(self._offsets):

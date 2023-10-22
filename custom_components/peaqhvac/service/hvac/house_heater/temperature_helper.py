@@ -1,5 +1,8 @@
 from statistics import mean
+from math import floor
+import logging
 
+_LOGGER = logging.getLogger(__name__)
 class HouseHeaterTemperatureHelper:
     def __init__(self, hub):
         self._hub = hub
@@ -16,8 +19,11 @@ class HouseHeaterTemperatureHelper:
         if abs(diff) < 0.5:
             return 0
         """get the inverted tolerance in this case"""
-        _tolerance = self._determine_tolerance(diff * -1, current_offset)
-        return int(round((diff / (_tolerance * 4)) * -1, 0))
+        _tolerance = self._determine_tolerance(diff, current_offset)
+        ret = floor(abs(diff) / _tolerance) * -1
+        if diff > 0:
+            return ret
+        return ret * -1
 
     def get_temp_extremas(self, current_offset) -> float:
         set_temp = self._hub.sensors.set_temp_indoors.adjusted_temp
