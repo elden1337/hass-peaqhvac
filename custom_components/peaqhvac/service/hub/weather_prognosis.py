@@ -43,10 +43,14 @@ class WeatherPrognosis:
             if len(entities) < 1:
                 raise Exception("no entities found for weather.")
             _ent = [e for e in entities if e.endswith("_hourly")]
-            if len(_ent) == 1:
+            if len(_ent) >= 1:
                 self.entity = _ent[0]
                 self.update_weather_prognosis()
                 self._is_initialized = True
+                if len(_ent) > 1:
+                    _LOGGER.warning(
+                        f"Peaqev found more than one weather-entity. Using the first one: {self.entity}"
+                    )
             else:
                 pass
         except Exception as e:
