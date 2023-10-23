@@ -6,14 +6,42 @@ _LOGGER = logging.getLogger(__name__)
 
 PEAQEVDOMAIN = "peaqev"
 
+class PeaqevFacadeBase:
+    # def add_callback(self, message, function):
+    #     self._peaqevhub.observer.add(message, function)
 
-class PeaqevFacade:
-    def __init__(self, hass: HomeAssistant):
+    @property
+    def offsets(self) -> dict:
+        return {}
+
+    @property
+    def min_price(self) -> float:
+        return 0
+
+    @property
+    def exact_threshold(self) -> float:
+        return 0
+
+    @property
+    def above_stop_threshold(self) -> bool:
+        return False
+
+    @property
+    def below_start_threshold(self) -> bool:
+        return True
+
+    @property
+    def average_this_month(self) -> float:
+        return 0
+
+class PeaqevFacade(PeaqevFacadeBase):
+    def __init__(self, hass: HomeAssistant, peaqev_discovered: bool):
         self._hass = hass
-        self._peaqevhub = hass.data[PEAQEVDOMAIN]["hub"]
+        if peaqev_discovered:
+            self._peaqevhub = hass.data[PEAQEVDOMAIN]["hub"]
 
-    def add_callback(self, message, function):
-        self._peaqevhub.observer.add(message, function)
+    # def add_callback(self, message, function):
+    #     self._peaqevhub.observer.add(message, function)
 
     @property
     def offsets(self) -> dict:

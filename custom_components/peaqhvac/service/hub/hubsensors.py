@@ -4,7 +4,7 @@ from custom_components.peaqhvac.service.hub.average import Average
 from custom_components.peaqhvac.service.hub.target_temp import TargetTemp
 from peaqevcore.common.trend import Gradient
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
-from custom_components.peaqhvac.service.peaqev_facade import PeaqevFacade
+from custom_components.peaqhvac.service.peaqev_facade import PeaqevFacade, PeaqevFacadeBase
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class HubSensors:
     average_temp_outdoors: Average
     hvac_tolerance: int
     peaqev_installed: bool
-    peaqev_facade: PeaqevFacade
+    peaqev_facade: PeaqevFacadeBase
 
     def __init__(
         self, hub, options: ConfigModel, hass, peaqev_discovered: bool = False
@@ -42,6 +42,7 @@ class HubSensors:
             self.peaqev_installed = True
             self.peaqev_facade = PeaqevFacade(hass)
         else:
+            self.peaqev_facade = PeaqevFacadeBase()
             self.peaqev_installed = False
 
     def get_tempdiff(self) -> float:
