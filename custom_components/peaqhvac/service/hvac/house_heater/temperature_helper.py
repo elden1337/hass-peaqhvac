@@ -19,7 +19,7 @@ class HouseHeaterTemperatureHelper:
         if abs(diff) < 0.5:
             return 0
         """get the inverted tolerance in this case"""
-        _tolerance = self._determine_tolerance(diff, current_offset)
+        _tolerance = self._determine_tolerance(diff *-1, current_offset)
         ret = floor(abs(diff) / _tolerance) * -1
         if diff > 0:
             return ret
@@ -52,7 +52,7 @@ class HouseHeaterTemperatureHelper:
             return 0
         predicted_temp = self._hub.predicted_temp
         set_temp = self._hub.sensors.set_temp_indoors.adjusted_temp
-        new_temp_diff = (predicted_temp - set_temp) / 2
+        new_temp_diff = (predicted_temp - set_temp) / 5
         if predicted_temp >= set_temp:
             ret = max(round(new_temp_diff, 1), 0)
         else:
