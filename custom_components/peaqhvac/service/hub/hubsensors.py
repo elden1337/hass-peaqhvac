@@ -40,7 +40,7 @@ class HubSensors:
 
         if peaqev_discovered:
             self.peaqev_installed = True
-            self.peaqev_facade = PeaqevFacade(hass)
+            self.peaqev_facade = PeaqevFacade(hass, peaqev_discovered)
         else:
             self.peaqev_facade = PeaqevFacadeBase()
             self.peaqev_installed = False
