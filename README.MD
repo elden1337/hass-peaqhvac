@@ -34,6 +34,16 @@ nibe:
         - 47206
 ```
 
+During setup you need to add the actual sensor names (from the Nibe integration) though:
+
+```
+Indoor temp
+sensor.nibe_15XXXX_40033
+
+Outdoor temp:
+sensor.nibe_15XXXX_40004
+```
+
 * Set a heat-curve on your system that corresponds well to your desired level of heating at offset 0. Offsets is what PeaqHvac will manipulate
 * Turn off indoor climate control on the heat pump as PeaqHvac now takes that role
 * Turn off Nibe Smart Price Adaption if activated
