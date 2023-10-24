@@ -36,10 +36,10 @@ nibe:
 
 During setup you need to add the actual sensor names (from the Nibe integration) though:
 
-###### Indoor temp:
+##### Indoor temp:
 `sensor.nibe_1234567890_40033`
 
-###### Outdoor temp:
+##### Outdoor temp:
 `sensor.nibe_1234567890_40004`
 
 * Set a heat-curve on your system that corresponds well to your desired level of heating at offset 0. Offsets is what PeaqHvac will manipulate
