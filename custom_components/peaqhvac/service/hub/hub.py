@@ -8,7 +8,6 @@ from typing import Callable
 
 from custom_components.peaqhvac.const import LATEST_WATER_BOOST, NEXT_WATER_START
 from custom_components.peaqhvac.service.hub.hubsensors import HubSensors
-from custom_components.peaqhvac.service.hub.nordpool import NordPoolUpdater
 from custom_components.peaqhvac.service.hub.state_changes import StateChanges
 from custom_components.peaqhvac.service.hub.weather_prognosis import \
     WeatherPrognosis
@@ -19,6 +18,9 @@ from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.models.offsets_exportmodel import OffsetsExportModel
 from custom_components.peaqhvac.service.observer.observer_service import Observer
 from custom_components.peaqhvac.extensionmethods import async_iscoroutine
+from peaqevcore.common.spotprice.spotprice_factory import SpotPriceFactory
+from peaqevcore.common.models.peaq_system import PeaqSystem
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -28,36 +30,36 @@ class Hub:
 
     def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
         self._is_initialized = False
-        self.hass = hass
+        self.state_machine = hass
         self.observer = Observer(self)
         self.options = hub_options
-        self.sensors = HubSensors(self, hub_options, self.hass, self.get_peaqev())
-        self.states = StateChanges(self, self.hass)
-        self.hvac = HvacFactory.create(self.hass, self.options, self)
-        self.nordpool = NordPoolUpdater(self.hass, self)
+        self.sensors = HubSensors(self, hub_options, self.state_machine, self.get_peaqev())
+        self.states = StateChanges(self, self.state_machine)
+        self.hvac = HvacFactory.create(self.state_machine, self.options, self)
+        self.spotprice = SpotPriceFactory.create(hub=self, observer=self.observer, system=PeaqSystem.PeaqHvac, test=False, is_active=True)
         self.prognosis = WeatherPrognosis(self)
         self.offset = OffsetCoordinator(self)
         self.options.hub = self
 
     async def async_setup(self) -> None:
-        await self.nordpool.async_setup()
+        #await self.spotprice.async_setup()
         await self.async_setup_trackers()
 
     async def async_setup_trackers(self):
         self.trackerentities = []
-        self.trackerentities.append(self.nordpool.nordpool_entity)
+        self.trackerentities.append(self.spotprice.entity)
         self.trackerentities.extend(self.options.indoor_tempsensors)
         self.trackerentities.extend(self.options.outdoor_tempsensors)
         await self.states.async_initialize_values()
         async_track_state_change(
-            self.hass, self.trackerentities, self.async_state_changed
+            self.state_machine, self.trackerentities, self.async_state_changed
         )
 
     def price_below_min(self, hour:datetime) -> bool:
         try:
-            return self.nordpool.prices[hour.hour] <= self.sensors.peaqev_facade.min_price
+            return self.spotprice.model.prices[hour.hour] <= self.sensors.peaqev_facade.min_price
         except:
-            _LOGGER.warning(f"Unable to get price for hour {hour}. min_price: {self.sensors.peaqev_facade.min_price}, num_prices_today: {len(self.nordpool.prices)}")
+            _LOGGER.warning(f"Unable to get price for hour {hour}. min_price: {self.sensors.peaqev_facade.min_price}, num_prices_today: {len(self.spotprice.model.prices)}")
             return False
 
     @property
@@ -67,7 +69,7 @@ class Hub:
         return self._check_initialized()
 
     def _check_initialized(self) -> bool:
-        if all([self.nordpool.is_initialized, self.prognosis.is_initialized]):
+        if all([self.spotprice.is_initialized, self.prognosis.is_initialized]):
             self._is_initialized = True
             self.observer.activate()
             return True
@@ -86,7 +88,7 @@ class Hub:
 
     def get_peaqev(self):
         try:
-            ret = self.hass.states.get("sensor.peaqev_threshold")
+            ret = self.state_machine.states.get("sensor.peaqev_threshold")
             if ret is not None:
                 _LOGGER.debug(
                     "Discovered Peaqev-entities, will adhere to peak-shaving."

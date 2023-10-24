@@ -17,7 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 class WeatherPrognosis:
     def __init__(self, hub):
         self._hub = hub
-        self._hass = hub.hass
+        self._hass = hub.state_machine
         self.prognosis_list: list[WeatherObject] = []
         self._hvac_prognosis_list: list = []
         self._current_temperature = 1000
@@ -41,7 +41,7 @@ class WeatherPrognosis:
         try:
             entities = template.integration_entities(self._hass, "met")
             if len(entities) < 1:
-                raise Exception("no entities found for weather.")
+                _LOGGER.warning("no entities found for weather. Cannot use weather prognosis")
             _ent = [e for e in entities if e.endswith("_hourly")]
             if len(_ent) >= 1:
                 self.entity = _ent[0]

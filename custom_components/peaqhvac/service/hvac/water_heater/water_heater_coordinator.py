@@ -32,11 +32,11 @@ class WaterHeater(IHeater):
         self._temp_trend = Gradient(
             max_age=3600, max_samples=10, precision=1, ignore=0
         )
-        self.model = WaterBoosterModel(self._hub.hass)
+        self.model = WaterBoosterModel(self._hub.state_machine)
         self.booster = NextWaterBoost()
         self._hub.observer.add("offsets changed", self._update_operation)
         async_track_time_interval(
-            self._hub.hass, self.async_update_operation, timedelta(seconds=30)
+            self._hub.state_machine, self.async_update_operation, timedelta(seconds=30)
         )
 
     @property
@@ -112,8 +112,8 @@ class WaterHeater(IHeater):
         demand = self.demand
         preset = self._hub.sensors.set_temp_indoors.preset
         return self.booster.next_predicted_demand(
-            prices_today=self._hub.nordpool.prices,
-            prices_tomorrow=self._hub.nordpool.prices_tomorrow,
+            prices_today=self._hub.spotprice.model.prices,
+            prices_tomorrow=self._hub.spotprice.model.prices_tomorrow,
             min_price=self._hub.sensors.peaqev_facade.min_price,
             demand=DEMAND_MINUTES[preset][demand],
             preset=preset,
@@ -161,7 +161,7 @@ class WaterHeater(IHeater):
             self._hub.sensors.peaqev_facade.below_start_threshold])
 
     def _is_price_below_min_price(self) -> bool:
-        return float(self._hub.nordpool.state) <= float(self._hub.sensors.peaqev_facade.min_price)
+        return float(self._hub.spotprice.state) <= float(self._hub.sensors.peaqev_facade.min_price)
 
     def _set_water_heater_operation_away(self):
         if self._hub.sensors.peaqev_installed:

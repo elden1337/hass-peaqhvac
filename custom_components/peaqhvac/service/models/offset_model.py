@@ -16,11 +16,9 @@ class OffsetModel:
 
     def __init__(self, hub):
         self.hub = hub
-        async_track_time_interval(self.hub.hass, self.recalculate_tolerance, timedelta(seconds=120))
+        async_track_time_interval(self.hub.state_machine, self.recalculate_tolerance, timedelta(seconds=120))
         self.hub.observer.add("hvac tolerance changed", self.recalculate_tolerance)
-        self.hub.observer.add(
-            "temperature outdoors changed", self.recalculate_tolerance
-        )
+        self.hub.observer.add("temperature outdoors changed", self.recalculate_tolerance)
 
     @property
     def peaks_today(self) -> list:

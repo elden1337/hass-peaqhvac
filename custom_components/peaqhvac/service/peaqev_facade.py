@@ -85,7 +85,7 @@ class PeaqevFacade(PeaqevFacadeBase):
     @property
     def average_this_month(self) -> float:
         try:
-            return self._peaqevhub.nordpool.average_month
+            return self._peaqevhub.spotprice.average_month
         except:
             return 0
 

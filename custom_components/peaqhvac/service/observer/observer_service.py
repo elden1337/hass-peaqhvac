@@ -27,7 +27,7 @@ class Observer:
         self.hub = hub
         self._lock = Lock()
         async_track_time_interval(
-            self.hub.hass, self.async_dispatch, timedelta(seconds=1)
+            self.hub.state_machine, self.async_dispatch, timedelta(seconds=1)
         )
 
     def activate(self, init_broadcast: str = None) -> None:
@@ -73,7 +73,7 @@ class Observer:
                     if await async_iscoroutine(func):
                         await self.async_call_func(func=func, command=command),
                     else:
-                        await self.hub.hass.async_add_executor_job(
+                        await self.hub.state_machine.async_add_executor_job(
                             self._call_func, func, command
                         )
                 self.model.broadcast_queue.remove(command)

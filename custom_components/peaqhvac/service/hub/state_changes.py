@@ -1,7 +1,12 @@
+from __future__ import annotations
 import logging
 import time
 
 from peaqevcore.common.wait_timer import WaitTimer
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from custom_components.peaqhvac.service.hub.hub import Hub
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -10,7 +15,7 @@ class StateChanges:
 
 
     def __init__(self, hub, hass):
-        self._hub = hub
+        self._hub: Hub = hub
         self._hass = hass
         self.latest_nordpool_update = WaitTimer(timeout=300)
 
@@ -41,10 +46,10 @@ class StateChanges:
         )
 
         if (
-            entity == self._hub.nordpool.nordpool_entity
+            entity == self._hub.spotprice.entity
             or self.latest_nordpool_update.is_timeout()
         ):
-            await self._hub.nordpool.async_update_nordpool()
+            await self._hub.spotprice.async_update_spotprice()
             await self._hass.async_add_executor_job(
                 self._hub.prognosis.update_weather_prognosis
             )

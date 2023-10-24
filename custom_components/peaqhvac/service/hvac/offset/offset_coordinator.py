@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from typing import Tuple
 
+from peaqevcore.common.models.observer_types import ObserverTypes
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
 
 from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
@@ -26,7 +27,8 @@ class OffsetCoordinator:
         self.hours = self._set_hours_type()
         self._prices = None
         self._prices_tomorrow = None
-        self._hub.observer.add("prices changed", self._update_prices)
+        self._hub.observer.add(ObserverTypes.PricesChanged, self._update_prices)
+        self._hub.observer.add(ObserverTypes.SpotpriceInitialized, self._update_prices)
         self._hub.observer.add("prognosis changed", self._update_prognosis)
         self._hub.observer.add("hvac preset changed", self._set_offset)
         self._hub.observer.add("set temperature changed", self._set_offset)
@@ -47,8 +49,13 @@ class OffsetCoordinator:
     @property
     def offsets(self) -> dict:
         if not self._hub.sensors.peaqev_installed:
-            return self.hours.offsets
-        return self._hub.sensors.peaqev_facade.offsets
+            ret = self.hours.offsets
+        else:
+            ret = self._hub.sensors.peaqev_facade.offsets
+            if len(ret) == 0 or not ret:
+                _LOGGER.warning("Tried to get offsets from peaqev, but got nothing")
+        return ret
+
 
     @property
     def current_offset(self) -> int:
@@ -85,6 +92,7 @@ class OffsetCoordinator:
     def _update_offset(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
         try:
             d = self.offsets
+            _LOGGER.debug(f"updating offsets with {d}")
             today_values = d.get("today", {})
             tomorrow_values = d.get("tomorrow", {})
             today = self._calculate_offset_per_day(today_values, weather_adjusted_today)
