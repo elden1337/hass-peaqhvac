@@ -32,9 +32,13 @@ class WeatherPrognosis:
     @property
     def prognosis(self) -> list:
         if len(self._hvac_prognosis_list) == 0:
-            return self.get_hvac_prognosis(
-                self._hub.sensors.average_temp_outdoors.value
-            )
+            try:
+                return self.get_hvac_prognosis(
+                    self._hub.sensors.average_temp_outdoors.value
+                )
+            except Exception as e:
+                _LOGGER.warning(f"Could not get hvac-prognosis: {e}")
+                return []
         return self._hvac_prognosis_list
 
     def _setup_weather_prognosis(self):
@@ -45,8 +49,8 @@ class WeatherPrognosis:
             _ent = [e for e in entities if e.endswith("_hourly")]
             if len(_ent) >= 1:
                 self.entity = _ent[0]
-                self.update_weather_prognosis()
                 self._is_initialized = True
+                self.update_weather_prognosis()
                 if len(_ent) > 1:
                     _LOGGER.warning(
                         f"Peaqev found more than one weather-entity. Using the first one: {self.entity}"
