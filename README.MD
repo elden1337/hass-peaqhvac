@@ -41,7 +41,7 @@ nibe:
 ### Integrations used
 
 #### Required:
-* [Nordpool](https://github.com/custom-components/nordpool)
+* [Nordpool](https://github.com/custom-components/nordpool) or [EnergiDataService](https://github.com/MTrab/energidataservice)
 * [Nibe](https://github.com/elupus/hass_nibe)
 
 #### Optional:
