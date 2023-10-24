@@ -7,9 +7,6 @@ _LOGGER = logging.getLogger(__name__)
 PEAQEVDOMAIN = "peaqev"
 
 class PeaqevFacadeBase:
-    # def add_callback(self, message, function):
-    #     self._peaqevhub.observer.add(message, function)
-
     @property
     def offsets(self) -> dict:
         return {}

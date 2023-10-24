@@ -92,7 +92,6 @@ class OffsetCoordinator:
     def _update_offset(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
         try:
             d = self.offsets
-            _LOGGER.debug(f"updating offsets with {d}")
             today_values = d.get("today", {})
             tomorrow_values = d.get("tomorrow", {})
             today = self._calculate_offset_per_day(today_values, weather_adjusted_today)
