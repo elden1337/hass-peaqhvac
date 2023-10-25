@@ -36,24 +36,27 @@ class OffsetCoordinator:
 
     @property #todo: move to hub
     def prices(self) -> list:
-        if not self._hub.sensors.peaqev_installed:
-            return self.hours.prices
-        return self._prices
+        if self._hub.sensors.peaqev_installed:
+            return self._prices
+        return self.hours.prices
+
 
     @property #todo: move to hub
     def prices_tomorrow(self) -> list:
-        if not self._hub.sensors.peaqev_installed:
-            return self.hours.prices_tomorrow
-        return self._prices_tomorrow
+        if self._hub.sensors.peaqev_installed:
+            return self._prices_tomorrow
+        return self.hours.prices_tomorrow
+
 
     @property
     def offsets(self) -> dict:
-        if not self._hub.sensors.peaqev_installed:
-            ret = self.hours.offsets
-        else:
+        if self._hub.sensors.peaqev_installed:
             ret = self._hub.sensors.peaqev_facade.offsets
             if len(ret) == 0 or not ret:
                 _LOGGER.warning("Tried to get offsets from peaqev, but got nothing")
+            return ret
+        ret = self.hours.offsets
+        _LOGGER.debug("offsets from core: %s", ret)
         return ret
 
 
@@ -82,8 +85,8 @@ class OffsetCoordinator:
                 self._prices = prices[0]
             if self._prices_tomorrow != prices[1]:
                 self._prices_tomorrow = prices[1]
-        self._set_offset()
-        self._update_model()
+        await self.async_set_offset()
+        await self.async_update_model()
 
     def max_price_lower(self, tempdiff: float) -> bool:
         """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
@@ -115,6 +118,9 @@ class OffsetCoordinator:
             )
         else:
             return list(weather_adjusted_today.values())
+
+    async def async_set_offset(self):
+        self._set_offset()
 
     def _set_offset(self) -> None:
         if all([self.prices is not None, self.model.prognosis is not None]):
@@ -149,7 +155,7 @@ class OffsetCoordinator:
         )
         return int(round(ret, 0))
 
-    def _update_model(self) -> None:
+    async def async_update_model(self) -> None:
         self.model.peaks_today = identify_peaks(self.prices)
         self.model.peaks_tomorrow = identify_peaks(self.prices_tomorrow)
 
