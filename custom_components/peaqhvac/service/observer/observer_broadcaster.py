@@ -1,6 +1,8 @@
+from peaqevcore.common.models.observer_types import ObserverTypes
+
 
 class ObserverBroadcaster:
-    def __init__(self, message: str, hub):
+    def __init__(self, message: ObserverTypes, hub):
         self._observer_message = message
         self.hub = hub
 

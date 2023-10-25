@@ -1,5 +1,8 @@
 from datetime import datetime, timedelta
 import logging
+
+from peaqevcore.common.models.observer_types import ObserverTypes
+
 from custom_components.peaqhvac.service.hvac.const import WAITTIMER_TIMEOUT, WAITTIMER_VENT
 from peaqevcore.common.wait_timer import WaitTimer
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
@@ -37,7 +40,7 @@ class HouseVentilation:
             # If HVAC degree minutes are high or outdoor temperature is very cold, stop vent boosting
             _LOGGER.debug(f"low dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} < {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
             self._current_vent_state = False
-            self._hvac.hub.observer.broadcast("update operation")
+            self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
 
     def _vent_boost_warmth(self) -> bool:
         return all(
@@ -74,4 +77,4 @@ class HouseVentilation:
             _LOGGER.debug(msg)
             self._wait_timer_boost.update()
             self._current_vent_state = True
-            self._hvac.hub.observer.broadcast("update operation")
+            self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
