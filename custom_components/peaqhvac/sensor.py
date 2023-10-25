@@ -7,8 +7,10 @@ from homeassistant.core import HomeAssistant
 
 from .const import AVERAGESENSORS, DEMANDSENSORS, DOMAIN, TRENDSENSORS, NEXT_WATER_START, LATEST_WATER_BOOST
 from .sensors.min_maxsensor import AverageSensor
+from .sensors.money_data_sensor import PeaqMoneyDataSensor
 from .sensors.offsetsensor import OffsetSensor
 from .sensors.peaqsensor import PeaqSensor
+from .sensors.simple_money_sensor import PeaqSimpleMoneySensor
 from .sensors.simple_sensor import PeaqSimpleSensor
 from .sensors.trendsensor import TrendSensor
 
@@ -40,5 +42,20 @@ async def _gather_sensors(hub, config, hass) -> list:
 
     ret.append(PeaqSimpleSensor(hub, config.entry_id, "next water start", NEXT_WATER_START, "mdi:clock-start"))
     ret.append(PeaqSimpleSensor(hub, config.entry_id, "latest water boost", LATEST_WATER_BOOST, "mdi:clock-end"))
+
+    if not hub.peaqev_discovered:
+        simplesensors = [("Average price this month", "average_month"),
+                         ("Average price 7 days", "average_weekly"),
+                         ("Average price 30 days", "average_30"),
+                         ("Average price 3 days", "average_three_days")]
+
+        for name, attr in simplesensors:
+            ret.append(
+                PeaqSimpleMoneySensor(
+                    hub, config.entry_id, name, attr)
+            )
+            _LOGGER.debug(f"Setting up sensor for {name} with attr {attr}")
+
+        ret.append(PeaqMoneyDataSensor(hub, config.entry_id))
 
     return ret

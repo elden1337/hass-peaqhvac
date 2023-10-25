@@ -34,7 +34,8 @@ class Hub:
         self.state_machine = hass
         self.observer = Observer(self)
         self.options = hub_options
-        self.sensors = HubSensors(self, hub_options, self.state_machine, self.get_peaqev())
+        self.peaqev_discovered: bool = self.get_peaqev()
+        self.sensors = HubSensors(self, hub_options, self.state_machine, self.peaqev_discovered)
         self.states = StateChanges(self, self.state_machine)
         self.hvac = HvacFactory.create(self.state_machine, self.options, self)
         self.spotprice = SpotPriceFactory.create(hub=self, observer=self.observer, system=PeaqSystem.PeaqHvac, test=False, is_active=True)
