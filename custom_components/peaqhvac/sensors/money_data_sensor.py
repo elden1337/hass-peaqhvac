@@ -5,7 +5,7 @@ import logging
 
 from custom_components.peaqhvac import DOMAIN
 from custom_components.peaqhvac.extensionmethods import nametoid
-from custom_components.peaqhvac.sensors.const import MONEYCONTROLS
+from custom_components.peaqhvac.sensors.const import MONEYCONTROLS, AVERAGE_SPOTPRICE_DATA
 
 if TYPE_CHECKING:
     from custom_components.peaqhvac.service.hub.hub import Hub
