@@ -48,7 +48,7 @@ class OffsetModel:
     def tolerance(self, val):
         self._tolerance = val
 
-    def recalculate_tolerance(self):
+    def recalculate_tolerance(self, *args):
         if self.hub.options.hvac_tolerance is not None:
             old_tolerance = self._tolerance
             old_raw = self.tolerance_raw
