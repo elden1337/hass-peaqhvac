@@ -4,6 +4,8 @@ import logging
 from datetime import datetime, timedelta
 from typing import Tuple
 
+from peaqevcore.common.models.observer_types import ObserverTypes
+
 from custom_components.peaqhvac.service.hvac.const import WAITTIMER_TIMEOUT, HEATBOOST_TIMER
 from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
 from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper import HouseHeaterTemperatureHelper
@@ -101,7 +103,7 @@ class HouseHeaterCoordinator(IHeater):
             _force_update = True
 
         if _force_update:
-            self._hvac.hub.observer.broadcast("update operation")
+            self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
 
         ret = self._hvac.hub.offset.adjust_to_threshold(offsetdata)
         self.current_adjusted_offset = ret

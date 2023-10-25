@@ -2,6 +2,8 @@ import logging
 from homeassistant.helpers.event import async_track_time_interval
 from datetime import timedelta
 
+from peaqevcore.common.models.observer_types import ObserverTypes
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -17,8 +19,8 @@ class OffsetModel:
     def __init__(self, hub):
         self.hub = hub
         async_track_time_interval(self.hub.state_machine, self.recalculate_tolerance, timedelta(seconds=120))
-        self.hub.observer.add("hvac tolerance changed", self.recalculate_tolerance)
-        self.hub.observer.add("temperature outdoors changed", self.recalculate_tolerance)
+        self.hub.observer.add(ObserverTypes.HvacToleranceChanged, self.recalculate_tolerance)
+        self.hub.observer.add(ObserverTypes.TemperatureOutdoorsChanged, self.recalculate_tolerance)
 
     @property
     def peaks_today(self) -> list:
@@ -65,7 +67,7 @@ class OffsetModel:
                 _LOGGER.debug(
                     f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self.hub.sensors.average_temp_outdoors.value}"
                 )
-                self.hub.observer.broadcast("offset recalculation")
+                self.hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
 
     @staticmethod
     def get_tolerance_difference(current_temp) -> int:

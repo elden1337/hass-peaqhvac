@@ -1,13 +1,15 @@
 import logging
 import statistics
 
+from peaqevcore.common.models.observer_types import ObserverTypes
+
 from custom_components.peaqhvac.service.observer.observer_broadcaster import ObserverBroadcaster
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class Average(ObserverBroadcaster):
-    def __init__(self, entities: list[str], observer_message: str = None, hub=None):
+    def __init__(self, entities: list[str], observer_message: ObserverTypes = None, hub=None):
         self.listenerentities = entities
         self._value: float = 0.0
         self._median: float = 0.0

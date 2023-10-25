@@ -5,6 +5,7 @@ import logging
 from homeassistant.components.number import NumberEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.restore_state import RestoreEntity
+from peaqevcore.common.models.observer_types import ObserverTypes
 
 from .const import DOMAIN
 
@@ -54,8 +55,8 @@ class PeaqNumber(NumberEntity, RestoreEntity):
     def set_native_value(self, value: float) -> None:
         self._state = value
         self._hub.options.hvac_tolerance = int(float(self._state))
-        self._hub.observer.broadcast("hvac tolerance changed")
-        self._hub.observer.broadcast("offset recalculation")
+        self._hub.observer.broadcast(ObserverTypes.HvacToleranceChanged)
+        self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
 
     async def async_added_to_hass(self):
         state = await super().async_get_last_state()

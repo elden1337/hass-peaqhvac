@@ -5,6 +5,8 @@ from abc import abstractmethod
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Tuple
 
+from peaqevcore.common.models.observer_types import ObserverTypes
+
 from custom_components.peaqhvac.service.hvac.house_ventilation import HouseVentilation
 from custom_components.peaqhvac.service.hvac.interfaces.update_system import UpdateSystem
 
@@ -35,8 +37,8 @@ class IHvac(UpdateSystem):
         self.water_heater = WaterHeater(hvac=self, hub=hub)
         self.house_ventilation = HouseVentilation(hvac=self)
         self.model = IHvacModel()
-        self.hub.observer.add("offset recalculation", self.update_offset)
-        self.hub.observer.add("update operation", self.request_periodic_updates)
+        self.hub.observer.add(ObserverTypes.OffsetRecalculation, self.update_offset)
+        self.hub.observer.add(ObserverTypes.UpdateOperation, self.request_periodic_updates)
 
     @property
     @abstractmethod
@@ -111,7 +113,7 @@ class IHvac(UpdateSystem):
                 self.current_offset = new_offset
                 self._force_update = force_update
             if self.current_offset != _hvac_offset:
-                self.hub.observer.broadcast("offsets changed")
+                self.hub.observer.broadcast(ObserverTypes.OffsetsChanged)
                 return True
             return False
         except Exception as e:

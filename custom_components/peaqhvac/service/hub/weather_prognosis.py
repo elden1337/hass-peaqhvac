@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import Tuple
 
 import homeassistant.helpers.template as template
+from peaqevcore.common.models.observer_types import ObserverTypes
 
 from custom_components.peaqhvac.service.models.prognosis_export_model import \
     PrognosisExportModel
@@ -176,7 +177,7 @@ class WeatherPrognosis:
             )
         self.prognosis_list = ret
         if self.prognosis_list != old_prognosis:
-            self._hub.observer.broadcast("prognosis changed")
+            self._hub.observer.broadcast(ObserverTypes.PrognosisChanged)
 
     def _correct_temperature_for_windchill(
         self, temp: float, windspeed: float

@@ -2,6 +2,7 @@ import logging
 import time
 from datetime import datetime, timedelta
 
+from peaqevcore.common.models.observer_types import ObserverTypes
 from peaqevcore.common.trend import Gradient
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from peaqevcore.common.wait_timer import WaitTimer
@@ -34,7 +35,7 @@ class WaterHeater(IHeater):
         )
         self.model = WaterBoosterModel(self._hub.state_machine)
         self.booster = NextWaterBoost()
-        self._hub.observer.add("offsets changed", self._update_operation)
+        self._hub.observer.add(ObserverTypes.OffsetsChanged, self._update_operation)
         async_track_time_interval(
             self._hub.state_machine, self.async_update_operation, timedelta(seconds=30)
         )
@@ -68,7 +69,7 @@ class WaterHeater(IHeater):
                 self._current_temp = float(val)
                 self.demand = self._current_temp
                 _LOGGER.debug(f"Water temp changed to {val}. demand is now {self.demand}")
-                self._hub.observer.broadcast("watertemp change")
+                self._hub.observer.broadcast(ObserverTypes.WatertempChange)
                 self._update_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
@@ -198,5 +199,5 @@ class WaterHeater(IHeater):
         else:
             self._wait_timer.update()
             self.model.pre_heating.value = False
-        self._hub.observer.broadcast("update operation")
+        self._hub.observer.broadcast(ObserverTypes.UpdateOperation)
 
