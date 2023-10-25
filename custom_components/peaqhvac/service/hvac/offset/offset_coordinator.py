@@ -27,12 +27,12 @@ class OffsetCoordinator:
         self.hours = self._set_hours_type()
         self._prices = None
         self._prices_tomorrow = None
-        self._hub.observer.add(ObserverTypes.PricesChanged, self._update_prices)
-        self._hub.observer.add(ObserverTypes.SpotpriceInitialized, self._update_prices)
-        self._hub.observer.add("prognosis changed", self._update_prognosis)
-        self._hub.observer.add("hvac preset changed", self._set_offset)
-        self._hub.observer.add("set temperature changed", self._set_offset)
-        self._hub.observer.add("hvac tolerance changed", self._set_offset)
+        self._hub.observer.add(ObserverTypes.PricesChanged, self.async_update_prices)
+        self._hub.observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)
+        self._hub.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
+        self._hub.observer.add(ObserverTypes.HvacPresetChanged, self._set_offset)
+        self._hub.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
+        self._hub.observer.add(ObserverTypes.HvacToleranceChanged, self._set_offset)
 
     @property #todo: move to hub
     def prices(self) -> list:
@@ -74,9 +74,9 @@ class OffsetCoordinator:
         self.model.prognosis = self._hub.prognosis.prognosis
         self._set_offset()
 
-    def _update_prices(self, prices) -> None:
+    async def async_update_prices(self, prices) -> None:
         if not self._hub.sensors.peaqev_installed:
-            self.hours.update_prices(prices[0], prices[1])
+            await self.hours.async_update_prices(prices[0], prices[1])
         else:
             if self._prices != prices[0]:
                 self._prices = prices[0]
@@ -132,7 +132,7 @@ class OffsetCoordinator:
         else:
             #_LOGGER.warning("not possible to calculate offset.")
             pass
-        self._hub.observer.broadcast("offset recalculation")
+        self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
 
     def adjust_to_threshold(self, offsetdata: CalculatedOffsetModel) -> int:
         adjustment = offsetdata.sum_values()
