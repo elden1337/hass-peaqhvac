@@ -57,7 +57,7 @@ class HouseHeaterTemperatureHelper:
             ret = max(round(new_temp_diff, 1), 0)
         else:
             ret = min(round(new_temp_diff, 1), 0)
-        return ret * -1
+        return min(ret,1) * -1
 
     def _determine_tolerance(self, determinator, current_offset) -> float:
         tolerances = self._hub.sensors.set_temp_indoors.adjusted_tolerances(
