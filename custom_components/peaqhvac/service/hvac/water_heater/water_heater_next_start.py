@@ -42,7 +42,7 @@ _LOGGER = logging.getLogger(__name__)
 HOUR_LIMIT = 18
 DELAY_LIMIT = 48
 MIN_DEMAND = 26
-DEFAULT_TEMP_TREND = -0.5
+DEFAULT_TEMP_TREND = -0.4
 
 
 DEMAND_MINUTES = {
@@ -121,7 +121,7 @@ class NextWaterBoost:
         return self._get_next_start(
             demand=demand,
             delay_dt=None if delay == 0 else self.now_dt + timedelta(hours=delay),
-            cold=self.current_temp < 42
+            cold=self.current_temp < 40
         )
 
     def _init_vars(self, temp, temp_trend, prices_today: list, prices_tomorrow: list, preset: HvacPresets, min_price: float, non_hours: list=None, high_demand_hours: dict=None, now_dt=None) -> None:
