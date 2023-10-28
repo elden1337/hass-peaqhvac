@@ -99,10 +99,10 @@ class WaterHeater(IHeater):
 
     @property
     def next_water_heater_start(self) -> datetime:
-        next_start = self._get_next_start()
+        next_start = self.model.next_water_heater_start
         if next_start < datetime.now()+timedelta(minutes=10):
             self.model.bus_fire_once("peaqhvac.upcoming_water_heater_warning", {"new": True}, next_start)
-        self.model.next_water_heater_start = next_start
+        #self.model.next_water_heater_start = next_start
         return next_start
 
     def _get_next_start(self) -> datetime:
@@ -111,7 +111,7 @@ class WaterHeater(IHeater):
             return datetime.max
         demand = self.demand
         preset = self._hub.sensors.set_temp_indoors.preset
-        return self.booster.next_predicted_demand(
+        ret = self.booster.next_predicted_demand(
             prices_today=self._hub.spotprice.model.prices,
             prices_tomorrow=self._hub.spotprice.model.prices_tomorrow,
             min_price=self._hub.sensors.peaqev_facade.min_price,
@@ -122,6 +122,8 @@ class WaterHeater(IHeater):
             target_temp=HIGHTEMP_THRESHOLD,
             non_hours=self._hub.options.heating_options.non_hours_water_boost
         )
+        self.model.next_water_heater_start = ret
+        return ret
 
     async def async_update_operation(self, caller=None):
         self._update_operation()
@@ -135,6 +137,8 @@ class WaterHeater(IHeater):
 
     def _set_water_heater_operation_home(self) -> None:
         ee = None
+        next_start = self._get_next_start()
+        _LOGGER.debug(f"Checked water heater next start and it is {next_start}")
         try:
             if self._hub.sensors.peaqev_installed:
                 if all([self._hub.sensors.peaqev_facade.above_stop_threshold,self.model.try_heat_water.value, 20 <= datetime.now().minute < 55]):
@@ -145,7 +149,7 @@ class WaterHeater(IHeater):
                         ee = f"1: {e}"
                 elif self._is_below_start_threshold():
                     try:
-                        if self._get_next_start() <= datetime.now():
+                        if next_start <= datetime.now():
                             self.model.pre_heating.value = True
                             self._toggle_boost(timer_timeout=None)
                     except Exception as e:
