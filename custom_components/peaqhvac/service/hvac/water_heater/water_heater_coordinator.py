@@ -56,6 +56,10 @@ class WaterHeater(IHeater):
             return time.strftime("%Y-%m-%d %H:%M", time.localtime(self.model.latest_boost_call))
         return "-"
 
+    def import_latest_boost_call(self, strtime):
+        struct_time = time.strptime(strtime, "%Y-%m-%d %H:%M")
+        self.model.latest_boost_call = time.mktime(struct_time)
+
     @property
     def current_temperature(self) -> float:
         """The current reported water-temperature in the hvac"""
