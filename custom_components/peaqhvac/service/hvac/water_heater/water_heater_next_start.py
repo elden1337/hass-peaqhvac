@@ -137,7 +137,7 @@ class NextWaterBoost:
         self._set_floating_mean()
         self._group_prices(prices_today, prices_tomorrow)
         self.preset = preset
-        self.temp_trend = DEFAULT_TEMP_TREND if temp_trend == 0 else temp_trend
+        self.temp_trend = DEFAULT_TEMP_TREND if temp_trend > DEFAULT_TEMP_TREND else temp_trend
         self.current_temp = temp
 
     def _get_next_start(self, demand: int, delay_dt=None, cold=True) -> datetime:

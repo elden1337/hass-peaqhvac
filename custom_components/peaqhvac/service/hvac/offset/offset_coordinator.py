@@ -26,8 +26,7 @@ class OffsetCoordinator:
         self._hub = hub
         self.model = OffsetModel(hub)
         self.hours = hours_type
-        self._prices = None
-        self._prices_tomorrow = None
+
         self._hub.observer.add(ObserverTypes.PricesChanged, self.async_update_prices)
         self._hub.observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)
         self._hub.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)

@@ -11,6 +11,8 @@ class OffsetCoordinatorPeaqEv(OffsetCoordinator):
 
     def __init__(self, hub, hours_type: Hoursselection = None): #type: ignore
         _LOGGER.debug("found peaqev and will not init hourselection")
+        self._prices = None
+        self._prices_tomorrow = None
         super().__init__(hub, hours_type)
 
     @property

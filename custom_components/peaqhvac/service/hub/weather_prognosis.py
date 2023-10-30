@@ -32,6 +32,8 @@ class WeatherPrognosis:
 
     @property
     def prognosis(self) -> list:
+        if not self.is_initialized:
+            return []
         if len(self._hvac_prognosis_list) == 0:
             try:
                 return self.get_hvac_prognosis(
@@ -79,10 +81,10 @@ class WeatherPrognosis:
                     return
             else:
                 _LOGGER.error("could not get weather-prognosis.")
-        else:
-            _LOGGER.debug(
-                "Tried to update weather-prognosis but the class is not initialized yet."
-            )
+        # else:
+        #     _LOGGER.debug(
+        #         "Tried to update weather-prognosis but the class is not initialized yet."
+        #     )
 
     def get_hvac_prognosis(self, current_temperature: float) -> list:
         ret = []
@@ -132,7 +134,7 @@ class WeatherPrognosis:
         self._hvac_prognosis_list = ret
         return ret
 
-    def get_weatherprognosis_adjustment(self, offsets, min_price) -> Tuple[dict, dict]:
+    def get_weatherprognosis_adjustment(self, offsets) -> Tuple[dict, dict]:
         self.update_weather_prognosis()
         ret = {}, offsets[1]
         for k, v in offsets[0].items():
@@ -147,7 +149,7 @@ class WeatherPrognosis:
         if _next_prognosis is not None and int(k) >= now.hour:
             divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
             adj = (
-                int(round((_next_prognosis.delta_temp_from_now / 3) * divisor, 0))
+                int(round((_next_prognosis.delta_temp_from_now / 2.5) * divisor, 0))
                 * -1
             )
             if adj != 0:

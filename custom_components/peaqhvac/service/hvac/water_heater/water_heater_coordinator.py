@@ -126,7 +126,9 @@ class WaterHeater(IHeater):
             target_temp=HIGHTEMP_THRESHOLD,
             non_hours=self._hub.options.heating_options.non_hours_water_boost
         )
-        self.model.next_water_heater_start = ret
+        if ret != self.model.next_water_heater_start:
+            _LOGGER.debug(f"Next water heater start changed from {self.model.next_water_heater_start} to {ret}.")
+            self.model.next_water_heater_start = ret
         return ret
 
     async def async_update_operation(self, caller=None):
@@ -142,7 +144,6 @@ class WaterHeater(IHeater):
     def _set_water_heater_operation_home(self) -> None:
         ee = None
         next_start = self._get_next_start()
-        _LOGGER.debug(f"Checked water heater next start and it is {next_start}")
         try:
             if self._hub.sensors.peaqev_installed:
                 if all([self._hub.sensors.peaqev_facade.above_stop_threshold,self.model.try_heat_water.value, 20 <= datetime.now().minute < 55]):
@@ -152,15 +153,20 @@ class WaterHeater(IHeater):
                     except Exception as e:
                         ee = f"1: {e}"
                 elif self._is_below_start_threshold():
-                    try:
-                        if next_start <= datetime.now():
-                            self.model.pre_heating.value = True
-                            self._toggle_boost(timer_timeout=None)
-                    except Exception as e:
-                        ee = f"2: {e}"
+                    self._set_toggle_boost_next_start(next_start)
+            else:
+                self._set_toggle_boost_next_start(next_start)
         except Exception as e:
             _LOGGER.error(
                 f"Could not check water-state: {e} with extended {ee}")
+
+    def _set_toggle_boost_next_start(self, next_start) -> None:
+        try:
+            if next_start <= datetime.now():
+                self.model.pre_heating.value = True
+                self._toggle_boost(timer_timeout=None)
+        except Exception as e:
+            ee = f"2: {e}"
 
     def _is_below_start_threshold(self) -> bool:
         return all([
