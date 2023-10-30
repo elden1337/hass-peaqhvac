@@ -16,7 +16,7 @@ class OffsetFactory:
 
     @staticmethod
     def create(hub: Hub) -> OffsetCoordinator:
-        if hub.sensors.peaqev_facade:
+        if hub.peaqev_discovered:
             return OffsetCoordinatorPeaqEv(hub, None)
         return OffsetCoordinatorStandAlone(hub, Hoursselection())
 
