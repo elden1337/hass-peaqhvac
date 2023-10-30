@@ -150,7 +150,7 @@ class NextWaterBoost:
         if last_known_price - self.now_dt > timedelta(hours=HOUR_LIMIT) and not cold:
             group = self._find_group(self.now_dt.hour)
             if group.group_type == GroupType.LOW:
-                return self._calculate_next_start(demand)
+                return self._calculate_last_start(demand,group.hours)
             return self._calculate_last_start(demand)
         _next_dt = self._calculate_next_start(demand)
         if not delay_dt:
