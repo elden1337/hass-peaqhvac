@@ -59,11 +59,10 @@ class WeatherPrognosis:
                         f"Peaqev found more than one weather-entity. Using the first one: {self.entity}"
                     )
             else:
-                self._hub.observer.broadcast(ObserverTypes.PrognosisChanged)
+                pass
         except Exception as e:
             msg = f"Peaqev was unable to get a single weather-entity. Disabling Weather-prognosis: {e}"
             _LOGGER.error(msg)
-            self._hub.observer.broadcast(ObserverTypes.PrognosisChanged)
 
     def update_weather_prognosis(self):
         if self.is_initialized:

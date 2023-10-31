@@ -71,8 +71,10 @@ class WaterHeater(IHeater):
             self._temp_trend.add_reading(val=float(val), t=time.time())
             if self._current_temp != float(val):
                 self._current_temp = float(val)
+                old_demand = self.demand.value
                 self.demand = self._current_temp
-                _LOGGER.debug(f"Water temp changed to {val}. demand is now {self.demand}")
+                if self.demand.value != old_demand:
+                    _LOGGER.debug(f"Water temp changed to {val} which caused demand to change from {old_demand} to {self.demand.value}")
                 self._hub.observer.broadcast(ObserverTypes.WatertempChange)
                 self._update_operation()
         except ValueError as E:
@@ -113,7 +115,7 @@ class WaterHeater(IHeater):
         if self.water_boost or self.model.pre_heating.value:
             """no need to calculate if we are already heating or trying to heat"""
             return datetime.max
-        demand = self.demand
+        demand = self._get_demand()
         preset = self._hub.sensors.set_temp_indoors.preset
         ret = self.booster.next_predicted_demand(
             prices_today=self._hub.spotprice.model.prices,
