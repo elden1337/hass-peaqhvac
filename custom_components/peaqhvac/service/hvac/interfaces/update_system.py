@@ -20,7 +20,7 @@ class UpdateSystem:
     _force_update: bool = False
     current_water_boost_state: int = 0
     current_vent_boost_state: int = 0
-    update_list: list = []
+    update_list: dict[HvacOperations, any] = {}
     periodic_update_timers: dict = {
         HvacOperations.Offset:     0,
         HvacOperations.WaterBoost: 0,
@@ -40,32 +40,31 @@ class UpdateSystem:
         if await self.async_ready_to_update(HvacOperations.VentBoost):
             _vent_state = int(self.house_ventilation.vent_boost)
             if _vent_state != self.current_vent_boost_state:
-                self.update_list.append((HvacOperations.VentBoost, _vent_state))
+                self.update_list[HvacOperations.VentBoost]= _vent_state
                 _LOGGER.debug(f"Vent boost state changed to {_vent_state}. Added to update list.")
                 self.current_vent_boost_state = _vent_state
 
     async def async_update_heat(self) -> None:
         if await self._hass.async_add_executor_job(self.update_offset):
             if await self.async_ready_to_update(HvacOperations.Offset):
-                self.update_list.append(
-                    (HvacOperations.Offset, self.current_offset)
-                )
+                self.update_list[HvacOperations.Offset] = self.current_offset
 
     async def async_update_water(self) -> None:
         if await self.async_ready_to_update(HvacOperations.WaterBoost):
             _water_state = int(self.water_heater.water_boost)
             if self.current_water_boost_state != _water_state:
-                self.update_list.append((HvacOperations.WaterBoost, _water_state))
+                self.update_list[HvacOperations.WaterBoost] = _water_state
                 _LOGGER.debug(f"Water boost state changed to {_water_state}. Added to update list.")
                 self.current_water_boost_state = _water_state
 
     async def async_perform_periodic_updates(self) -> None:
-        for u in self.update_list:
-            await self.async_update_system(operation=u[0], set_val=u[1])
-            self.periodic_update_timers[u[0]] = time.time()
-        self.update_list = []
+        for operation,v in self.update_list:
+            if self.timer_timeout(operation):
+                if await self.async_update_system(operation=operation, set_val=v):
+                    self.periodic_update_timers[operation] = time.time()
+                    self.update_list.pop(operation)
 
-    async def async_update_system(self, operation: HvacOperations, set_val: any = None):
+    async def async_update_system(self, operation: HvacOperations, set_val: any = None) -> bool:
         if self.hub.sensors.peaq_enabled.value:
             _value = 0
             if self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5:
@@ -80,13 +79,18 @@ class UpdateSystem:
                 _LOGGER.debug(
                     f"Requested to update hvac-{operation.name} with value {set_val}. Actual value: {params} for {call_operation}"
                 )
+                return True
+        return False
+
+    def timer_timeout(self, operation) -> bool:
+        return time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation]
 
     async def async_ready_to_update(self, operation) -> bool:
         match operation:
             case HvacOperations.WaterBoost | HvacOperations.VentBoost:
                 return any(
                     [
-                        time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation],
+                        self.timer_timeout(operation),
                         self.hub.sensors.peaqev_facade.exact_threshold >= 100,
                     ]
                 )
@@ -96,8 +100,7 @@ class UpdateSystem:
                     return True
                 return any(
                     [
-                        time.time() - self.periodic_update_timers[operation]
-                        > UPDATE_INTERVALS[operation],
+                        self.timer_timeout(operation),
                         datetime.now().minute == 0,
                         self.hub.sensors.peaqev_facade.exact_threshold >= 100,
                     ]
