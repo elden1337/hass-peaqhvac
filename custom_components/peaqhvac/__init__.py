@@ -36,7 +36,6 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     huboptions.heating_options.non_hours_water_boost = [7, 11, 12, 15, 16, 17,23]
     huboptions.heating_options.low_degree_minutes = -600
     huboptions.heating_options.very_cold_temp = -12
-    huboptions.heating_options.night_hours = [23,0,1,2,3,4,5]
     # todo: make conf out of these
 
     hub = Hub(hass, huboptions)

@@ -58,7 +58,7 @@ class HouseVentilation:
                     [
                         self._hvac.hub.sensors.get_tempdiff_in_out() > 4,
                         self._hvac.hub.sensors.average_temp_outdoors.value >= self._hvac.hub.options.heating_options.outdoor_temp_stop_heating,
-                        datetime.now().hour in self._hvac.hub.options.heating_options.night_hours,
+                        datetime.now().hour in [23,0,1,2,3,4,5],
                         self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away,
                     ]
                 )
