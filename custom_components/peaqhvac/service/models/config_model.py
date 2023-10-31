@@ -23,7 +23,6 @@ class HeatingOptions:
     non_hours_water_boost: list[int] = field(default_factory=lambda: [])
     night_hours: list[int] = field(default_factory=lambda: [])
     low_degree_minutes: int = -9999
-    summer_temp: int = 999
     very_cold_temp: int = -999
 
 
