@@ -163,12 +163,10 @@ class WaterHeater(IHeater):
                 f"Could not check water-state: {e} with extended {ee}")
 
     def _set_toggle_boost_next_start(self, next_start) -> None:
-        try:
             if next_start <= datetime.now():
                 self.model.pre_heating.value = True
-                self._toggle_boost(timer_timeout=None)
-        except Exception as e:
-            ee = f"2: {e}"
+                #self._toggle_boost(timer_timeout=None)
+                self._set_boost(True)
 
     def _is_below_start_threshold(self) -> bool:
         return all([
