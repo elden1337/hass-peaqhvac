@@ -135,16 +135,16 @@ class HouseHeaterCoordinator(IHeater):
         return False
 
     def _lower_offset_threshold_breach(self) -> bool:
-        if all(
-            [
-                self._hvac.hub.sensors.peaqev_installed,
-                30 <= datetime.now().minute < 58,
-                self._hvac.hub.sensors.peaqev_facade.above_stop_threshold
-            ]
-        ):
-            _LOGGER.debug("Lowering offset because of peak about to be breached.")
-            self._wait_timer_breach.update()
-            return True
+        if self._hvac.hub.sensors.peaqev_installed:
+            if all(
+                [
+                    30 <= datetime.now().minute < 58,
+                    self._hvac.hub.sensors.peaqev_facade.above_stop_threshold
+                ]
+            ):
+                _LOGGER.debug("Lowering offset because of peak about to be breached.")
+                self._wait_timer_breach.update()
+                return True
         return False
 
     def _get_demand(self) -> Demand:
@@ -200,18 +200,15 @@ class HouseHeaterCoordinator(IHeater):
                 pre_offset -= 1
                 self._latest_boost.reset()
             return pre_offset
-
         if not all([
             self._hvac.hvac_mode == HvacMode.Idle,
             self._hvac.hub.sensors.get_tempdiff() < 0,
             self._hvac.hub.sensors.temp_trend_indoors.gradient <= 0.3,
         ]):
             return pre_offset
-
         _LOGGER.debug("Adding additional heating since there is no sunwarming happening and house is too cold.")
         self._latest_boost.update()
         return pre_offset + 1
-
 
     async def async_update_operation(self):
         pass
