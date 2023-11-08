@@ -15,7 +15,6 @@ from custom_components.peaqhvac.service.models.enums.hvac_presets import \
 from homeassistant.helpers.event import async_track_time_interval
 from custom_components.peaqhvac.service.hvac.water_heater.models.waterbooster_model import \
     WaterBoosterModel
-from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
 
 _LOGGER = logging.getLogger(__name__)
 
