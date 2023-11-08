@@ -15,6 +15,7 @@ from custom_components.peaqhvac.service.models.enums.hvac_presets import \
 from homeassistant.helpers.event import async_track_time_interval
 from custom_components.peaqhvac.service.hvac.water_heater.models.waterbooster_model import \
     WaterBoosterModel
+from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ class WaterHeater(IHeater):
                 self._update_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
-            self.model.try_heat_water.value = False
+            self.model.water_boost.value = False
 
     @property
     def demand(self) -> Demand:
@@ -94,11 +95,6 @@ class WaterHeater(IHeater):
         return ret
 
     @property
-    def water_boost(self) -> bool:
-        """Returns true if we should try and heat the water"""
-        return self.model.try_heat_water.value
-
-    @property
     def water_heating(self) -> bool:
         """Return true if the water is currently being heated"""
         return self.temperature_trend > 0 or self.model.pre_heating.value
@@ -111,8 +107,8 @@ class WaterHeater(IHeater):
         #self.model.next_water_heater_start = next_start
         return next_start
 
-    def _get_next_start(self) -> datetime:
-        if self.water_boost or self.model.pre_heating.value:
+    def _get_next_start(self, target_temp: int) -> datetime:
+        if self.model.water_boost.value or self.model.pre_heating.value:
             """no need to calculate if we are already heating or trying to heat"""
             return datetime.max
         demand = self._get_demand()
@@ -125,7 +121,7 @@ class WaterHeater(IHeater):
             preset=preset,
             temp=self.current_temperature,
             temp_trend=self._temp_trend.gradient_raw,
-            target_temp=HIGHTEMP_THRESHOLD,
+            target_temp=target_temp,
             non_hours=self._hub.options.heating_options.non_hours_water_boost
         )
         if ret != self.model.next_water_heater_start:
@@ -139,79 +135,61 @@ class WaterHeater(IHeater):
     def _update_operation(self) -> None:
         if self.is_initialized:
             if self._hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
-                self._set_water_heater_operation_home()
+                self._set_water_heater_operation(HIGHTEMP_THRESHOLD)
             elif self._hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
-                self._set_water_heater_operation_away()
+                self._set_water_heater_operation(LOWTEMP_THRESHOLD)
 
-    def _set_water_heater_operation_home(self) -> None:
+    def _set_water_heater_operation(self, target_temp: int) -> None:
         ee = None
-        next_start = self._get_next_start()
+        next_start = self._get_next_start(target_temp)
         try:
             if self._hub.sensors.peaqev_installed:
-                if all([self._hub.sensors.peaqev_facade.above_stop_threshold,self.model.try_heat_water.value, 20 <= datetime.now().minute < 55]):
+                if all([self._hub.sensors.peaqev_facade.above_stop_threshold, self.model.water_boost.value, 20 <= datetime.now().minute < 55]):
                     _LOGGER.debug("Peak is being breached. Turning off water heating")
                     try:
-                        self._set_boost(False)
+                        self.__set_boost(False)
                     except Exception as e:
                         ee = f"1: {e}"
-                elif self._is_below_start_threshold():
-                    self._set_toggle_boost_next_start(next_start)
+                elif self.__is_below_start_threshold():
+                    self.__set_toggle_boost_next_start(next_start)
             else:
-                self._set_toggle_boost_next_start(next_start)
+                if not self.model.water_boost.value:
+                    self.__set_toggle_boost_next_start(next_start)
         except Exception as e:
             _LOGGER.error(
                 f"Could not check water-state: {e} with extended {ee}")
 
-    def _set_toggle_boost_next_start(self, next_start) -> None:
+    def __set_toggle_boost_next_start(self, next_start) -> None:
         try:
             if next_start <= datetime.now():
                 self.model.pre_heating.value = True
-                self._toggle_boost(timer_timeout=None)
+                self.__toggle_boost(timer_timeout=None)
         except Exception as e:
             ee = f"2: {e}"
 
-    def _is_below_start_threshold(self) -> bool:
+    def __is_below_start_threshold(self) -> bool:
         return all([
             self._hub.offset.current_offset >= 0,
             datetime.now().minute >= 30,
             self._hub.sensors.peaqev_facade.below_start_threshold])
 
-    def _is_price_below_min_price(self) -> bool:
+    def __is_price_below_min_price(self) -> bool:
         return float(self._hub.spotprice.state) <= float(self._hub.sensors.peaqev_facade.min_price)
 
-    def _set_water_heater_operation_away(self):
-        if self._hub.sensors.peaqev_installed:
-            if float(self._hub.sensors.peaqev_facade.exact_threshold) >= 100:
-                self._set_boost(False)
-        try:
-            if self._hub.offset.current_offset > 0 and 20 < datetime.now().minute < 50:
-                if 0 < self.current_temperature <= LOWTEMP_THRESHOLD:
-                    self.model.pre_heating.value = True
-                    self._toggle_boost(timer_timeout=None)
-        except Exception as e:
-            _LOGGER.debug(
-                f"Could not properly update water operation in away-mode: {e}"
-            )
-
-    def _toggle_boost(self, timer_timeout: int = None) -> None:
-        if self.model.try_heat_water.value:
+    def __toggle_boost(self, timer_timeout: int = None) -> None:
+        if self.model.water_boost.value:
             if self.model.heat_water_timer.is_timeout():
-                self._set_boost(False)
-        elif all(
-                [
-                    self.model.pre_heating.value,
-                    self._wait_timer.is_timeout(),
-                ]
-        ):
-            self._set_boost(True, timer_timeout)
+                self.__set_boost(False)
+        elif self.model.pre_heating.value:
+            self.__set_boost(True, timer_timeout)
 
-    def _set_boost(self, set_boost_value:bool, timer_timeout = None) -> None:
-        self.model.try_heat_water.value = set_boost_value
+    def __set_boost(self, set_boost_value:bool, timer_timeout = None) -> None:
+        self.model.water_boost.value = set_boost_value
         if set_boost_value:
             self.model.latest_boost_call = time.time()
             if timer_timeout:
                 self.model.heat_water_timer.update(timer_timeout)
-            self.model.try_heat_water.timeout(datetime.now())
+            self.model.water_boost.timeout(datetime.now())
         else:
             self._wait_timer.update()
             self.model.pre_heating.value = False

@@ -28,7 +28,6 @@ class UpdateSystem:
     }
 
     async def request_periodic_updates(self) -> None:
-        #_LOGGER.debug("Requesting periodic updates")
         await self.async_update_ventilation()
         if self.hub.hvac.water_heater.control_module:
             await self.async_update_water()
@@ -51,11 +50,12 @@ class UpdateSystem:
 
     async def async_update_water(self) -> None:
         if await self.async_ready_to_update(HvacOperations.WaterBoost):
-            _water_state = int(self.water_heater.water_boost)
-            if self.current_water_boost_state != _water_state:
-                self.update_list[HvacOperations.WaterBoost] = _water_state
-                _LOGGER.debug(f"Water boost state changed to {_water_state}. Added to update list.")
-                self.current_water_boost_state = _water_state
+            _state = int(self.hub.hvac.water_heater.model.water_boost.value)
+            if _state:
+                if self.current_water_boost_state != _state:
+                    self.update_list[HvacOperations.WaterBoost] = _state
+                    _LOGGER.debug(f"Water boost state changed to {_state}. Added to update list.")
+                    self.current_water_boost_state = _state
 
     async def async_perform_periodic_updates(self) -> None:
         for operation,v in self.update_list:

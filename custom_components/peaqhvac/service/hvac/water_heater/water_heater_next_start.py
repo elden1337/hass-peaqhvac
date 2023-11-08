@@ -124,7 +124,7 @@ class NextWaterBoost:
         return self._get_next_start(
             demand=demand,
             delay_dt=None if delay == 0 else self.now_dt + timedelta(hours=delay),
-            cold=self.current_temp < 40
+            cold=self.current_temp < target_temp
         )
 
     def _init_vars(self, temp, temp_trend, prices_today: list, prices_tomorrow: list, preset: HvacPresets, min_price: float, non_hours: list=None, high_demand_hours: dict=None, now_dt=None) -> None:
