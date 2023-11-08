@@ -5,8 +5,15 @@
         "data": {
           "indoor_tempsensors": "[%key:common::config_flow::data::indoor_tempsensors%]",
           "outdoor_tempsensors": "[%key:common::config_flow::data::outdoor_tempsensors%]",
-          "hvac_tolerance":  "[%key:common::config_flow::data::hvac_tolerance%]",
           "systemid":  "[%key:common::config_flow::data::systemid%]"
+        }
+      },
+      "optional": {
+        "data": {
+          "outdoor_temp_stop_heating": "[%key:common::config_flow::data::outdoor_temp_stop_heating%]",
+          "non_hours_water_boost": "[%key:common::config_flow::data::non_hours_water_boost%]",
+          "low_degree_minutes": "[%key:common::config_flow::data::low_degree_minutes%]",
+          "very_cold_temp": "[%key:common::config_flow::data::very_cold_temp%]"
         }
       }
     },
@@ -17,6 +24,20 @@
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "indoor_tempsensors": "[%key:common::config_flow::data::indoor_tempsensors%]",
+          "outdoor_tempsensors": "[%key:common::config_flow::data::outdoor_tempsensors%]",
+          "outdoor_temp_stop_heating": "[%key:common::config_flow::data::outdoor_temp_stop_heating%]",
+          "non_hours_water_boost": "[%key:common::config_flow::data::non_hours_water_boost%]",
+          "low_degree_minutes": "[%key:common::config_flow::data::low_degree_minutes%]",
+          "very_cold_temp": "[%key:common::config_flow::data::very_cold_temp%]"
+        }
+      }
     }
   },
   "services": {
@@ -39,4 +60,4 @@
       }
     }
   }
-}
+},
