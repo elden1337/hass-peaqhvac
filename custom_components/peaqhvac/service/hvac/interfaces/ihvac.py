@@ -6,8 +6,6 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Tuple
 
 from peaqevcore.common.models.observer_types import ObserverTypes
-
-from custom_components.peaqhvac.service.hvac.house_ventilation import HouseVentilation
 from custom_components.peaqhvac.service.hvac.interfaces.update_system import UpdateSystem
 
 if TYPE_CHECKING:

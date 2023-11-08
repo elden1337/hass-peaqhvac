@@ -165,7 +165,7 @@ class HouseHeaterCoordinator(IHeater):
             _LOGGER.debug(
                 f"Compressor_start: {_compressor_start}, delta-return: {self._hvac.delta_return_temp} and pushed DM: {dm}. Could not calculate demand."
             )
-            return Demand.NoDemand
+            return Demand.ErrorDemand
 
     def get_calculated_offsetdata(self, _force_update: bool = False) -> CalculatedOffsetModel:
         self._check_next_hour_offset(force_update=_force_update)

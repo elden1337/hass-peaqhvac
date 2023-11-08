@@ -47,18 +47,21 @@ DEFAULT_TEMP_TREND = -0.4
 
 DEMAND_MINUTES = {
     HvacPresets.Normal: {
+        Demand.ErrorDemand: 0,
         Demand.NoDemand:     0,
         Demand.LowDemand:    26,
         Demand.MediumDemand: 35,
         Demand.HighDemand:   45
     },
     HvacPresets.Eco: {
+        Demand.ErrorDemand: 0,
         Demand.NoDemand:     0,
         Demand.LowDemand:    26,
         Demand.MediumDemand: 35,
         Demand.HighDemand:   45
     },
     HvacPresets.Away: {
+        Demand.ErrorDemand: 0,
         Demand.NoDemand:     0,
         Demand.LowDemand:    0,
         Demand.MediumDemand: 26,
@@ -78,7 +81,7 @@ def get_demand(temp) -> Demand:
             return Demand.MediumDemand
         if temp < 25:
             return Demand.HighDemand
-    return Demand.NoDemand
+    return Demand.ErrorDemand
 
 
 class NextWaterBoost:
