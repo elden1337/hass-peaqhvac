@@ -58,11 +58,14 @@ class UpdateSystem:
                     self.current_water_boost_state = _state
 
     async def async_perform_periodic_updates(self) -> None:
-        for operation,v in self.update_list:
+        removelist = []
+        for operation,v in self.update_list.items():
             if self.timer_timeout(operation):
                 if await self.async_update_system(operation=operation, set_val=v):
                     self.periodic_update_timers[operation] = time.time()
-                    self.update_list.pop(operation)
+                    removelist.add(operation)
+        for r in removelist:
+            self.update_list.pop(r)
 
     async def async_update_system(self, operation: HvacOperations, set_val: any = None) -> bool:
         if self.hub.sensors.peaq_enabled.value:
