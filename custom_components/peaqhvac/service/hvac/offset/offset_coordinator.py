@@ -103,20 +103,22 @@ class OffsetCoordinator:
             return list(weather_adjusted_today.values())
 
     def _set_offset(self) -> None:
-        if all([self.prices is not None, self.model.prognosis is not None]):
+        if self.prices is not None:
             self.model.raw_offsets = self._update_offset()
-            try:
-                _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
-                if len(_weather_dict[0]) > 0:
-                    self.model.calculated_offsets = self._update_offset(_weather_dict[0])
-                else:
-                    self.model.calculated_offsets = self.model.raw_offsets
-            except Exception as e:
-                _LOGGER.warning(
-                    f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
-                )
-                self.model.calculated_offsets = self.model.raw_offsets
+            self.model.calculated_offsets = self.model.raw_offsets
+
+            if self.model.prognosis is not None:
+                try:
+                    _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
+                    if len(_weather_dict[0]) > 0:
+                        self.model.calculated_offsets = self._update_offset(_weather_dict[0])
+                except Exception as e:
+                    _LOGGER.warning(
+                        f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
+                    )
             self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
+        else:
+            _LOGGER.warning("Unable to set offset. Prices are not properly. state:{self.prices}")
 
     def adjust_to_threshold(self, offsetdata: CalculatedOffsetModel) -> int:
         adjustment = offsetdata.sum_values()

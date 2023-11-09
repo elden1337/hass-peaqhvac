@@ -16,8 +16,6 @@ class OffsetCoordinatorStandAlone(OffsetCoordinator):
 
     @property
     def prices(self) -> list:
-        if not len(self.hours.prices):
-            _LOGGER.exception("peaqhvac cannot get calculated prices. please report an error for this log")
         return self.hours.prices
 
     @property
