@@ -25,7 +25,7 @@ class OffsetCoordinatorStandAlone(OffsetCoordinator):
     @property
     def offsets(self) -> dict:
         if not len(self.hours.offsets):
-            lenpr = len(self.hours.prices)
+            lenpr = len(self.prices)
             _LOGGER.warning(f"Unable to get offsets. The prices available for today are {lenpr}")
         return self.hours.offsets
 
