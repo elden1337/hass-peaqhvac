@@ -12,12 +12,9 @@ from custom_components.peaqhvac.service.hub.state_changes import StateChanges
 from custom_components.peaqhvac.service.hub.weather_prognosis import \
     WeatherPrognosis
 from custom_components.peaqhvac.service.hvac.hvacfactory import HvacFactory
-from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import \
-    OffsetCoordinator
 from custom_components.peaqhvac.service.hvac.offset.offset_coordinator_factory import OffsetFactory
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.models.offsets_exportmodel import OffsetsExportModel
-#from custom_components.peaqhvac.service.observer.observer_service import Observer
 from custom_components.peaqhvac.service.observer.observer_coordinator import Observer
 from custom_components.peaqhvac.extensionmethods import async_iscoroutine
 from peaqevcore.common.spotprice.spotprice_factory import SpotPriceFactory
@@ -41,12 +38,10 @@ class Hub:
         self.hvac = HvacFactory.create(self.state_machine, self.options, self)
         self.spotprice = SpotPriceFactory.create(hub=self, observer=self.observer, system=PeaqSystem.PeaqHvac, test=False, is_active=True)
         self.prognosis = WeatherPrognosis(self)
-        #self.offset = OffsetCoordinator(self)
         self.offset = OffsetFactory.create(self)
         self.options.hub = self
 
     async def async_setup(self) -> None:
-        #await self.spotprice.async_setup()
         await self.async_setup_trackers()
 
     async def async_setup_trackers(self):

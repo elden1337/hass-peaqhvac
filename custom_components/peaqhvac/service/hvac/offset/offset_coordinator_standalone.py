@@ -26,10 +26,15 @@ class OffsetCoordinatorStandAlone(OffsetCoordinator):
     def offsets(self) -> dict:
         if not len(self.hours.offsets):
             lenpr = len(self.prices)
-            _LOGGER.warning(f"Unable to get offsets. The prices available for today are {lenpr}")
+            if lenpr:
+                _first = self.prices[0]
+            else:
+                _first = None
+            _LOGGER.warning(f"Unable to get offsets. The prices available for today are {lenpr}. First price is {_first} as example.")
         return self.hours.offsets
 
     async def async_update_prices(self, prices) -> None:
         await self.hours.async_update_prices(prices[0], prices[1])
+        _LOGGER.debug(f"Updated prices to {self.hours.prices, self.hours.prices_tomorrow}")
         self._set_offset()
         self._update_model()
