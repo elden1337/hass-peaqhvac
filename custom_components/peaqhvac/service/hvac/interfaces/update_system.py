@@ -63,7 +63,7 @@ class UpdateSystem:
             if self.timer_timeout(operation):
                 if await self.async_update_system(operation=operation, set_val=v):
                     self.periodic_update_timers[operation] = time.time()
-                    removelist.add(operation)
+                    removelist.append(operation)
         for r in removelist:
             self.update_list.pop(r)
 
