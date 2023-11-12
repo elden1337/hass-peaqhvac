@@ -4,7 +4,6 @@ import logging
 from datetime import timedelta
 
 from homeassistant.helpers.event import async_track_time_interval
-from peaqevcore.common.models.observer_types import ObserverTypes
 from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
 from custom_components.peaqhvac.service.observer.models.command import Command
 from custom_components.peaqhvac.extensionmethods import async_iscoroutine

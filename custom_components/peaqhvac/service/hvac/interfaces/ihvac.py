@@ -39,6 +39,7 @@ class IHvac(UpdateSystem):
         self.model = IHvacModel()
         self.hub.observer.add(ObserverTypes.OffsetRecalculation, self.update_offset)
         self.hub.observer.add(ObserverTypes.UpdateOperation, self.request_periodic_updates)
+        self.hub.observer.add("water boost", self.async_boost_water)
 
     @property
     @abstractmethod
