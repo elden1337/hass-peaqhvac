@@ -56,9 +56,14 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
         mode = call.data.get("mode")
         await hub.call_set_mode(mode)
 
+    async def servicehandler_boost_water(call):
+        timeout = call.data.get("timeout")
+        hub.observer.broadcast("BoostWater", timeout)
+
     hass.services.async_register(DOMAIN, "enable", servicehandler_enable)
     hass.services.async_register(DOMAIN, "disable", servicehandler_disable)
     hass.services.async_register(DOMAIN, "set_mode", servicehandler_set_mode)
+    hass.services.async_register(DOMAIN, "boost_water", servicehandler_boost_water)
 
     await hass.config_entries.async_forward_entry_setups(config, PLATFORMS)
 

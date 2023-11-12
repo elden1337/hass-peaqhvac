@@ -7,3 +7,8 @@ set_mode:
   fields:
     mode:
       example: HOME | AWAY | VACATION
+
+boost_water:
+  fields:
+    timeout:
+      example: 1200
