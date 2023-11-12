@@ -162,7 +162,7 @@ class WaterHeater(IHeater):
         try:
             if next_start <= datetime.now():
                 self.model.pre_heating.value = True
-                self.__toggle_boost(timer_timeout=None)
+            self.__toggle_boost(timer_timeout=None)
         except Exception as e:
             ee = f"2: {e}"
 
