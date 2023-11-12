@@ -16,9 +16,10 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class WeatherPrognosis:
-    def __init__(self, hub):
-        self._hub = hub
-        self._hass = hub.state_machine
+    def __init__(self, hass, average_temp_outdoors, observer):
+        self._hass = hass
+        self.average_temp_outdoors = average_temp_outdoors
+        self.observer = observer
         self.prognosis_list: list[WeatherObject] = []
         self._hvac_prognosis_list: list = []
         self._current_temperature = 1000
@@ -37,7 +38,7 @@ class WeatherPrognosis:
         if len(self._hvac_prognosis_list) == 0:
             try:
                 return self.get_hvac_prognosis(
-                    self._hub.sensors.average_temp_outdoors.value
+                    self.average_temp_outdoors.value
                 )
             except Exception as e:
                 _LOGGER.warning(f"Could not get hvac-prognosis: {e}")
@@ -179,7 +180,7 @@ class WeatherPrognosis:
             )
         self.prognosis_list = ret
         if self.prognosis_list != old_prognosis:
-            self._hub.observer.broadcast(ObserverTypes.PrognosisChanged)
+            self.observer.broadcast(ObserverTypes.PrognosisChanged)
 
     def _correct_temperature_for_windchill(
         self, temp: float, windspeed: float

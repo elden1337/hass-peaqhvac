@@ -37,7 +37,7 @@ class Hub:
         self.states = StateChanges(self, self.state_machine)
         self.hvac = HvacFactory.create(self.state_machine, self.options, self)
         self.spotprice = SpotPriceFactory.create(hub=self, observer=self.observer, system=PeaqSystem.PeaqHvac, test=False, is_active=True)
-        self.prognosis = WeatherPrognosis(self)
+        self.prognosis = WeatherPrognosis(self.state_machine, self.sensors.average_temp_outdoors, self.observer)
         self.offset = OffsetFactory.create(self)
         self.options.hub = self
 
