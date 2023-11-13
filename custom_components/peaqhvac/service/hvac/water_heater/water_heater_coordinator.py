@@ -161,7 +161,10 @@ class WaterHeater(IHeater):
                 _LOGGER.debug("Next water heater start is now. Turning on water heating.")
                 self.model.water_boost.value = True
                 self.model.latest_boost_call = time.time()
-                self._hub.observer.broadcast("water boost start", DEFAULT_WATER_BOOST)
+                demand = self._get_demand()
+                preset = self._hub.sensors.set_temp_indoors.preset
+                demand_minutes = DEMAND_MINUTES[preset].get(demand, DEFAULT_WATER_BOOST)
+                self._hub.observer.broadcast("water boost start", demand_minutes)
         except Exception as e:
             pass
 
