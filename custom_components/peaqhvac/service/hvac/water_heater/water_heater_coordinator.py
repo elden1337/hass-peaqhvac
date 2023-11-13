@@ -38,6 +38,7 @@ class WaterHeater(IHeater):
         self.model = WaterBoosterModel(self._hub.state_machine)
         self.booster = NextWaterBoost()
         self._hub.observer.add(ObserverTypes.OffsetsChanged, self._update_operation)
+        self._hub.observer.add("water boost done", self.async_reset_water_boost)
         async_track_time_interval(
             self._hub.state_machine, self.async_update_operation, timedelta(seconds=30)
         )
@@ -130,6 +131,10 @@ class WaterHeater(IHeater):
             self.model.next_water_heater_start = ret
         return ret
 
+    async def async_reset_water_boost(self):
+        self.model.water_boost.value = False
+        await self.async_update_operation()
+
     async def async_update_operation(self, caller=None):
         self._update_operation()
 
@@ -155,7 +160,8 @@ class WaterHeater(IHeater):
             if next_start <= datetime.now():
                 _LOGGER.debug("Next water heater start is now. Turning on water heating.")
                 self.model.water_boost.value = True
-                self._hub.observer.broadcast("water boost", DEFAULT_WATER_BOOST)
+                self.model.latest_boost_call = time.time()
+                self._hub.observer.broadcast("water boost start", DEFAULT_WATER_BOOST)
         except Exception as e:
             pass
 

@@ -43,11 +43,11 @@
     },
     "boost_water": {
       "name": "Boost Water",
-      "description": "Override-service to call booster for x seconds. Remember delay to Nibe-api",
+      "description": "Override-service to call booster for x minutes (min 10, max 60). Remember delay to Nibe-api",
       "fields": {
         "timeout": {
           "name": "Timeout",
-          "description": "The timeout in seconds."
+          "description": "The timeout in minutes."
         }
       }
     }

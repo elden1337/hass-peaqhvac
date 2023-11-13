@@ -13,10 +13,8 @@ UPDATE_INTERVALS = {
 }
 
 
-
 async def async_cycle_waterboost(timeout: int, async_update_system: callable, hub) -> bool:
     end_time = time.time() + timeout
-    _LOGGER.debug("test calling nibe water ON")
     await async_update_system(operation=HvacOperations.WaterBoost, set_val=1)
     while time.time() < end_time:
         if hub.sensors.peaqev_installed:
@@ -25,7 +23,7 @@ async def async_cycle_waterboost(timeout: int, async_update_system: callable, hu
                 break
         await asyncio.sleep(5)
     await async_update_system(operation=HvacOperations.WaterBoost, set_val=0)
-    _LOGGER.debug("test calling nibe water OFF")
+    hub.observer.broadcast("water boost done")
     return True
 
 
