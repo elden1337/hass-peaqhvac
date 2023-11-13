@@ -3,10 +3,17 @@
     "step": {
       "user": {
         "data": {
-          "indoor_tempsensors": "temp sensors indoors. comma-separated",
-          "outdoor_tempsensors": "temp sensors outdoors. comma-separated",
-          "hvac_tolerance":  "tolerance in steps, 0-10",
-          "systemid":  "hvac systemid"
+          "indoor_tempsensors": "Temp sensors indoors. comma-separated",
+          "outdoor_tempsensors": "Temp sensors outdoors. comma-separated",
+          "systemid":  "Hvac systemid"
+        }
+      },
+      "optional": {
+        "data": {
+          "outdoor_temp_stop_heating": "Stop heating temp",
+          "non_hours_water_boost": "Nonhours waterboost",
+          "low_degree_minutes": "Low DM-value",
+          "very_cold_temp": "Very cold temp"
         }
       }
     },
@@ -20,6 +27,20 @@
     },
     "abort": {
       "already_configured": "This integration has already been configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "indoor_tempsensors": "Temp sensors indoors. comma-separated",
+          "outdoor_tempsensors": "Temp sensors outdoors. comma-separated",
+          "outdoor_temp_stop_heating": "Stop heating temp",
+          "non_hours_water_boost": "Nonhours waterboost",
+          "low_degree_minutes": "Low DM-value",
+          "very_cold_temp": "Very cold temp"
+        }
+      }
     }
   },
   "services": {

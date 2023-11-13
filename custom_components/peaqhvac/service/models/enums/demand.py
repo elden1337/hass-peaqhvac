@@ -6,3 +6,4 @@ class Demand(Enum):
     LowDemand = "Low demand"
     MediumDemand = "Medium demand"
     HighDemand = "High demand"
+    ErrorDemand = "Unknown demand"

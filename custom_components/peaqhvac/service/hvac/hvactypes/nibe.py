@@ -14,6 +14,7 @@ NIBE_MAX_THRESHOLD = 10
 NIBE_MIN_THRESHOLD = -10
 class Nibe(IHvac):
     domain = "Nibe"
+    water_heater_entity = None
 
     _servicecall_types = {
         HvacOperations.Offset: 47011,
@@ -21,12 +22,35 @@ class Nibe(IHvac):
         HvacOperations.WaterBoost: "hot_water_boost",
     }
 
+    def _get_water_heater(self) -> str:
+        """Fix to handle both new and old water heater entity naming."""
+        if self.water_heater_entity:
+            return self.water_heater_entity
+        try:
+            w1 = self.hub.state_machine.states.get(f"water_heater.nibe_{self.hub.options.systemid}_40014_47387")
+            if w1:
+                attr1 = w1.attributes.get("current_temperature")
+                if attr1:
+                    self.water_heater_entity = f"water_heater.nibe_{self.hub.options.systemid}_40014_47387|current_temperature"
+                    _LOGGER.debug(f"Found water_heater entity: {self.water_heater_entity}")
+                    return self.water_heater_entity
+            w2 = self.hub.state_machine.states.get(f"water_heater.nibe_hot_water")
+            if w2:
+                attr2 = w2.attributes.get("current_temperature")
+                if attr2:
+                    self.water_heater_entity = f"water_heater.nibe_hot_water|current_temperature"
+                    _LOGGER.debug(f"Found water_heater entity: {self.water_heater_entity}")
+                    return self.water_heater_entity
+        except Exception as e:
+            _LOGGER.error("Unable to set water_heater_entity", e)
+            return None
+
     def get_sensor(self, sensor: SensorType = None):
         types = {
             SensorType.HvacMode: f"climate.nibe_{self.hub.options.systemid}_s1_supply|hvac_action",
             SensorType.Offset: f"climate.nibe_{self.hub.options.systemid}_s1_supply|offset_heat",
             SensorType.DegreeMinutes: f"sensor.nibe_{self.hub.options.systemid}_43005",
-            SensorType.WaterTemp: f"water_heater.nibe_{self.hub.options.systemid}_40014_47387|current_temperature",
+            SensorType.WaterTemp: self._get_water_heater(),
             SensorType.HvacTemp: f"climate.nibe_{self.hub.options.systemid}_s1_supply|current_temperature",
             SensorType.CondenserReturn: f"sensor.nibe_{self.hub.options.systemid}_40012",
             SensorType.ElectricalAddition: f"sensor.nibe_{self.hub.options.systemid}_43084",

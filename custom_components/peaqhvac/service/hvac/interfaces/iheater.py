@@ -33,7 +33,7 @@ class IHeater(ABC):
         if self._demand is not None:
             return self._demand
         _LOGGER.error(f"{__name__} had no value for Demand.")
-        return Demand.NoDemand
+        return Demand.ErrorDemand
 
     @property
     def control_module(self) -> bool:

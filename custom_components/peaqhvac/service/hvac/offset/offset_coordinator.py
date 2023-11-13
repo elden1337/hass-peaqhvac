@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from abc import abstractmethod
 from datetime import datetime
 from typing import Tuple
 
@@ -21,12 +22,11 @@ _LOGGER = logging.getLogger(__name__)
 class OffsetCoordinator:
     """The class that provides the offsets for the hvac"""
 
-    def __init__(self, hub):
+    def __init__(self, hub, hours_type: Hoursselection = None): #type: ignore
         self._hub = hub
         self.model = OffsetModel(hub)
-        self.hours = self._set_hours_type()
-        self._prices = None
-        self._prices_tomorrow = None
+        self.hours = hours_type
+
         self._hub.observer.add(ObserverTypes.PricesChanged, self.async_update_prices)
         self._hub.observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)
         self._hub.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
@@ -34,27 +34,20 @@ class OffsetCoordinator:
         self._hub.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
         self._hub.observer.add(ObserverTypes.HvacToleranceChanged, self._set_offset)
 
-    @property #todo: move to hub
+    @property
+    @abstractmethod
     def prices(self) -> list:
-        if not self._hub.sensors.peaqev_installed:
-            return self.hours.prices
-        return self._prices
-
-    @property #todo: move to hub
-    def prices_tomorrow(self) -> list:
-        if not self._hub.sensors.peaqev_installed:
-            return self.hours.prices_tomorrow
-        return self._prices_tomorrow
+        pass
 
     @property
+    @abstractmethod
+    def prices_tomorrow(self) -> list:
+        pass
+
+    @property
+    @abstractmethod
     def offsets(self) -> dict:
-        if not self._hub.sensors.peaqev_installed:
-            ret = self.hours.offsets
-        else:
-            ret = self._hub.sensors.peaqev_facade.offsets
-            if len(ret) == 0 or not ret:
-                _LOGGER.warning("Tried to get offsets from peaqev, but got nothing")
-        return ret
+        pass
 
 
     @property
@@ -74,16 +67,9 @@ class OffsetCoordinator:
         self.model.prognosis = self._hub.prognosis.prognosis
         self._set_offset()
 
+    @abstractmethod
     async def async_update_prices(self, prices) -> None:
-        if not self._hub.sensors.peaqev_installed:
-            await self.hours.async_update_prices(prices[0], prices[1])
-        else:
-            if self._prices != prices[0]:
-                self._prices = prices[0]
-            if self._prices_tomorrow != prices[1]:
-                self._prices_tomorrow = prices[1]
-        self._set_offset()
-        self._update_model()
+        pass
 
     def max_price_lower(self, tempdiff: float) -> bool:
         """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
@@ -117,22 +103,22 @@ class OffsetCoordinator:
             return list(weather_adjusted_today.values())
 
     def _set_offset(self) -> None:
-        if all([self.prices is not None, self.model.prognosis is not None]):
+        if self.prices is not None:
             self.model.raw_offsets = self._update_offset()
-            try:
-                _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(
-                    self.model.raw_offsets, self._hub.sensors.peaqev_facade.min_price
-                )
-                self.model.calculated_offsets = self._update_offset(_weather_dict[0])
-            except Exception as e:
-                _LOGGER.warning(
-                    f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
-                )
-                self.model.calculated_offsets = self.model.raw_offsets
+            self.model.calculated_offsets = self.model.raw_offsets
+
+            if self.model.prognosis is not None:
+                try:
+                    _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
+                    if len(_weather_dict[0]) > 0:
+                        self.model.calculated_offsets = self._update_offset(_weather_dict[0])
+                except Exception as e:
+                    _LOGGER.warning(
+                        f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
+                    )
+            self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
         else:
-            #_LOGGER.warning("not possible to calculate offset.")
-            pass
-        self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
+            _LOGGER.warning("Unable to set offset. Prices are not properly. state:{self.prices}")
 
     def adjust_to_threshold(self, offsetdata: CalculatedOffsetModel) -> int:
         adjustment = offsetdata.sum_values()
@@ -153,9 +139,9 @@ class OffsetCoordinator:
         self.model.peaks_today = identify_peaks(self.prices)
         self.model.peaks_tomorrow = identify_peaks(self.prices_tomorrow)
 
-    def _set_hours_type(self):
-        if not self._hub.sensors.peaqev_installed:
-            _LOGGER.debug("initializing an hourselection-instance")
-            return Hoursselection()
-        _LOGGER.debug("found peaqev and will not init hourselection")
-        return None
+
+
+
+
+
+

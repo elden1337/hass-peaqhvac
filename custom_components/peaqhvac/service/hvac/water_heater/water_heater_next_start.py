@@ -42,23 +42,26 @@ _LOGGER = logging.getLogger(__name__)
 HOUR_LIMIT = 18
 DELAY_LIMIT = 48
 MIN_DEMAND = 26
-DEFAULT_TEMP_TREND = -0.5
+DEFAULT_TEMP_TREND = -0.4
 
 
 DEMAND_MINUTES = {
     HvacPresets.Normal: {
+        Demand.ErrorDemand: 0,
         Demand.NoDemand:     0,
         Demand.LowDemand:    26,
         Demand.MediumDemand: 35,
         Demand.HighDemand:   45
     },
     HvacPresets.Eco: {
+        Demand.ErrorDemand: 0,
         Demand.NoDemand:     0,
         Demand.LowDemand:    26,
         Demand.MediumDemand: 35,
         Demand.HighDemand:   45
     },
     HvacPresets.Away: {
+        Demand.ErrorDemand: 0,
         Demand.NoDemand:     0,
         Demand.LowDemand:    0,
         Demand.MediumDemand: 26,
@@ -78,7 +81,7 @@ def get_demand(temp) -> Demand:
             return Demand.MediumDemand
         if temp < 25:
             return Demand.HighDemand
-    return Demand.NoDemand
+    return Demand.ErrorDemand
 
 
 class NextWaterBoost:
@@ -121,7 +124,7 @@ class NextWaterBoost:
         return self._get_next_start(
             demand=demand,
             delay_dt=None if delay == 0 else self.now_dt + timedelta(hours=delay),
-            cold=self.current_temp < 42
+            cold=self.current_temp < target_temp
         )
 
     def _init_vars(self, temp, temp_trend, prices_today: list, prices_tomorrow: list, preset: HvacPresets, min_price: float, non_hours: list=None, high_demand_hours: dict=None, now_dt=None) -> None:
@@ -137,7 +140,7 @@ class NextWaterBoost:
         self._set_floating_mean()
         self._group_prices(prices_today, prices_tomorrow)
         self.preset = preset
-        self.temp_trend = DEFAULT_TEMP_TREND if temp_trend == 0 else temp_trend
+        self.temp_trend = DEFAULT_TEMP_TREND if temp_trend > DEFAULT_TEMP_TREND else temp_trend
         self.current_temp = temp
 
     def _get_next_start(self, demand: int, delay_dt=None, cold=True) -> datetime:

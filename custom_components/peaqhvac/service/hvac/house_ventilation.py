@@ -48,7 +48,7 @@ class HouseVentilation:
                         self._hvac.hub.sensors.get_tempdiff() > 3,
                         self._hvac.hub.sensors.temp_trend_indoors.gradient >= 0,
                         self._hvac.hub.sensors.temp_trend_outdoors.gradient >= 0,
-                        self._hvac.hub.sensors.average_temp_outdoors.value >= self._hvac.hub.options.heating_options.summer_temp,
+                        self._hvac.hub.sensors.average_temp_outdoors.value >= self._hvac.hub.options.heating_options.outdoor_temp_stop_heating,
                         self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away,
                     ]
                 )
@@ -57,8 +57,8 @@ class HouseVentilation:
         return all(
                     [
                         self._hvac.hub.sensors.get_tempdiff_in_out() > 4,
-                        self._hvac.hub.sensors.average_temp_outdoors.value >= self._hvac.hub.options.heating_options.summer_temp,
-                        datetime.now().hour in self._hvac.hub.options.heating_options.night_hours,
+                        self._hvac.hub.sensors.average_temp_outdoors.value >= self._hvac.hub.options.heating_options.outdoor_temp_stop_heating,
+                        datetime.now().hour in [23,0,1,2,3,4,5],
                         self._hvac.hub.sensors.set_temp_indoors.preset != HvacPresets.Away,
                     ]
                 )

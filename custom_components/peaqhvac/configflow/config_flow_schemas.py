@@ -1,9 +1,6 @@
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 
-# import custom_components.peaqev.peaqservice.util.constants as pk
-
-
 USER_SCHEMA = vol.Schema(
     {
         vol.Optional("indoor_tempsensors"): cv.string,
@@ -11,91 +8,11 @@ USER_SCHEMA = vol.Schema(
         vol.Optional("systemid"): cv.string,
     }
 )
-#
-# TYPE_SCHEMA = vol.Schema(
-#                 {
-#                     vol.Optional(
-#                         "peaqevtype",
-#                         default="",
-#                     ): vol.In(pk.INSTALLATIONTYPES)
-#                 }
-#             )
-#
-# SENSOR_SCHEMA = vol.Schema(
-#                 {
-#                     vol.Optional(CONF_NAME): cv.string,
-#                     vol.Optional("powersensorincludescar", default=False): cv.boolean
-#                 }
-#             )
-#
-# CHARGER_SCHEMA = vol.Schema(
-#                 {
-#                     vol.Optional(
-#                         "chargertype",
-#                         default="",
-#                         ): vol.In(pk.CHARGERTYPES),
-#                     vol.Optional(
-#                         "locale",
-#                         default="",
-#                         ): vol.In(LOCALES)
-#                 }
-#             )
-#
-# CHARGER_DETAILS_SCHEMA = vol.Schema(
-#                 {
-#                     vol.Optional("chargerid"): cv.string,
-#                 }
-# )
-#
-# OUTLET_DETAILS_SCHEMA = vol.Schema(
-#                 {
-#                     vol.Optional("outletswitch"): cv.string,
-#                     vol.Optional("outletpowermeter"): cv.string,
-#                 }
-# )
-#
-# HOURS_SCHEMA = vol.Schema(
-#             {
-#                 vol.Optional("nonhours"): cv.multi_select(
-#                     list(range(0, 24))
-#                 ),
-#                 vol.Optional("cautionhours"): cv.multi_select(
-#                     list(range(0, 24))
-#                 )
-#             })
-#
-# PRICEAWARE_SCHEMA = vol.Schema(
-#                 {
-#                     vol.Optional("priceaware", default=False): cv.boolean,
-#                     vol.Optional("allow_top_up", default=False): cv.boolean,
-#                     vol.Optional("absolute_top_price"): cv.positive_float,
-#                     vol.Optional("min_priceaware_threshold_price"): cv.positive_float,
-#                     vol.Optional(
-#                         "cautionhour_type",
-#                         default=pk.CAUTIONHOURTYPE_INTERMEDIATE,
-#                     ): vol.In(pk.CAUTIONHOURTYPE_NAMES),
-#                 })
-#
-# MONTHS_SCHEMA = vol.Schema(
-#                 {
-#                     vol.Optional("jan", default=1.5): cv.positive_float,
-#                     vol.Optional("feb", default=1.5): cv.positive_float,
-#                     vol.Optional("mar", default=1.5): cv.positive_float,
-#                     vol.Optional("apr", default=1.5): cv.positive_float,
-#                     vol.Optional("may", default=1.5): cv.positive_float,
-#                     vol.Optional("jun", default=1.5): cv.positive_float,
-#                     vol.Optional("jul", default=1.5): cv.positive_float,
-#                     vol.Optional("aug", default=1.5): cv.positive_float,
-#                     vol.Optional("sep", default=1.5): cv.positive_float,
-#                     vol.Optional("oct", default=1.5): cv.positive_float,
-#                     vol.Optional("nov", default=1.5): cv.positive_float,
-#                     vol.Optional("dec", default=1.5): cv.positive_float
-#                 })
 
-# SCHEMAS = [
-#     SENSOR_SCHEMA,
-# CHARGER_SCHEMA,
-# HOURS_SCHEMA,
-# PRICEAWARE_SCHEMA,
-# MONTHS_SCHEMA
-# ]
+OPTIONAL_SCHEMA = vol.Schema({
+    vol.Optional("outdoor_temp_stop_heating", default=15): cv.positive_int,
+    vol.Optional("non_hours_water_boost", default=[7, 11, 12, 15, 16, 17, 23]): cv.multi_select(list(range(0, 24))),
+    vol.Optional("low_degree_minutes", default=-600): cv.positive_int,
+    vol.Optional("very_cold_temp", default=-12): cv.positive_int,
+})
+

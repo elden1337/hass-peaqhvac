@@ -16,9 +16,10 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class WeatherPrognosis:
-    def __init__(self, hub):
-        self._hub = hub
-        self._hass = hub.state_machine
+    def __init__(self, hass, average_temp_outdoors, observer):
+        self._hass = hass
+        self.average_temp_outdoors = average_temp_outdoors
+        self.observer = observer
         self.prognosis_list: list[WeatherObject] = []
         self._hvac_prognosis_list: list = []
         self._current_temperature = 1000
@@ -32,10 +33,12 @@ class WeatherPrognosis:
 
     @property
     def prognosis(self) -> list:
+        if not self.is_initialized:
+            return []
         if len(self._hvac_prognosis_list) == 0:
             try:
                 return self.get_hvac_prognosis(
-                    self._hub.sensors.average_temp_outdoors.value
+                    self.average_temp_outdoors.value
                 )
             except Exception as e:
                 _LOGGER.warning(f"Could not get hvac-prognosis: {e}")
@@ -79,10 +82,10 @@ class WeatherPrognosis:
                     return
             else:
                 _LOGGER.error("could not get weather-prognosis.")
-        else:
-            _LOGGER.debug(
-                "Tried to update weather-prognosis but the class is not initialized yet."
-            )
+        # else:
+        #     _LOGGER.debug(
+        #         "Tried to update weather-prognosis but the class is not initialized yet."
+        #     )
 
     def get_hvac_prognosis(self, current_temperature: float) -> list:
         ret = []
@@ -132,7 +135,7 @@ class WeatherPrognosis:
         self._hvac_prognosis_list = ret
         return ret
 
-    def get_weatherprognosis_adjustment(self, offsets, min_price) -> Tuple[dict, dict]:
+    def get_weatherprognosis_adjustment(self, offsets) -> Tuple[dict, dict]:
         self.update_weather_prognosis()
         ret = {}, offsets[1]
         for k, v in offsets[0].items():
@@ -147,7 +150,7 @@ class WeatherPrognosis:
         if _next_prognosis is not None and int(k) >= now.hour:
             divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
             adj = (
-                int(round((_next_prognosis.delta_temp_from_now / 3) * divisor, 0))
+                int(round((_next_prognosis.delta_temp_from_now / 2.5) * divisor, 0))
                 * -1
             )
             if adj != 0:
@@ -177,7 +180,7 @@ class WeatherPrognosis:
             )
         self.prognosis_list = ret
         if self.prognosis_list != old_prognosis:
-            self._hub.observer.broadcast(ObserverTypes.PrognosisChanged)
+            self.observer.broadcast(ObserverTypes.PrognosisChanged)
 
     def _correct_temperature_for_windchill(
         self, temp: float, windspeed: float
