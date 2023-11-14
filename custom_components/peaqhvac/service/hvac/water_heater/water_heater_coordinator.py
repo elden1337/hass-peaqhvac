@@ -164,7 +164,7 @@ class WaterHeater(IHeater):
                 demand = self._get_demand()
                 preset = self._hub.sensors.set_temp_indoors.preset
                 demand_minutes = DEMAND_MINUTES[preset].get(demand, DEFAULT_WATER_BOOST)
-                self._hub.observer.broadcast("water boost start", demand_minutes)
+                self._hub.observer.broadcast("water boost start", demand_minutes*60)
         except Exception as e:
             pass
 
