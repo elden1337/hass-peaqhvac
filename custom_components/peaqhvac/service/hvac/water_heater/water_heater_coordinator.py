@@ -109,7 +109,7 @@ class WaterHeater(IHeater):
         return next_start
 
     def _get_next_start(self, target_temp: int) -> datetime:
-        if self.model.water_boost.value:
+        if self.water_heating:
             """no need to calculate if we are already heating or trying to heat"""
             self.model.next_water_heater_start = datetime.max
             return self.model.next_water_heater_start
