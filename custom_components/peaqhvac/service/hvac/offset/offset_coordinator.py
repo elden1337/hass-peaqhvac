@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from abc import abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Tuple
 
 from peaqevcore.common.models.observer_types import ObserverTypes
@@ -11,7 +11,7 @@ from peaqevcore.services.hourselection.hoursselection import Hoursselection
 from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
 from custom_components.peaqhvac.service.hvac.offset.models.offsets_model import OffsetsModel
 from custom_components.peaqhvac.service.hvac.offset.offset_utils import (
-    max_price_lower_internal, offset_per_day)
+    max_price_lower_internal, offset_per_day, set_offset_dict)
 from custom_components.peaqhvac.service.hvac.offset.peakfinder import (
     identify_peaks, smooth_transitions)
 from custom_components.peaqhvac.service.models.offset_model import OffsetModel
@@ -46,9 +46,8 @@ class OffsetCoordinator:
 
     @property
     @abstractmethod
-    def offsets(self) -> dict:
+    def min_price(self) -> float:
         pass
-
 
     @property
     def current_offset(self) -> int:
@@ -72,14 +71,13 @@ class OffsetCoordinator:
         pass
 
     def max_price_lower(self, tempdiff: float) -> bool:
-        """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
         return max_price_lower_internal(tempdiff, self.model.peaks_today)
 
     def _update_offset(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
         try:
-            d = self.offsets
-            today_values = d.get("today", {})
-            tomorrow_values = d.get("tomorrow", {})
+            d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price)
+            today_values = d.get(datetime.now().date(), {})
+            tomorrow_values = d.get((datetime.now() + timedelta(days=1)).date(), {})
             today = self._calculate_offset_per_day(today_values, weather_adjusted_today)
             tomorrow = self._calculate_offset_per_day(tomorrow_values)
             return smooth_transitions(
