@@ -53,14 +53,19 @@ def get_offset_dict(offset_dict, dt_now) -> dict:
     }
 
 
-def set_offset_dict(prices: list[float], dt: datetime, min_price: float) -> dict:
+def set_offset_dict(prices: list[float], dt: datetime, min_price: float, existing: dict) -> dict:
     ret = {}
     dt = dt.replace(minute=0, second=0, microsecond=0)
     dt_date = dt.date()
     all_offsets = _deviation_from_mean(prices, min_price, dt)
-    ret[dt_date] = {k.hour: v for k, v in all_offsets.items() if k.date() == dt_date}
-    ret[dt_date + timedelta(days=1)] = {k.hour: v for k, v in all_offsets.items() if
-                                        k.date() == dt_date + timedelta(days=1)}
+    if all([
+        len(existing.get(dt_date, {})),
+        not len([k.hour for k,v in all_offsets.items() if k.date() ==dt_date + timedelta(days=1)])
+        ]):
+        ret[dt_date] = existing[dt_date]
+    else:
+        ret[dt_date] = {k.hour: v for k, v in all_offsets.items() if k.date() == dt_date}
+    ret[dt_date + timedelta(days=1)] = {k.hour: v for k, v in all_offsets.items() if k.date() == dt_date + timedelta(days=1)}
     return ret
 
 

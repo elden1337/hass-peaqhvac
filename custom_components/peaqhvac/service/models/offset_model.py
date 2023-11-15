@@ -12,6 +12,7 @@ class OffsetModel:
     _peaks_tomorrow: list = []
     calculated_offsets = {}, {}
     raw_offsets = {}, {}
+    base_offsets = {}, {}
     _tolerance = None
     tolerance_raw = None
     prognosis = None
