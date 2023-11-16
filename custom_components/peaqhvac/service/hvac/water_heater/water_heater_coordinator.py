@@ -138,7 +138,12 @@ class WaterHeater(IHeater):
     async def async_update_operation(self, caller=None):
         self._update_operation()
 
+    def _check_and_reset_boost(self) -> None:
+        if self.model.water_boost.value and self.model.latest_boost_call - time.time() > 3600:
+            _LOGGER.debug("Water boost has been on for more than an hour. Turning off.")
+            self.model.water_boost.value = False
     def _update_operation(self) -> None:
+        self._check_and_reset_boost()
         if self.is_initialized:
             if self._hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
                 self._set_water_heater_operation(HIGHTEMP_THRESHOLD)
