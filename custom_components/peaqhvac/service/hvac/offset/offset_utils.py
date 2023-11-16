@@ -10,40 +10,30 @@ _LOGGER = logging.getLogger(__name__)
 TODAY = "today"
 TOMORROW = "tomorrow"
 
+def flat_day_lower_tolerance(prices):
+    deviator = (max(prices) - min(prices))/mean(prices)
+    if deviator > 0.95:
+        return 0
+    if deviator > 0.8:
+        return 1
+    if deviator > 0.7:
+        return 2
+
+
 def offset_per_day(
     day_values: dict,
+    all_prices: list[float],
     tolerance: int | None,
     indoors_preset: HvacPresets = HvacPresets.Normal,
 ) -> list:
     ret = {}
     if tolerance is not None:
+        tolerance -= flat_day_lower_tolerance(all_prices)
         for k, v in day_values.items():
             ret[k] = int(round((day_values[k] *tolerance) * -1, 0))
             if indoors_preset is HvacPresets.Away:
                 ret[k] -= 1
     return list(ret.values())
-
-# def offset_per_day(
-#     day_values: dict,
-#     tolerance: int | None,
-#     indoors_preset: HvacPresets = HvacPresets.Normal,
-# ) -> list:
-#     ret = {}
-#     _max_today = max(day_values.values(), default=0)
-#     _min_today = min(day_values.values(), default=0)
-#     if tolerance is not None and _max_today != _min_today:
-#         try:
-#             factor = max(abs(_max_today), abs(_min_today)) / tolerance
-#         except ZeroDivisionError:
-#             _LOGGER.info(
-#                 f"Offset calculation not finalized due to missing tolerance. Will change shortly..."
-#             )
-#             factor = 1
-#         for k, v in day_values.items():
-#             ret[k] = int(round((day_values[k] / factor) * -1, 0))
-#             if indoors_preset is HvacPresets.Away:
-#                 ret[k] -= 1
-#     return list(ret.values())
 
 
 def get_offset_dict(offset_dict, dt_now) -> dict:

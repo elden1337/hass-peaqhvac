@@ -94,6 +94,7 @@ class OffsetCoordinator:
         if weather_adjusted_today is None:
             indoors_preset = self._hub.sensors.set_temp_indoors.preset
             return offset_per_day(
+                all_prices=self.prices+self.prices_tomorrow,
                 day_values=day_values,
                 tolerance=self.model.tolerance,
                 indoors_preset=indoors_preset,
