@@ -61,7 +61,9 @@ class WaterHeater(IHeater):
 
     def import_latest_boost_call(self, strtime):
         struct_time = time.strptime(strtime, "%Y-%m-%d %H:%M")
-        self.model.latest_boost_call = time.mktime(struct_time)
+        new = time.mktime(struct_time)
+        current = self.model.latest_boost_call
+        self.model.latest_boost_call = max(new,current)
 
     @property
     def current_temperature(self) -> float:
