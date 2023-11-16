@@ -1,0 +1,76 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "indoor_tempsensors": "Teplotné senzory v interiéri. oddelená čiarka",
+          "outdoor_tempsensors": "Vonkajšie snímače teploty. oddelená čiarka",
+          "systemid":  "Hvac systemid"
+        }
+      },
+      "optional": {
+        "data": {
+          "outdoor_temp_stop_heating": "Zastaviť ohrev tepl",
+          "non_hours_water_boost": "Nonhours waterboost",
+          "low_degree_minutes": "Nízka hodnota DM",
+          "very_cold_temp": "Veľmi nízka teplota"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nie je možné vytvoriť inštanciu Peaq",
+      "invalid_auth": "Neplatné overenie",
+      "unknown": "Vyskytla sa neznáma chyba",
+      "invalid_powersensor": "Poskytnutý snímač výkonu nie je dosiahnuteľný alebo má nesprávny typ (stav musí byť číselný)",
+      "invalid_chargerid": "Musíte poskytnúť ID nabíjačky",
+      "invalid_nonhours": "Ak je k dispozícii nabíjačka, musíte poskytnúť aspoň jednu hodinu denne. Nonhours je momentálne nastavený ako každú hodinu."
+    },
+    "abort": {
+      "already_configured": "Táto integrácia už bola nakonfigurovaná"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "indoor_tempsensors": "Teplotné senzory v interiéri. oddelená čiarka",
+          "outdoor_tempsensors": "Vonkajšie snímače teploty. oddelená čiarka",
+          "outdoor_temp_stop_heating": "Zastaviť ohrev teploty",
+          "non_hours_water_boost": "Nonhours waterboost",
+          "low_degree_minutes": "Nízka hodnota DM",
+          "very_cold_temp": "Veľmi nízka teplota"
+        }
+      }
+    }
+  },
+  "services": {
+    "enable": {
+      "name": "Povoliť Peaqhvac",
+      "description": "Povolí Peaqhvac"
+    },
+    "disable": {
+      "name": "Zakázať Peaqhvac",
+      "description": "Zakáže Peaqhvac"
+    },
+    "set_mode": {
+      "name": "Nastavte domáci režim",
+      "description": "Nastaví dom do režimov a môže podľa toho pôsobiť peaqhvac.",
+      "fields": {
+        "mode": {
+          "name": "Režim",
+          "description": "Režim, ktorý chcete nastaviť."
+        }
+      }
+    },
+    "boost_water": {
+      "name": "Posilnite vodu",
+      "description": "Override-service na volanie booster na x minút (min 10, max 60). Pamätajte na meškanie do Nibe-api",
+      "fields": {
+        "timeout": {
+          "name": "Čas vypršal",
+          "description": "Časový limit v minútach."
+        }
+      }
+    }
+  }
+}
