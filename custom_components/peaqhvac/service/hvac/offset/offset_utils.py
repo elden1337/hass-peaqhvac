@@ -11,13 +11,17 @@ TODAY = "today"
 TOMORROW = "tomorrow"
 
 def flat_day_lower_tolerance(prices):
-    deviator = (max(prices) - min(prices))/mean(prices)
-    if deviator > 0.95:
-        return 0
-    if deviator > 0.8:
-        return 1
-    if deviator > 0.7:
-        return 2
+    try:
+        deviator = (max(prices) - min(prices))/mean(prices)
+        if deviator > 0.95:
+            return 0
+        if deviator > 0.8:
+            return 1
+        if deviator > 0.7:
+            return 2
+    except Exception as e:
+        _LOGGER.error(f"Error in flat_day_lower_tolerance: {e}")
+    return 0
 
 
 def offset_per_day(
