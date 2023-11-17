@@ -77,7 +77,7 @@ def _deviation_from_mean(prices: list[float], min_price: float, dt: datetime) ->
     avg = mean(prices)
     devi = stdev(prices)
     avg2 = avg
-    devi = devi
+    devi2 = devi
 
     if dt.hour >= 13:
         avg2 = mean(prices[13:])
