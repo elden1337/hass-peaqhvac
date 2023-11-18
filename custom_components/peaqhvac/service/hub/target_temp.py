@@ -87,7 +87,7 @@ class TargetTemp(ObserverBroadcaster):
 
     def adjusted_tolerances(self, offset: int) -> Tuple[float, float]:
         if abs(offset) <3:
-            return min_tolerance, max_tolerance
+            return self.min_tolerance, self.max_tolerance
         _max_tolerance = (
             self.max_tolerance + (offset / 15) if offset > 0 else self.max_tolerance
         )
