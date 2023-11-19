@@ -106,7 +106,6 @@ class OffsetCoordinator:
         if self.prices is not None:
             self.model.raw_offsets = self._update_offset()
             self.model.calculated_offsets = self.model.raw_offsets
-
             if self.model.prognosis is not None:
                 try:
                     _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
@@ -118,7 +117,8 @@ class OffsetCoordinator:
                     )
             self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
         else:
-            _LOGGER.warning("Unable to set offset. Prices are not properly. state:{self.prices}")
+            if self._hub.is_initialized:
+                _LOGGER.warning(f"Hub is ready but I'm unable to set offset. Prices num:{len(self.prices)}")
 
     def adjust_to_threshold(self, offsetdata: CalculatedOffsetModel) -> int:
         adjustment = offsetdata.sum_values()
