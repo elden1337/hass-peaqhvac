@@ -32,15 +32,15 @@ class HouseVentilation:
             elif self._vent_boost_low_dm():
                 self._vent_boost_start("Vent boosting because of low degree minutes.")
             else:
-                #_LOGGER.debug("all vent boost conditions returned false")
                 self._current_vent_state = False
-        # else:
-        #     self._current_vent_state = False
-        if self._hvac.hvac_dm < self._hvac.hub.options.heating_options.low_degree_minutes + 100 or self._hvac.hub.sensors.average_temp_outdoors.value < self._hvac.hub.options.heating_options.very_cold_temp:
-            # If HVAC degree minutes are high or outdoor temperature is very cold, stop vent boosting
-            _LOGGER.debug(f"low dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} < {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
-            self._current_vent_state = False
-            self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
+        if any([
+            self._hvac.hvac_dm < self._hvac.hub.options.heating_options.low_degree_minutes + 100,
+            self._hvac.hub.sensors.average_temp_outdoors.value < self._hvac.hub.options.heating_options.very_cold_temp
+            ]):
+            if self._current_vent_state:
+                _LOGGER.debug(f"low dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} < {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
+                self._current_vent_state = False
+                self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
 
     def _vent_boost_warmth(self) -> bool:
         return all(
