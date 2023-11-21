@@ -164,14 +164,16 @@ class WaterHeater(IHeater):
 
     def __set_toggle_boost_next_start(self, next_start) -> None:
         try:
-            if next_start <= datetime.now():
-                _LOGGER.debug("Next water heater start is now. Turning on water heating.")
+            if next_start <= datetime.now() and not self.model.water_boost.value:
                 self.model.water_boost.value = True
                 self.model.latest_boost_call = time.time()
-
                 preset = self._hub.sensors.set_temp_indoors.preset
                 demand_minutes = DEMAND_MINUTES[preset].get(self._get_demand(), DEFAULT_WATER_BOOST)
-                self._hub.observer.broadcast("water boost start", demand_minutes*60)
+
+                if demand_minutes > 0:
+                    _LOGGER.debug("Next water heater start is now. Turning on water heating.")
+                    self._hub.observer.broadcast("water boost start", demand_minutes*60)
+
         except Exception as e:
             _LOGGER.warning(f"Could not set water boost: {e}")
 
