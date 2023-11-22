@@ -126,7 +126,8 @@ class WaterHeater(IHeater):
             temp=self.current_temperature,
             temp_trend=self._temp_trend.gradient_raw,
             target_temp=target_temp,
-            non_hours=self._hub.options.heating_options.non_hours_water_boost
+            non_hours=self._hub.options.heating_options.non_hours_water_boost,
+            latest_boost=datetime.fromtimestamp(self.model.latest_boost_call),
         )
         if ret != self.model.next_water_heater_start:
             _LOGGER.debug(f"Next water heater start changed from {self.model.next_water_heater_start} to {ret}.")

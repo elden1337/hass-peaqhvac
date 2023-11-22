@@ -109,7 +109,8 @@ class NextWaterBoost:
             preset: HvacPresets = HvacPresets.Normal,
             now_dt=None,
             non_hours=None,
-            high_demand_hours=None
+            high_demand_hours=None,
+            latest_boost: datetime = None
     ) -> datetime:
         if len(prices_today) < 1:
             return datetime.max
@@ -124,7 +125,8 @@ class NextWaterBoost:
         return self._get_next_start(
             demand=demand,
             delay_dt=None if delay == 0 else self.now_dt + timedelta(hours=delay),
-            cold=self.current_temp < target_temp
+            cold=self.current_temp < target_temp,
+            latest_boost=latest_boost
         )
 
     def _init_vars(self, temp, temp_trend, prices_today: list, prices_tomorrow: list, preset: HvacPresets, min_price: float, non_hours: list=None, high_demand_hours: dict=None, now_dt=None) -> None:
@@ -143,13 +145,19 @@ class NextWaterBoost:
         self.temp_trend = DEFAULT_TEMP_TREND if temp_trend > DEFAULT_TEMP_TREND else temp_trend
         self.current_temp = temp
 
-    def _get_next_start(self, demand: int, delay_dt=None, cold=True) -> datetime:
+    def _get_next_start(self, demand: int, delay_dt=None, cold=True, latest_boost: datetime = None) -> datetime:
         try:
             last_known_price = self.now_dt.replace(hour=0, minute=0, second=0) + timedelta(hours=len(self.prices) - 1)
         except Exception as e:
             _LOGGER.error(
                 f"Error on getting last known price with {self.now_dt} and len prices {len(self.prices)}: {e}")
             return datetime.max
+
+        latest_limit = latest_boost + timedelta(hours=24) if latest_boost else datetime.now()
+        if latest_limit < datetime.now() and cold:
+            """It's been too long since last boost. Boost now."""
+            return datetime.now().replace(minute=self._set_minute_start(now_dt=datetime.now()), second=0, microsecond=0)
+
         if last_known_price - self.now_dt > timedelta(hours=HOUR_LIMIT) and not cold:
             group = self._find_group(self.now_dt.hour)
             if group.group_type == GroupType.LOW: #and self.now_dt.hour not in self.demand_hours:
