@@ -76,12 +76,16 @@ class OffsetCoordinator:
     def _update_offset(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
         try:
             d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price, self.model.base_offsets)
-            today_values = d.get(datetime.now().date(), {})
-            tomorrow_values = d.get((datetime.now() + timedelta(days=1)).date(), {})
-            today = self._calculate_offset_per_day(today_values, weather_adjusted_today)
-            tomorrow = self._calculate_offset_per_day(tomorrow_values)
+            today = self._calculate_offset_per_day(
+                d.get(datetime.now().date(), {}),
+                weather_adjusted_today
+            )
+            tomorrow = self._calculate_offset_per_day(
+                d.get((datetime.now() + timedelta(days=1)).date(), {})
+            )
+
             self.model.base_offsets = d
-            return smooth_transitions(#67
+            return smooth_transitions(
                 today=today,
                 tomorrow=tomorrow,
                 tolerance=self.model.tolerance,
