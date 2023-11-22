@@ -26,6 +26,7 @@ class OffsetCoordinator:
         self._hub = hub
         self.model = OffsetModel(hub)
         self.hours = hours_type
+        self.latest_raw_offset_update_hour: int = -1
 
         self._hub.observer.add(ObserverTypes.PricesChanged, self.async_update_prices)
         self._hub.observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)
@@ -73,9 +74,37 @@ class OffsetCoordinator:
     def max_price_lower(self, tempdiff: float) -> bool:
         return max_price_lower_internal(tempdiff, self.model.peaks_today)
 
-    def _update_offset(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
+    def _set_raw_offsets(self) -> Tuple[dict, dict]:
+        if all([
+                self.latest_raw_offset_update_hour == datetime.now().hour,
+                len(self.model.raw_offsets[0])
+            ]):
+            return self.model.raw_offsets
         try:
             d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price, self.model.base_offsets)
+            today = self._calculate_offset_per_day(
+                d.get(datetime.now().date(), {}),
+                None
+            )
+            tomorrow = self._calculate_offset_per_day(
+                d.get((datetime.now() + timedelta(days=1)).date(), {})
+            )
+
+            self.model.base_offsets = d
+            self.latest_raw_offset_update_hour = datetime.now().hour
+            return smooth_transitions(
+                today=today,
+                tomorrow=tomorrow,
+                tolerance=self.model.tolerance,
+            )
+        except Exception as e:
+            _LOGGER.exception(f"Exception while trying to calculate raw offset: {e}")
+            return {}, {}
+
+
+    def _set_calculated_offsets(self, base_offsets: dict, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
+        try:
+            d = base_offsets
             today = self._calculate_offset_per_day(
                 d.get(datetime.now().date(), {}),
                 weather_adjusted_today
@@ -84,14 +113,13 @@ class OffsetCoordinator:
                 d.get((datetime.now() + timedelta(days=1)).date(), {})
             )
 
-            self.model.base_offsets = d
             return smooth_transitions(
                 today=today,
                 tomorrow=tomorrow,
                 tolerance=self.model.tolerance,
             )
         except Exception as e:
-            _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
+            _LOGGER.exception(f"Exception while trying to calculate weather adjusted offset: {e}")
             return {}, {}
 
     def _calculate_offset_per_day(self, day_values: dict, weather_adjusted_today: dict | None = None) -> list:
@@ -108,13 +136,13 @@ class OffsetCoordinator:
 
     def _set_offset(self) -> None:
         if self.prices is not None:
-            self.model.raw_offsets = self._update_offset()
+            self.model.raw_offsets = self._set_raw_offsets()
             self.model.calculated_offsets = self.model.raw_offsets
             if self.model.prognosis is not None:
                 try:
                     _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
                     if len(_weather_dict[0]) > 0:
-                        self.model.calculated_offsets = self._update_offset(_weather_dict[0])
+                        self.model.calculated_offsets = self._set_calculated_offsets(self.model.base_offsets, _weather_dict[0])
                 except Exception as e:
                     _LOGGER.warning(
                         f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
