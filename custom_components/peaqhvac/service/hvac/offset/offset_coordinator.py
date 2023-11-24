@@ -10,6 +10,7 @@ from peaqevcore.services.hourselection.hoursselection import Hoursselection
 
 from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
 from custom_components.peaqhvac.service.hvac.offset.models.offsets_model import OffsetsModel
+import custom_components.peaqhvac.service.hvac.offset.offset_cache as cache
 from custom_components.peaqhvac.service.hvac.offset.offset_utils import (
     max_price_lower_internal, offset_per_day, set_offset_dict)
 from custom_components.peaqhvac.service.hvac.offset.peakfinder import (
@@ -74,53 +75,95 @@ class OffsetCoordinator:
     def max_price_lower(self, tempdiff: float) -> bool:
         return max_price_lower_internal(tempdiff, self.model.peaks_today)
 
-    def _set_raw_offsets(self) -> Tuple[dict, dict]:
-        if all([
-                self.latest_raw_offset_update_hour == datetime.now().hour,
-                len(self.model.raw_offsets[0])
-            ]):
-            return self.model.raw_offsets
-        try:
-            d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price, self.model.base_offsets)
-            today = self._calculate_offset_per_day(
-                d.get(datetime.now().date(), {}),
-                None
-            )
-            tomorrow = self._calculate_offset_per_day(
-                d.get((datetime.now() + timedelta(days=1)).date(), {})
-            )
+    def _update_offset(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
+        cached_today = cache.get_cache(datetime.now().date())
+        cached_tomorrow = cache.get_cache((datetime.now() + timedelta(days=1)).date())
 
-            self.model.base_offsets = d
-            self.latest_raw_offset_update_hour = datetime.now().hour
-            return smooth_transitions(
+        try:
+            if all([cached_today, cached_tomorrow]):
+                today_values = cached_today.offsets
+                tomorrow_values = cached_tomorrow.offsets
+            elif cached_today and not cached_today.today:
+                #this is what should happen at midnight but not at 13.
+                _LOGGER.debug("Using cached values for today")
+                today_values = cached_today.offsets
+                d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price, {})
+                tomorrow_values = d.get((datetime.now() + timedelta(days=1)).date(), {})
+            else:
+                d = set_offset_dict(self.prices + self.prices_tomorrow, datetime.now(), self.min_price, {})
+                today_values = d.get(datetime.now().date(), {})
+                tomorrow_values = d.get((datetime.now() + timedelta(days=1)).date(), {})
+
+            today = self._calculate_offset_per_day(today_values, weather_adjusted_today)
+            tomorrow = self._calculate_offset_per_day(tomorrow_values)
+
+            return smooth_transitions(  # 67
                 today=today,
                 tomorrow=tomorrow,
                 tolerance=self.model.tolerance,
             )
         except Exception as e:
-            _LOGGER.exception(f"Exception while trying to calculate raw offset: {e}")
+            _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
 
 
-    def _set_calculated_offsets(self, base_offsets: dict, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
-        try:
-            d = base_offsets
-            today = self._calculate_offset_per_day(
-                d.get(datetime.now().date(), {}),
-                weather_adjusted_today
-            )
-            tomorrow = self._calculate_offset_per_day(
-                d.get((datetime.now() + timedelta(days=1)).date(), {})
-            )
+    # def _set_raw_offsets(self) -> Tuple[dict, dict]:
+    #     # if all([
+    #     #         self.latest_raw_offset_update_hour == datetime.now().hour,
+    #     #         len(self.model.raw_offsets[0])
+    #     #     ]):
+    #     #     return self.model.raw_offsets
+    #
+    #     cached_today = cache.get_cache(datetime.now().date())
+    #     cached_tomorrow = cache.get_cache((datetime.now() + timedelta(days=1)).date())
+    #
+    #     try:
+    #         if all([cached_today, cached_tomorrow]):
+    #
+    #             offsets_today = cached_today.offsets
+    #             offsets_tomorrow = cached_tomorrow.offsets
+    #         elif cached_today and not cached_today.today:
+    #             _LOGGER.debug("Using cached values for today")
+    #             offsets_today = cached_today.offsets
+    #             d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price, {})
+    #             offsets_tomorrow = d.get((datetime.now() + timedelta(days=1)).date(), {})
+    #         else:
+    #             d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price,{})
+    #             offsets_today = d.get(datetime.now().date(), {})
+    #             offsets_tomorrow = d.get((datetime.now() + timedelta(days=1)).date(), {})
+    #
+    #         today = self._calculate_offset_per_day(offsets_today,None)
+    #         tomorrow = self._calculate_offset_per_day(offsets_tomorrow)
+    #
+    #         cache.update_cache(datetime.now().date(), self.prices, offsets_today)
+    #         if len(offsets_tomorrow):
+    #             cache.update_cache((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow, offsets_tomorrow)
+    #         #self.latest_raw_offset_update_hour = datetime.now().hour
+    #
+    #         return smooth_transitions(
+    #             today=today,
+    #             tomorrow=tomorrow,
+    #             tolerance=self.model.tolerance,
+    #         )
+    #     except Exception as e:
+    #         _LOGGER.exception(f"Exception while trying to calculate raw offset: {e}")
+    #         return {}, {}
 
-            return smooth_transitions(
-                today=today,
-                tomorrow=tomorrow,
-                tolerance=self.model.tolerance,
-            )
-        except Exception as e:
-            _LOGGER.exception(f"Exception while trying to calculate weather adjusted offset: {e}")
-            return {}, {}
+
+    # def _set_calculated_offsets(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
+    #     try:
+    #         raw = self.model.raw_offsets
+    #         today = self._calculate_offset_per_day(raw[0],weather_adjusted_today)
+    #         tomorrow = self._calculate_offset_per_day(raw[1])
+    #
+    #         return smooth_transitions(
+    #             today=today,
+    #             tomorrow=tomorrow,
+    #             tolerance=self.model.tolerance,
+    #         )
+    #     except Exception as e:
+    #         _LOGGER.exception(f"Exception while trying to calculate weather adjusted offset: {e}")
+    #         return {}, {}
 
     def _calculate_offset_per_day(self, day_values: dict, weather_adjusted_today: dict | None = None) -> list:
         if weather_adjusted_today is None:
@@ -136,13 +179,13 @@ class OffsetCoordinator:
 
     def _set_offset(self) -> None:
         if self.prices is not None:
-            self.model.raw_offsets = self._set_raw_offsets()
+            self.model.raw_offsets = self._update_offset()
             self.model.calculated_offsets = self.model.raw_offsets
             if self.model.prognosis is not None:
                 try:
                     _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
                     if len(_weather_dict[0]) > 0:
-                        self.model.calculated_offsets = self._set_calculated_offsets(self.model.base_offsets, _weather_dict[0])
+                        self.model.calculated_offsets = self._update_offset(_weather_dict[0])
                 except Exception as e:
                     _LOGGER.warning(
                         f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
@@ -150,7 +193,7 @@ class OffsetCoordinator:
             self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
         else:
             if self._hub.is_initialized:
-                _LOGGER.warning(f"Hub is ready but I'm unable to set offset. Prices num:{len(self.prices)}")
+                _LOGGER.warning(f"Hub is ready but I'm unable to set offset. Prices num:{len(self.prices) if self.prices else 0}")
 
     def adjust_to_threshold(self, offsetdata: CalculatedOffsetModel) -> int:
         adjustment = offsetdata.sum_values()
