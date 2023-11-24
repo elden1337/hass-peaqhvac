@@ -110,7 +110,7 @@ def _deviation_from_mean(prices: list[float], min_price: float, dt: datetime) ->
 
 def max_price_lower_internal(tempdiff: float, peaks_today: list) -> bool:
     """Temporarily lower to -10 if this hour is a peak for today and temp > set-temp + 0.5C"""
-    if tempdiff >= 0:
+    if tempdiff >= 0.5:
         if datetime.now().hour in peaks_today:
             return True
         elif datetime.now().hour < 23 and datetime.now().minute > 40:
