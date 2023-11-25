@@ -22,7 +22,6 @@ _LOGGER = logging.getLogger(__name__)
 
 class OffsetCoordinator:
     """The class that provides the offsets for the hvac"""
-
     def __init__(self, hub, hours_type: Hoursselection = None): #type: ignore
         self._hub = hub
         self.model = OffsetModel(hub)
@@ -79,21 +78,31 @@ class OffsetCoordinator:
     def _update_offset(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
         cached_today = cache.get_cache_for_today(datetime.now().date(), self.prices)
         cached_tomorrow = cache.get_cache_for_today((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow)
+        cached_midnight_problem = cache.get_cache_for_today(datetime.now().date() - timedelta(days=1), self.prices)
 
         try:
             if all([cached_today, cached_tomorrow]):
+                #_LOGGER.debug("Using cached values for today and tomorrow")
                 today_values = cached_today.offsets
                 tomorrow_values = cached_tomorrow.offsets
             elif cached_today:
-                #this is what should happen at midnight but not at 13.
-                _LOGGER.debug("Using cached values for today")
+                #_LOGGER.debug("Using cached values for today")
                 today_values = cached_today.offsets
                 d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price, {})
                 tomorrow_values = d.get((datetime.now() + timedelta(days=1)).date(), {})
+                cache.update_cache((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow, tomorrow_values)
+            elif cached_midnight_problem:
+                """interim fix til we have dates on all price-lists"""
+                #_LOGGER.debug("Midnight issue occurred")
+                today_values = cached_midnight_problem.offsets
+                tomorrow_values = {}
             else:
+                #_LOGGER.debug("no cached values found")
                 d = set_offset_dict(self.prices + self.prices_tomorrow, datetime.now(), self.min_price, {})
                 today_values = d.get(datetime.now().date(), {})
                 tomorrow_values = d.get((datetime.now() + timedelta(days=1)).date(), {})
+                cache.update_cache(datetime.now().date(), self.prices, today_values)
+                cache.update_cache((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow, tomorrow_values)
 
             today = self._calculate_offset_per_day(today_values, weather_adjusted_today)
             tomorrow = self._calculate_offset_per_day(tomorrow_values)
@@ -142,15 +151,13 @@ class OffsetCoordinator:
         adjustment = offsetdata.sum_values()
         if adjustment is None or self._hub.sensors.average_temp_outdoors.value > 13:
             return 0
-        if self.model.tolerance is None:
-            tolerance = 3
-        else:
-            tolerance = self.model.tolerance
+        tolerance = 3 if self.model.tolerance is None else self.model.tolerance
         ret = (
             min(adjustment, tolerance)
             if adjustment >= 0
             else max(adjustment, tolerance * -1)
         )
+        #_LOGGER.debug(f"adjusting offset to threshold: {ret}. The adjustment was: {adjustment} and returning value will be {int(round(ret, 0))}")
         return int(round(ret, 0))
 
     def _update_model(self) -> None:

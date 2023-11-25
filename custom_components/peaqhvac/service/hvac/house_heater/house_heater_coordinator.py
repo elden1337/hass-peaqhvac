@@ -73,11 +73,12 @@ class HouseHeaterCoordinator(IHeater):
                 ret -= 1
         if ret != self._temp_lower_offset_num:
             self._temp_lower_offset_num = ret
-            if ret < 0:
+            if ret != input_offset.current_offset * 1:
                 _LOGGER.debug(f"Lowering offset {ret}.")
         return ret
 
-    def get_current_offset(self, offsets: dict) -> Tuple[int, bool]:
+    def get_current_offset(self) -> Tuple[int, bool]:
+        offsets = self._hvac.model.current_offset_dict_combined
         _force_update: bool = False
         self._offsets = offsets
         if any([
@@ -87,7 +88,6 @@ class HouseHeaterCoordinator(IHeater):
             return OFFSET_MIN_VALUE, True
 
         offsetdata = self.get_calculated_offsetdata(_force_update)
-
         if offsetdata.sum_values() <= 0 and self.current_tempdiff <= 0:
             ret = self._get_lower_offset()
             self.current_adjusted_offset = ret

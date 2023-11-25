@@ -105,9 +105,7 @@ class IHvac(UpdateSystem):
         try:
             self.get_offsets()
             _hvac_offset = self.hvac_offset
-            new_offset, force_update = self.house_heater.get_current_offset(
-                self.model.current_offset_dict_combined
-            )
+            new_offset, force_update = self.house_heater.get_current_offset()
             if new_offset != self.current_offset:
                 self.current_offset = new_offset
                 self._force_update = force_update

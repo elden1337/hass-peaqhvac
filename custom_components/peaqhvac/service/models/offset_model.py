@@ -15,6 +15,7 @@ class OffsetModel:
     _tolerance = None
     tolerance_raw = None
     prognosis = None
+    _tolerance_difference: int = 0
 
     def __init__(self, hub):
         self.hub = hub
@@ -48,6 +49,7 @@ class OffsetModel:
     def tolerance(self, val):
         self._tolerance = val
 
+
     def recalculate_tolerance(self, *args):
         if self.hub.options.hvac_tolerance is not None:
             old_tolerance = self._tolerance
@@ -69,18 +71,24 @@ class OffsetModel:
                 )
                 self.hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
 
-    @staticmethod
-    def get_tolerance_difference(current_temp) -> int:
+    def get_tolerance_difference(self, current_temp) -> int:
         """change the tolerance based on the current outside temperature"""
-        if current_temp <= -10:
-            return -2
-        if current_temp <= -5:
-            return -1
-        if -5 < current_temp < 10:
-            return 0
-        if 10 <= current_temp < 13:
-            return 1
-        return 0
+        match current_temp:
+            case _ if current_temp <= -10:
+                tolerance_difference = -2
+            case _ if current_temp <= -7:
+                tolerance_difference = -1
+            case _ if -5 < current_temp < 10:
+                tolerance_difference = 0
+            case _ if 10 <= current_temp < 13:
+                tolerance_difference = 1
+            case _:
+                tolerance_difference = 0
+
+        if tolerance_difference != self._tolerance_difference:
+            self._tolerance_difference = tolerance_difference
+            _LOGGER.debug(f"Lowering tolerance with {tolerance_difference} based on current temperature {current_temp}C.")
+        return tolerance_difference
 
     @staticmethod
     def get_boundrary(adjustment, set_tolerance) -> int:
