@@ -97,16 +97,15 @@ class WeatherPrognosis:
             _LOGGER.debug(f"Could not parse temperature as float: {e}")
             return ret
         corrected_temp_delta = 0
-        now = datetime.now()
-        thishour = datetime(now.year, now.month, now.day, now.hour, 0, 0)
+        now = datetime.now().replace(minute=0, second=0, microsecond=0)
 
         valid_progs = [
-            p for idx, p in enumerate(self.prognosis_list) if p.DT >= thishour
+            p for idx, p in enumerate(self.prognosis_list) if p.DT >= now
         ]
         if len(valid_progs) == 0:
             return ret
         for p in valid_progs:
-            c = p.DT - thishour
+            c = p.DT - now
             if c.seconds == 0:
                 corrected_temp_delta = round(
                     self._current_temperature - p.Temperature, 2
@@ -114,18 +113,16 @@ class WeatherPrognosis:
                 continue
             if 3600 <= c.seconds <= 21600:
                 # correct the temp
-                temp = round(
-                    p.Temperature + corrected_temp_delta / int(c.seconds / 3600), 1
-                )
+                t1 = p.Temperature + corrected_temp_delta
+                t2 = t1 / int(c.seconds / 3600)
+                temp = round(t2, 1)
             else:
                 temp = p.Temperature
             hourdiff = int(c.seconds / 3600)
             hour_prognosis = PrognosisExportModel(
                 prognosis_temp=p.Temperature,
                 corrected_temp=temp,
-                windchill_temp=self._correct_temperature_for_windchill(
-                    temp, p.Wind_Speed
-                ),
+                windchill_temp=self._correct_temperature_for_windchill(temp, p.Wind_Speed),
                 delta_temp_from_now=round(temp - self._current_temperature, 1),
                 DT=p.DT,
                 TimeDelta=hourdiff,

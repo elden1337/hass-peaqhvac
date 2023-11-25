@@ -42,13 +42,13 @@ class TrendSensor(SensorBase, RestoreEntity):
 
     def update(self) -> None:
         if self._sensorname == TRENDSENSOR_INDOORS:
-            self._state = self._hub.sensors.temp_trend_indoors.gradient
+            self._state = self._hub.sensors.temp_trend_indoors.trend
             self._samples = self._hub.sensors.temp_trend_indoors.samples
             self._oldest_sample = self._hub.sensors.temp_trend_indoors.oldest_sample
             self._newest_sample = self._hub.sensors.temp_trend_indoors.newest_sample
             self._samples_raw = self._hub.sensors.temp_trend_indoors.samples_raw
         elif self._sensorname == TRENDSENSOR_OUTDOORS:
-            self._state = self._hub.sensors.temp_trend_outdoors.gradient
+            self._state = self._hub.sensors.temp_trend_outdoors.trend
             self._samples = self._hub.sensors.temp_trend_outdoors.samples
             self._oldest_sample = self._hub.sensors.temp_trend_outdoors.oldest_sample
             self._newest_sample = self._hub.sensors.temp_trend_outdoors.newest_sample

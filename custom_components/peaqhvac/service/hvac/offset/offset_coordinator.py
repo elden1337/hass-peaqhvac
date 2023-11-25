@@ -66,6 +66,7 @@ class OffsetCoordinator:
 
     def _update_prognosis(self) -> None:
         self.model.prognosis = self._hub.prognosis.prognosis
+        _LOGGER.debug("prognosis updated to", self.model.prognosis)
         self._set_offset()
 
     @abstractmethod
@@ -106,65 +107,6 @@ class OffsetCoordinator:
             _LOGGER.exception(f"Exception while trying to calculate offset: {e}")
             return {}, {}
 
-
-    # def _set_raw_offsets(self) -> Tuple[dict, dict]:
-    #     # if all([
-    #     #         self.latest_raw_offset_update_hour == datetime.now().hour,
-    #     #         len(self.model.raw_offsets[0])
-    #     #     ]):
-    #     #     return self.model.raw_offsets
-    #
-    #     cached_today = cache.get_cache(datetime.now().date())
-    #     cached_tomorrow = cache.get_cache((datetime.now() + timedelta(days=1)).date())
-    #
-    #     try:
-    #         if all([cached_today, cached_tomorrow]):
-    #
-    #             offsets_today = cached_today.offsets
-    #             offsets_tomorrow = cached_tomorrow.offsets
-    #         elif cached_today and not cached_today.today:
-    #             _LOGGER.debug("Using cached values for today")
-    #             offsets_today = cached_today.offsets
-    #             d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price, {})
-    #             offsets_tomorrow = d.get((datetime.now() + timedelta(days=1)).date(), {})
-    #         else:
-    #             d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price,{})
-    #             offsets_today = d.get(datetime.now().date(), {})
-    #             offsets_tomorrow = d.get((datetime.now() + timedelta(days=1)).date(), {})
-    #
-    #         today = self._calculate_offset_per_day(offsets_today,None)
-    #         tomorrow = self._calculate_offset_per_day(offsets_tomorrow)
-    #
-    #         cache.update_cache(datetime.now().date(), self.prices, offsets_today)
-    #         if len(offsets_tomorrow):
-    #             cache.update_cache((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow, offsets_tomorrow)
-    #         #self.latest_raw_offset_update_hour = datetime.now().hour
-    #
-    #         return smooth_transitions(
-    #             today=today,
-    #             tomorrow=tomorrow,
-    #             tolerance=self.model.tolerance,
-    #         )
-    #     except Exception as e:
-    #         _LOGGER.exception(f"Exception while trying to calculate raw offset: {e}")
-    #         return {}, {}
-
-
-    # def _set_calculated_offsets(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
-    #     try:
-    #         raw = self.model.raw_offsets
-    #         today = self._calculate_offset_per_day(raw[0],weather_adjusted_today)
-    #         tomorrow = self._calculate_offset_per_day(raw[1])
-    #
-    #         return smooth_transitions(
-    #             today=today,
-    #             tomorrow=tomorrow,
-    #             tolerance=self.model.tolerance,
-    #         )
-    #     except Exception as e:
-    #         _LOGGER.exception(f"Exception while trying to calculate weather adjusted offset: {e}")
-    #         return {}, {}
-
     def _calculate_offset_per_day(self, day_values: dict, weather_adjusted_today: dict | None = None) -> list:
         if weather_adjusted_today is None:
             indoors_preset = self._hub.sensors.set_temp_indoors.preset
@@ -185,6 +127,7 @@ class OffsetCoordinator:
                 try:
                     _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
                     if len(_weather_dict[0]) > 0:
+                        _LOGGER.debug("weather-prognosis", _weather_dict)
                         self.model.calculated_offsets = self._update_offset(_weather_dict[0])
                 except Exception as e:
                     _LOGGER.warning(

@@ -117,7 +117,7 @@ class Hub:
     def predicted_temp(self) -> float:
         return (
             self.sensors.average_temp_indoors.value
-            + self.sensors.temp_trend_indoors.gradient
+            + self.sensors.temp_trend_indoors.trend
         )
 
 

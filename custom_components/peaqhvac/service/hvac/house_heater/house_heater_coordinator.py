@@ -206,7 +206,7 @@ class HouseHeaterCoordinator(IHeater):
         if not all([
             self._hvac.hvac_mode == HvacMode.Idle,
             self._hvac.hub.sensors.get_tempdiff() < 0,
-            self._hvac.hub.sensors.temp_trend_indoors.gradient <= 0.3,
+            self._hvac.hub.sensors.temp_trend_indoors.trend <= 0.3,
         ]):
             return pre_offset
         _LOGGER.debug("Adding additional heating since there is no sunwarming happening and house is too cold.")
