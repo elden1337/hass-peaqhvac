@@ -111,7 +111,7 @@ class WeatherPrognosis:
                     self._current_temperature - p.Temperature, 2
                 )
                 continue
-            if 3600 <= c.seconds <= 21600:
+            if 3600 <= c.seconds <= 43200:
                 # correct the temp
                 t1 = p.Temperature + corrected_temp_delta
                 t2 = t1 / int(c.seconds / 3600)
@@ -146,9 +146,9 @@ class WeatherPrognosis:
         )
         if _next_prognosis is not None and int(k) >= now.hour:
             divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
+            adjustment_divisor = 2.5 if _next_prognosis.corrected_temp > -2 else 2
             adj = (
-                int(round((_next_prognosis.delta_temp_from_now / 2.5) * divisor, 0))
-                * -1
+                int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1
             )
             if adj != 0:
                 if (v + adj) <= 0:
