@@ -24,10 +24,7 @@ class OffsetCoordinatorStandAlone(OffsetCoordinator):
 
     @property
     def min_price(self) -> float:
-        try:
-            return self.hours.min_price
-        except:
-            return 0
+        return 0
 
     async def async_update_prices(self, prices) -> None:
         await self.hours.async_update_prices(prices[0], prices[1])

@@ -30,13 +30,6 @@ class OffsetCoordinatorPeaqEv(OffsetCoordinator):
         except:
             return 0
 
-    # @property
-    # def offsets(self) -> dict:
-    #     ret = self._hub.sensors.peaqev_facade.offsets
-    #     if len(ret) == 0 or not ret:
-    #         _LOGGER.warning("Tried to get offsets from peaqev, but got nothing")
-    #     return ret
-
     async def async_update_prices(self, prices) -> None:
         if self._prices != prices[0]:
             self._prices = prices[0]
