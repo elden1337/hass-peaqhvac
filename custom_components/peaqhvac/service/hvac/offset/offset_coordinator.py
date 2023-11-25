@@ -77,14 +77,14 @@ class OffsetCoordinator:
         return max_price_lower_internal(tempdiff, self.model.peaks_today)
 
     def _update_offset(self, weather_adjusted_today: dict | None = None) -> Tuple[dict, dict]:
-        cached_today = cache.get_cache(datetime.now().date())
-        cached_tomorrow = cache.get_cache((datetime.now() + timedelta(days=1)).date())
+        cached_today = cache.get_cache_for_today(datetime.now().date(), self.prices)
+        cached_tomorrow = cache.get_cache_for_today((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow)
 
         try:
             if all([cached_today, cached_tomorrow]):
                 today_values = cached_today.offsets
                 tomorrow_values = cached_tomorrow.offsets
-            elif cached_today and not cached_today.today:
+            elif cached_today:
                 #this is what should happen at midnight but not at 13.
                 _LOGGER.debug("Using cached values for today")
                 today_values = cached_today.offsets
