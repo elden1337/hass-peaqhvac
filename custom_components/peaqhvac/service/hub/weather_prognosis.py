@@ -35,6 +35,7 @@ class WeatherPrognosis:
     def prognosis(self) -> list:
         if not self.is_initialized:
             return []
+        self.update_weather_prognosis()
         if len(self._hvac_prognosis_list) == 0:
             try:
                 return self.get_hvac_prognosis(
@@ -152,7 +153,7 @@ class WeatherPrognosis:
             )
             if adj != 0:
                 if (v + adj) <= 0:
-                    return (v + adj) * -1
+                    return (v + (adj*-1))*-1
                 else:
                     return (v + adj) * -1
             else:

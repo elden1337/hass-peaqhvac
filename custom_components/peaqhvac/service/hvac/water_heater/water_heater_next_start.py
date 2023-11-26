@@ -156,7 +156,7 @@ class NextWaterBoost:
         latest_limit = latest_boost + timedelta(hours=24) if latest_boost else datetime.now()
         if latest_limit < datetime.now() and cold:
             """It's been too long since last boost. Boost now."""
-            return datetime.now().replace(minute=self._set_minute_start(now_dt=datetime.now()), second=0, microsecond=0)
+            return datetime.now().replace(minute=self._set_minute_start(now_dt=datetime.now(), demand=demand), second=0, microsecond=0)
 
         if last_known_price - self.now_dt > timedelta(hours=HOUR_LIMIT) and not cold:
             group = self._find_group(self.now_dt.hour)

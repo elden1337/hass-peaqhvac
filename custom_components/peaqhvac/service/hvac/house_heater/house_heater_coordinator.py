@@ -23,6 +23,7 @@ class HouseHeaterCoordinator(IHeater):
         self._hvac = hvac
         self._degree_minutes = 0
         self._current_offset: int = 0
+        self._temp_lower_offset_num: int = 0
         self._offsets: dict = {}
         self._current_adjusted_offset: int = 0
         self._wait_timer_breach = WaitTimer(timeout=WAITTIMER_TIMEOUT)
@@ -70,6 +71,10 @@ class HouseHeaterCoordinator(IHeater):
         elif self._hvac.hub.sensors.peaqev_installed:
             if self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes:
                 ret -= 1
+        if ret != self._temp_lower_offset_num:
+            self._temp_lower_offset_num = ret
+            if ret != input_offset.current_offset * 1:
+                _LOGGER.debug(f"Lowering offset {ret}.")
         return ret
 
     def get_current_offset(self) -> Tuple[int, bool]:
@@ -113,6 +118,7 @@ class HouseHeaterCoordinator(IHeater):
                 current_offset=self._current_offset,
                 temp_diff=self._temp_helper.get_tempdiff_inverted(self.current_offset),
                 temp_trend=self._temp_helper.get_temp_trend_offset(),
+                current_outside_temp=self._hvac.hub.sensors.average_temp_outdoors.value
             )
 
     def _should_adjust_offset(self, offsetdata: CalculatedOffsetModel) -> bool:
@@ -212,9 +218,10 @@ class HouseHeaterCoordinator(IHeater):
         pass
 
     @staticmethod
-    def _set_lower_offset_strong(current_offset, temp_diff, temp_trend) -> int:
+    def _set_lower_offset_strong(current_offset, temp_diff, temp_trend,current_outside_temp) -> int:
         calc = sum([current_offset, temp_diff, temp_trend])
-        ret = max(-5, calc)
+        minval = -5 if current_outside_temp > 5 else -3
+        ret = max(minval, calc)
         return round(ret, 0)
 
 

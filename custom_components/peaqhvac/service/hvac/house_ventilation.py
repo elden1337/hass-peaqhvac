@@ -34,11 +34,11 @@ class HouseVentilation:
             else:
                 self._current_vent_state = False
         if any([
-            self._hvac.hvac_dm < self._hvac.hub.options.heating_options.low_degree_minutes + 100,
+            self._hvac.hvac_dm < self._hvac.hub.options.heating_options.low_degree_minutes + 200,
             self._hvac.hub.sensors.average_temp_outdoors.value < self._hvac.hub.options.heating_options.very_cold_temp
             ]):
             if self._current_vent_state:
-                _LOGGER.debug(f"low dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} < {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
+                _LOGGER.debug(f"recovered dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} < {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
                 self._current_vent_state = False
                 self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
 
