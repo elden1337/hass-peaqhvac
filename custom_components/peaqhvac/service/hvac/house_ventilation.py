@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, timedelta
 import logging
 
@@ -28,7 +29,7 @@ class HouseVentilation:
             self._current_vent_state = val
 
     async def async_check_vent_boost(self, caller=None) -> None:
-        if self._hvac.hub.sensors.temp_trend_indoors.is_clean and self._wait_timer_boost.is_timeout():
+        if self._hvac.hub.sensors.temp_trend_indoors.samples > 0 and time.time() - self._wait_timer_boost.value > WAITTIMER_VENT:
             if self._vent_boost_warmth():
                 self._vent_boost_start("Vent boosting because of warmth.")
             elif self._vent_boost_night_cooling():
@@ -38,11 +39,11 @@ class HouseVentilation:
             else:
                 self.vent_boost = False
         if any([
-            self._hvac.hvac_dm < self._hvac.hub.options.heating_options.low_degree_minutes + 200,
+            self._hvac.hvac_dm > self._hvac.hub.options.heating_options.low_degree_minutes + 200,
             self._hvac.hub.sensors.average_temp_outdoors.value < self._hvac.hub.options.heating_options.very_cold_temp
             ]):
             if self.vent_boost:
-                _LOGGER.debug(f"recovered dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} < {self._hvac.hub.options.heating_options.low_degree_minutes + 200}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
+                _LOGGER.debug(f"recovered dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} > {self._hvac.hub.options.heating_options.low_degree_minutes + 200}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
                 self.vent_boost = False
                 self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
 
