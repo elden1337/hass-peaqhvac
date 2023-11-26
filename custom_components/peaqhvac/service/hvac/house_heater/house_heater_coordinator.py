@@ -23,7 +23,6 @@ class HouseHeaterCoordinator(IHeater):
         self._hvac = hvac
         self._degree_minutes = 0
         self._current_offset: int = 0
-        self._temp_lower_offset_num: int = 0
         self._offsets: dict = {}
         self._current_adjusted_offset: int = 0
         self._wait_timer_breach = WaitTimer(timeout=WAITTIMER_TIMEOUT)
@@ -71,10 +70,6 @@ class HouseHeaterCoordinator(IHeater):
         elif self._hvac.hub.sensors.peaqev_installed:
             if self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes:
                 ret -= 1
-        if ret != self._temp_lower_offset_num:
-            self._temp_lower_offset_num = ret
-            if ret != input_offset.current_offset * 1:
-                _LOGGER.debug(f"Lowering offset {ret}.")
         return ret
 
     def get_current_offset(self) -> Tuple[int, bool]:
