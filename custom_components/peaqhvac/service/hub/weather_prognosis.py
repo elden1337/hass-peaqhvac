@@ -97,21 +97,36 @@ class WeatherPrognosis:
         return p.Temperature
 
     def get_hvac_prognosis(self, current_temperature: float) -> list:
-        if not self.is_initialized or not isinstance(current_temperature, float):
-            return []
-
-        self._current_temperature = current_temperature
+        ret = []
+        if not self.is_initialized:
+            return ret
+        try:
+            self._current_temperature = float(current_temperature)
+        except Exception as e:
+            _LOGGER.debug(f"Could not parse temperature as float: {e}")
+            return ret
+        corrected_temp_delta = 0
         now = datetime.now().replace(minute=0, second=0, microsecond=0)
 
-        valid_progs = [p for p in self.prognosis_list if p.DT >= now]
-        if not valid_progs:
-            return []
-
-        ret = []
+        valid_progs = [
+            p for idx, p in enumerate(self.prognosis_list) if p.DT >= now
+        ]
+        if len(valid_progs) == 0:
+            return ret
         for p in valid_progs:
             c = p.DT - now
-            corrected_temp_delta = self._get_corrected_temp_delta(p, now)
-            temp = self._get_temp(p, corrected_temp_delta, c)
+            if c.seconds == 0:
+                corrected_temp_delta = round(
+                    self._current_temperature - p.Temperature, 2
+                )
+                continue
+            if 3600 <= c.seconds <= 43200:
+                # correct the temp
+                t1 = p.Temperature + corrected_temp_delta
+                t2 = t1 / int(c.seconds / 3600)
+                temp = round(t2, 1)
+            else:
+                temp = p.Temperature
             hourdiff = int(c.seconds / 3600)
             hour_prognosis = PrognosisExportModel(
                 prognosis_temp=p.Temperature,
@@ -126,96 +141,31 @@ class WeatherPrognosis:
         self._hvac_prognosis_list = ret
         return ret
 
-    # def get_hvac_prognosis(self, current_temperature: float) -> list:
-    #     ret = []
-    #     if not self.is_initialized:
-    #         return ret
-    #     try:
-    #         self._current_temperature = float(current_temperature)
-    #     except Exception as e:
-    #         _LOGGER.debug(f"Could not parse temperature as float: {e}")
-    #         return ret
-    #     corrected_temp_delta = 0
-    #     now = datetime.now().replace(minute=0, second=0, microsecond=0)
-    #
-    #     valid_progs = [
-    #         p for idx, p in enumerate(self.prognosis_list) if p.DT >= now
-    #     ]
-    #     if len(valid_progs) == 0:
-    #         return ret
-    #     for p in valid_progs:
-    #         c = p.DT - now
-    #         if c.seconds == 0:
-    #             corrected_temp_delta = round(
-    #                 self._current_temperature - p.Temperature, 2
-    #             )
-    #             continue
-    #         if 3600 <= c.seconds <= 43200:
-    #             # correct the temp
-    #             t1 = p.Temperature + corrected_temp_delta
-    #             t2 = t1 / int(c.seconds / 3600)
-    #             temp = round(t2, 1)
-    #         else:
-    #             temp = p.Temperature
-    #         hourdiff = int(c.seconds / 3600)
-    #         hour_prognosis = PrognosisExportModel(
-    #             prognosis_temp=p.Temperature,
-    #             corrected_temp=temp,
-    #             windchill_temp=self._correct_temperature_for_windchill(temp, p.Wind_Speed),
-    #             delta_temp_from_now=round(temp - self._current_temperature, 1),
-    #             DT=p.DT,
-    #             TimeDelta=hourdiff,
-    #         )
-    #         ret.append(hour_prognosis)
-    #
-    #     self._hvac_prognosis_list = ret
-    #     return ret
-
     def get_weatherprognosis_adjustment(self, offsets) -> Tuple[dict, dict]:
         self.update_weather_prognosis()
         ret = {}, offsets[1]
         for hour, temperature in offsets[0].items():
             ret[0][hour] = self._get_weatherprognosis_hourly_adjustment(hour, temperature)
-        return {hour: temperature for (hour, temperature) in ret[0].items()}, ret[1]
+        return {hour: -temperature for (hour, temperature) in ret[0].items()}, ret[1]
 
     def _get_weatherprognosis_hourly_adjustment(self, hour, temperature):
         now = datetime.now()
         _next_prognosis = self._get_two_hour_prog(
             datetime(now.year, now.month, now.day, int(hour), 0, 0)
         )
-        if _next_prognosis is None or int(hour) < now.hour:
-            return -temperature
-
-        divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
-        adjustment_divisor = 2.5 if _next_prognosis.corrected_temp > -2 else 2
-        adj = int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1
-
-        if adj == 0:
-            return temperature
-
-        adjusted_temp = temperature + adj if (temperature + adj) > 0 else temperature - adj
-        return adjusted_temp
-
-    # def _get_weatherprognosis_hourly_adjustment(self, hour, temperature):
-    #     now = datetime.now()
-    #     _next_prognosis = self._get_two_hour_prog(
-    #         datetime(now.year, now.month, now.day, int(hour), 0, 0)
-    #     )
-    #     if _next_prognosis is not None and int(hour) >= now.hour:
-    #         divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
-    #         adjustment_divisor = 2.5 if _next_prognosis.corrected_temp > -2 else 2
-    #         adj = (
-    #             int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1
-    #         )
-    #         if adj != 0:
-    #             if (temperature + adj) <= 0:
-    #                 return (temperature + (adj * -1))*-1
-    #             else:
-    #                 return (temperature + adj) * -1
-    #         else:
-    #             return temperature * -1
-    #     else:
-    #         return temperature * -1
+        ret = temperature
+        if _next_prognosis is not None and int(hour) >= now.hour:
+            divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
+            adjustment_divisor = 2.5 if _next_prognosis.corrected_temp > -2 else 2
+            adj = (
+                int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1
+            )
+            if adj != 0:
+                if (temperature + adj) <= 0:
+                    ret = (temperature + (adj * -1))
+                else:
+                    ret = (temperature + adj)
+        return ret * -1
 
     def _set_prognosis(self, import_list: list):
         old_prognosis = self.prognosis_list
