@@ -87,7 +87,7 @@ class HouseHeaterCoordinator(IHeater):
             return OFFSET_MIN_VALUE, True
 
         offsetdata = self.get_calculated_offsetdata(_force_update)
-        offsetdata.current_offset = self.keep_compressor_running(offsetdata.current_offset)
+        offsetdata.current_offset, _force_update = self.keep_compressor_running(offsetdata.current_offset, _force_update)
         if offsetdata.sum_values() <= 0 and self.current_tempdiff <= 0:
             ret = self._get_lower_offset()
             self.current_adjusted_offset = ret
@@ -198,7 +198,7 @@ class HouseHeaterCoordinator(IHeater):
             force_update = True
             self.current_offset = _offset
 
-    def keep_compressor_running(self, input_offset) -> int:
+    def keep_compressor_running(self, input_offset, force_update) -> Tuple[int, bool]:
         """in certain conditions, up the offset to keep the compressor running for energy savings"""
         dm_prediction = self._hvac.dm_trend.predicted_time_at_value(0)
         now = datetime.now()
@@ -207,8 +207,8 @@ class HouseHeaterCoordinator(IHeater):
                 self._hvac.hub.sensors.average_temp_outdoors.value >= 0 or
                 dm_prediction is None or
                 dm_prediction > now + timedelta(hours=1)):
-            return input_offset
-        return input_offset + 1
+            return input_offset, force_update
+        return input_offset + 1, True
 
     def _add_temp_boost(self, pre_offset: int) -> int:
         #todo: is this one really needed?
