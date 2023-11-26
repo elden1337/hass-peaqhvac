@@ -83,8 +83,7 @@ class HouseHeaterCoordinator(IHeater):
         self._offsets = offsets
         if any([
             self._hvac.hub.sensors.average_temp_outdoors.value > self._hvac.hub.options.heating_options.outdoor_temp_stop_heating,
-            self._hvac.hub.offset.max_price_lower(self._hvac.hub.sensors.get_tempdiff())]):
-            self.current_adjusted_offset = OFFSET_MIN_VALUE
+            self._hvac.hub.offset.max_price_lower(self._hvac.hub.sensors.get_tempdiff())]) and self._hvac.hub.sensors.average_temp_outdoors.value >= 0:
             return OFFSET_MIN_VALUE, True
 
         offsetdata = self.get_calculated_offsetdata(_force_update)
