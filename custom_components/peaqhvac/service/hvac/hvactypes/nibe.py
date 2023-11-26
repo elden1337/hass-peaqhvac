@@ -88,15 +88,13 @@ class Nibe(IHvac):
         sensor = self.get_sensor(SensorType.HvacMode)
         ret = self._handle_sensor(sensor)
         if ret is not None:
-            if ret == "heating":
+            if ret.lower() == "heating":
                 return HvacMode.Heat
-            elif ret == "idle":
+            elif ret.lower() == "idle":
                 return HvacMode.Idle
         return HvacMode.Unknown
 
-    async def _get_operation_value(
-        self, operation: HvacOperations, set_val: any = None
-    ):
+    async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):
         match operation:
             case HvacOperations.Offset:
                 return self._cap_nibe_offset_value(set_val)
@@ -104,9 +102,7 @@ class Nibe(IHvac):
                 return set_val
         raise ValueError(f"Operation {operation} not supported")
 
-    def _set_operation_call_parameters(
-        self, operation: HvacOperations, _value: any
-    ) -> Tuple[str, dict, str]:
+    def _set_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
         call_operation = "set_parameter"
         params = {
             "system": int(self.hub.options.systemid),
