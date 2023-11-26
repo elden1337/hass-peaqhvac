@@ -76,7 +76,10 @@ class IHvac(UpdateSystem):
 
     @property
     def hvac_dm(self) -> int:
-        return self.get_value(SensorType.DegreeMinutes, int)
+        ret = self.get_value(SensorType.DegreeMinutes, int)
+        if ret not in range(-10000, 101):
+            _LOGGER.warning(f"DM is out of range: {ret}")
+        return ret
 
     @property
     def hvac_electrical_addon(self) -> float:
