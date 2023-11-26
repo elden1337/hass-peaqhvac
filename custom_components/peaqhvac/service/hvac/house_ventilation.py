@@ -14,14 +14,18 @@ _LOGGER = logging.getLogger(__name__)
 class HouseVentilation:
     def __init__(self, hvac):
         self._hvac = hvac
-        self._wait_timer_boost = WaitTimer(timeout=WAITTIMER_VENT)
+        self._wait_timer_boost = WaitTimer(timeout=WAITTIMER_VENT, init_now=False)
         self._current_vent_state: bool = False
         async_track_time_interval(self._hvac.hub.state_machine, self.async_check_vent_boost, timedelta(seconds=30))
 
     @property
     def vent_boost(self) -> bool:
-        #_LOGGER.debug(f"Vent boost state: {self._current_vent_state}")
         return self._current_vent_state
+
+    @vent_boost.setter
+    def vent_boost(self, val) -> None:
+        if isinstance(val, bool):
+            self._current_vent_state = val
 
     async def async_check_vent_boost(self, caller=None) -> None:
         if self._hvac.hub.sensors.temp_trend_indoors.is_clean and self._wait_timer_boost.is_timeout():
@@ -32,14 +36,14 @@ class HouseVentilation:
             elif self._vent_boost_low_dm():
                 self._vent_boost_start("Vent boosting because of low degree minutes.")
             else:
-                self._current_vent_state = False
+                self.vent_boost = False
         if any([
             self._hvac.hvac_dm < self._hvac.hub.options.heating_options.low_degree_minutes + 200,
             self._hvac.hub.sensors.average_temp_outdoors.value < self._hvac.hub.options.heating_options.very_cold_temp
             ]):
-            if self._current_vent_state:
-                _LOGGER.debug(f"recovered dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} < {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
-                self._current_vent_state = False
+            if self.vent_boost:
+                _LOGGER.debug(f"recovered dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} < {self._hvac.hub.options.heating_options.low_degree_minutes + 200}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
+                self.vent_boost = False
                 self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
 
     def _vent_boost_warmth(self) -> bool:
@@ -73,8 +77,8 @@ class HouseVentilation:
                 )
 
     def _vent_boost_start(self, msg) -> None:
-        if not self._current_vent_state:
+        if not self.vent_boost:
             _LOGGER.debug(msg)
             self._wait_timer_boost.update()
-            self._current_vent_state = True
+            self.vent_boost = True
             self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
