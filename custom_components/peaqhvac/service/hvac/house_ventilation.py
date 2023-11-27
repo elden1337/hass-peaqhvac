@@ -39,7 +39,7 @@ class HouseVentilation:
             else:
                 self.vent_boost = False
         if any([
-            self._hvac.hvac_dm > self._hvac.hub.options.heating_options.low_degree_minutes + 200,
+            self._hvac.hvac_dm > self._hvac.hub.options.heating_options.low_degree_minutes + 100,
             self._hvac.hub.sensors.average_temp_outdoors.value < self._hvac.hub.options.heating_options.very_cold_temp
             ]):
             if self.vent_boost:
