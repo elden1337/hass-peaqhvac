@@ -39,21 +39,23 @@ async def _gather_sensors(hub, config, hass) -> list:
             "sensor": hub.sensors.temp_trend_indoors,
             "icon":   "mdi:home-thermometer",
             "unit":   "°C/h",
+            "negate": 1
         },
         {
             "name":   TRENDSENSOR_OUTDOORS,
             "sensor": hub.sensors.temp_trend_outdoors,
             "icon":   "mdi:sun-thermometer",
             "unit":   "°C/h",
+            "negate": 1
         },
         {
             "name":   TRENDSENSOR_DM,
             "sensor": hub.sensors.dm_trend,
             "icon":   "mdi:hvac",
             "unit":   "DM/h",
+            "negate": -1
         }
     ]
-
 
     ret = []
 
@@ -67,7 +69,8 @@ async def _gather_sensors(hub, config, hass) -> list:
             name=sensor["name"],
             icon=sensor["icon"],
             unit_of_measurement=sensor["unit"],
-            sensor=sensor["sensor"]))
+            sensor=sensor["sensor"],
+            negate_value=sensor["negate"]))
     for key in DEMANDSENSORS:
         ret.append(PeaqSensor(hub, config.entry_id, key, DEMANDSENSORS[key]))
 

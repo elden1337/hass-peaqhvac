@@ -156,11 +156,12 @@ class WeatherPrognosis:
         ret = temperature
         if _next_prognosis is not None and int(hour) >= now.hour:
             divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
-            adjustment_divisor = 2.5 if _next_prognosis.corrected_temp > -2 else 2
+            adjustment_divisor = 2.5 if _next_prognosis.corrected_temp > -2 else 2.5
             adj = (
                 int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1
             )
             if adj != 0:
+                #_LOGGER.debug(f"for {hour} the temp {temperature}, delta {_next_prognosis.delta_temp_from_now}, corrected {_next_prognosis.corrected_temp}, adj {adj}")
                 if (temperature + adj) <= 0:
                     ret = (temperature + (adj * -1))
                 else:

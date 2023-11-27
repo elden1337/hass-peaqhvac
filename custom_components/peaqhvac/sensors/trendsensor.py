@@ -5,7 +5,7 @@ from custom_components.peaqhvac.sensors.sensorbase import SensorBase
 
 
 class TrendSensor(SensorBase, RestoreEntity):
-    def __init__(self, hub, entry_id, name, icon, unit_of_measurement, sensor):
+    def __init__(self, hub, entry_id, name, icon, unit_of_measurement, sensor, negate_value = 1):
         self._sensorname = name
         self.datasensor = sensor
         self._attr_name = f"{hub.hubname} {name}"
@@ -17,6 +17,7 @@ class TrendSensor(SensorBase, RestoreEntity):
         self._oldest_sample = "-"
         self._newest_sample = "-"
         self._samples_raw = []
+        self._negate = negate_value
         self._latest_restart: datetime = None
 
     @property
@@ -44,7 +45,7 @@ class TrendSensor(SensorBase, RestoreEntity):
 
     async def async_update(self) -> None:
 
-        self._state = getattr(self.datasensor, "trend")
+        self._state = getattr(self.datasensor, "trend") * self._negate
         self._samples = getattr(self.datasensor, "samples")
         self._oldest_sample = getattr(self.datasensor, "oldest_sample")
         self._newest_sample = getattr(self.datasensor, "newest_sample")

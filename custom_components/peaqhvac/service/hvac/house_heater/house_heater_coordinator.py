@@ -218,7 +218,6 @@ class HouseHeaterCoordinator(IHeater):
         """in certain conditions, up the offset to keep the compressor running for energy savings"""
         dm_prediction = self._hvac.hub.sensors.dm_trend.predicted_time_at_value(0)
         now = datetime.now()
-        _LOGGER.debug(f"dmpred: {dm_prediction}")
         if (self._hvac.hvac_mode is not HvacMode.Heat or
                 self._hvac.hub.sensors.average_temp_outdoors.value >= 0 or
                 dm_prediction is None or

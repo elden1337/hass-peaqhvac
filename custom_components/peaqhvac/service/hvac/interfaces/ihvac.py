@@ -6,8 +6,6 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Tuple
 
 from peaqevcore.common.models.observer_types import ObserverTypes
-from peaqevcore.common.trend import Gradient
-
 from custom_components.peaqhvac.service.hvac.interfaces.update_system import UpdateSystem
 
 if TYPE_CHECKING:
@@ -82,7 +80,11 @@ class IHvac(UpdateSystem):
         ret = self.get_value(SensorType.DegreeMinutes, int)
         if ret not in range(-10000, 101):
             _LOGGER.warning(f"DM is out of range: {ret}")
-        self.hub.sensors.dm_trend.add_reading(ret)
+        if not len(self.hub.sensors.dm_trend.samples_raw):
+            self.hub.sensors.dm_trend.add_reading(ret)
+        elif ret != self.hub.sensors.dm_trend.samples_raw[-1][1]:
+            _LOGGER.debug(f"DM: {ret} is not the same as last sample: {self.hub.sensors.dm_trend.samples_raw[-1][1]}")
+            self.hub.sensors.dm_trend.add_reading(ret)
         return ret
 
     @property
