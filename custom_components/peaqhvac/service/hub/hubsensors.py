@@ -36,7 +36,7 @@ class HubSensors:
         )
         self.temp_trend_indoors = Gradient(max_samples=100, max_age=7200, precision=1, outlier=1, ignore=0)
         self.temp_trend_outdoors = Gradient(max_samples=100, max_age=7200, precision=1, outlier=1)
-        self.dm_trend = Gradient(max_age=1800, max_samples=100, precision=0)
+        self.dm_trend = Gradient(max_age=3600, max_samples=100, precision=1)
         self.set_temp_indoors = TargetTemp(
             observer_message=ObserverTypes.SetTemperatureChanged, hub=hub
         )
