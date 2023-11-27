@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from homeassistant.helpers.restore_state import RestoreEntity
 from custom_components.peaqhvac.sensors.sensorbase import SensorBase
 
@@ -15,6 +17,7 @@ class TrendSensor(SensorBase, RestoreEntity):
         self._oldest_sample = "-"
         self._newest_sample = "-"
         self._samples_raw = []
+        self._latest_restart: datetime = None
 
     @property
     def unit_of_measurement(self):
@@ -36,6 +39,7 @@ class TrendSensor(SensorBase, RestoreEntity):
         attr_dict["oldest_sample"] = self._oldest_sample
         attr_dict["newest_sample"] = self._newest_sample
         attr_dict["samples_raw"] = self._samples_raw
+        attr_dict["latest_restart"] = self._latest_restart
         return attr_dict
 
     async def async_update(self) -> None:
@@ -47,6 +51,7 @@ class TrendSensor(SensorBase, RestoreEntity):
         self._samples_raw = getattr(self.datasensor, "samples_raw")
 
     async def async_added_to_hass(self):
+        self._latest_restart = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         state = await super().async_get_last_state()
         if state:
             self._state = state.state
