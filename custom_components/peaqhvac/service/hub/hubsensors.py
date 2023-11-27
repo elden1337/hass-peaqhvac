@@ -13,6 +13,7 @@ class HubSensors:
     peaq_enabled: HubMember
     temp_trend_outdoors: Gradient
     temp_trend_indoors: Gradient
+    dm_trend: Gradient
     set_temp_indoors: TargetTemp
     average_temp_indoors: Average
     average_temp_outdoors: Average
@@ -33,8 +34,9 @@ class HubSensors:
             observer_message=ObserverTypes.TemperatureOutdoorsChanged,
             hub=hub,
         )
-        self.temp_trend_indoors = Gradient(max_samples=30, max_age=7200, precision=1, outlier=1, ignore=0)
-        self.temp_trend_outdoors = Gradient(max_samples=30, max_age=14400, precision=1, outlier=1)
+        self.temp_trend_indoors = Gradient(max_samples=100, max_age=7200, precision=1, outlier=1, ignore=0)
+        self.temp_trend_outdoors = Gradient(max_samples=100, max_age=7200, precision=1, outlier=1)
+        self.dm_trend = Gradient(max_age=1800, max_samples=100, precision=5)
         self.set_temp_indoors = TargetTemp(
             observer_message=ObserverTypes.SetTemperatureChanged, hub=hub
         )

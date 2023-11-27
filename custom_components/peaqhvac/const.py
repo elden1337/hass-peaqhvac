@@ -6,6 +6,7 @@ LISTENER_FN_CLOSE = "update_listener_close_fn"
 PEAQENABLED = "enabled"
 TRENDSENSOR_INDOORS = "Temperature trend indoors"
 TRENDSENSOR_OUTDOORS = "Temperature trend outdoors"
+TRENDSENSOR_DM = "Degree Minutes trend"
 
 AVERAGESENSOR_INDOORS = "Average temperature indoors"
 AVERAGESENSOR_OUTDOORS = "Average temperature outdoors"
@@ -15,10 +16,6 @@ CLIMATE_SENSOR = "Climate control"
 
 AVERAGESENSORS = [AVERAGESENSOR_INDOORS, AVERAGESENSOR_OUTDOORS]
 
-TRENDSENSORS = {
-    TRENDSENSOR_INDOORS: "mdi:home-thermometer",
-    TRENDSENSOR_OUTDOORS: "mdi:sun-thermometer",
-}
 
 DEMANDSENSORS = {WATERDEMAND: "mdi:water-boiler", HEATINGDEMAND: "mdi:heat-pump"}
 

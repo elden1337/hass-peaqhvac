@@ -5,7 +5,8 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import AVERAGESENSORS, DEMANDSENSORS, DOMAIN, TRENDSENSORS, NEXT_WATER_START, LATEST_WATER_BOOST
+from .const import AVERAGESENSORS, DEMANDSENSORS, DOMAIN, NEXT_WATER_START, LATEST_WATER_BOOST, \
+    TRENDSENSOR_DM, TRENDSENSOR_OUTDOORS, TRENDSENSOR_INDOORS
 from .sensors.min_maxsensor import AverageSensor
 from .sensors.money_data_sensor import PeaqMoneyDataSensor
 from .sensors.offsetsensor import OffsetSensor
@@ -29,14 +30,41 @@ async def async_setup_entry(
     async_add_entities(peaqsensors, update_before_add=True)
 
 
+TRENDSENSORS = [
+    {
+        "name": TRENDSENSOR_INDOORS,
+        "sensor": "temp_trend_indoors",
+        "icon": "mdi:home-thermometer",
+        "unit": "°C/h",
+    },
+    {
+        "name": TRENDSENSOR_OUTDOORS,
+        "sensor": "temp_trend_outdoors",
+        "icon": "mdi:sun-thermometer",
+        "unit": "°C/h",
+    },
+    {
+        "name": TRENDSENSOR_DM,
+        "sensor": "dm_trend",
+        "icon": "mdi:hvac",
+        "unit": "DM/h",
+    }
+]
+
 async def _gather_sensors(hub, config, hass) -> list:
     ret = []
 
     ret.append(OffsetSensor(hub, config.entry_id, "calculated hvac offset"))
     for a in AVERAGESENSORS:
         ret.append(AverageSensor(hub, config.entry_id, a))
-    for key in TRENDSENSORS:
-        ret.append(TrendSensor(hub, config.entry_id, key, TRENDSENSORS[key]))
+    for sensor in TRENDSENSORS:
+        ret.append(TrendSensor(
+            hub=hub,
+            entry_id=config.entry_id,
+            name=sensor["name"],
+            icon=sensor["icon"],
+            unit_of_measurement=sensor["unit"],
+            sensor=sensor["sensor"]))
     for key in DEMANDSENSORS:
         ret.append(PeaqSensor(hub, config.entry_id, key, DEMANDSENSORS[key]))
 

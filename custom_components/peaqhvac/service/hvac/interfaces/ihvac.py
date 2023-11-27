@@ -36,7 +36,7 @@ class IHvac(UpdateSystem):
         self.house_heater = HouseHeaterCoordinator(hvac=self)
         self.water_heater = WaterHeater(hvac=self, hub=hub)
         self.house_ventilation = HouseVentilation(hvac=self)
-        self.dm_trend = Gradient(max_age=1800, max_samples=100, precision=5)
+
         self.model = IHvacModel()
         self.hub.observer.add(ObserverTypes.OffsetRecalculation, self.update_offset)
         self.hub.observer.add(ObserverTypes.UpdateOperation, self.request_periodic_updates)
@@ -82,7 +82,7 @@ class IHvac(UpdateSystem):
         ret = self.get_value(SensorType.DegreeMinutes, int)
         if ret not in range(-10000, 101):
             _LOGGER.warning(f"DM is out of range: {ret}")
-        self.dm_trend.add_reading(ret)
+        self.hub.sensors.dm_trend.add_reading(ret)
         return ret
 
     @property
