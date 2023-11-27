@@ -30,28 +30,31 @@ async def async_setup_entry(
     async_add_entities(peaqsensors, update_before_add=True)
 
 
-TRENDSENSORS = [
-    {
-        "name": TRENDSENSOR_INDOORS,
-        "sensor": "temp_trend_indoors",
-        "icon": "mdi:home-thermometer",
-        "unit": "°C/h",
-    },
-    {
-        "name": TRENDSENSOR_OUTDOORS,
-        "sensor": "temp_trend_outdoors",
-        "icon": "mdi:sun-thermometer",
-        "unit": "°C/h",
-    },
-    {
-        "name": TRENDSENSOR_DM,
-        "sensor": "dm_trend",
-        "icon": "mdi:hvac",
-        "unit": "DM/h",
-    }
-]
+
 
 async def _gather_sensors(hub, config, hass) -> list:
+    TRENDSENSORS = [
+        {
+            "name":   TRENDSENSOR_INDOORS,
+            "sensor": hub.sensors.temp_trend_indoors,
+            "icon":   "mdi:home-thermometer",
+            "unit":   "°C/h",
+        },
+        {
+            "name":   TRENDSENSOR_OUTDOORS,
+            "sensor": hub.sensors.temp_trend_outdoors,
+            "icon":   "mdi:sun-thermometer",
+            "unit":   "°C/h",
+        },
+        {
+            "name":   TRENDSENSOR_DM,
+            "sensor": hub.sensors.dm_trend,
+            "icon":   "mdi:hvac",
+            "unit":   "DM/h",
+        }
+    ]
+
+
     ret = []
 
     ret.append(OffsetSensor(hub, config.entry_id, "calculated hvac offset"))
