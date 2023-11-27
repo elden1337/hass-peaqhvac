@@ -18,6 +18,7 @@ class TargetTemp(ObserverBroadcaster):
         self._value = initval
         self._min_tolerance = None
         self._max_tolerance = None
+        self._adjusted_value = 0
         self._preset = HvacPresets.Normal
         self._internal_set_temp = initval
         super().__init__(observer_message, hub)
@@ -40,9 +41,8 @@ class TargetTemp(ObserverBroadcaster):
         try:
             if val is not None:
                 self._value = val
-            self._internal_set_temp = self._value - HvacPresets.get_tempdiff(
-                self.preset
-            )
+            self._internal_set_temp = self._value - HvacPresets.get_tempdiff(self.preset)
+            self._adjusted_value = self.adjusted_temp
             self._set_temperature_and_tolerances()
             self._broadcast_changes()
         except:
@@ -65,11 +65,16 @@ class TargetTemp(ObserverBroadcaster):
     @property
     def adjusted_temp(self) -> float:
         """adjust the set temp slightly if below -5C outside"""
-        _frost_temp = -5
+        _frost_temp = -3 if self.preset is not HvacPresets.Normal else -5
         ret = self.value
         _outdoors = self.hub.sensors.average_temp_outdoors.value
-        if _outdoors < _frost_temp and self.preset is not HvacPresets.Normal:
+        if _outdoors < _frost_temp:
             ret += round(((int(_outdoors - _frost_temp) / 1.5) * 0.1), 1)
+            if ret != self._adjusted_value:
+                self._adjusted_value = ret
+                _LOGGER.info(
+                    f"Adjusted the set indoor temperature from {self.value}C to {ret}C due to outdoors being colder than {_frost_temp}C."
+                )
         return max(ret, 15)
 
     def _set_temperature_and_tolerances(self):

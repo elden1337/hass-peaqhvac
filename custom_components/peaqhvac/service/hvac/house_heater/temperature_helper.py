@@ -7,13 +7,6 @@ class HouseHeaterTemperatureHelper:
     def __init__(self, hub):
         self._hub = hub
 
-    # def get_tempdiff_inverted(self, current_offset) -> int:
-    #     diff = self._hub.sensors.get_tempdiff()
-    #     if diff == 0:
-    #         return 0
-    #     _tolerance = self._determine_tolerance(diff, current_offset)
-    #     return int(diff / _tolerance) * -1
-
     def get_tempdiff_inverted(self, current_offset) -> int:
         diff = self._hub.sensors.get_tempdiff()+ 0.00001
         if abs(diff) < 0.2:
