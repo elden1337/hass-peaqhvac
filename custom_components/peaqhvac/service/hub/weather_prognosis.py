@@ -46,26 +46,6 @@ class WeatherPrognosis:
                 return []
         return self._hvac_prognosis_list
 
-    def _setup_weather_prognosis(self):
-        try:
-            entities = template.integration_entities(self._hass, "met")
-            if len(entities) < 1:
-                _LOGGER.warning("no entities found for weather. Cannot use weather prognosis")
-            _ent = [e for e in entities if e.endswith("_hourly")]
-            if len(_ent) >= 1:
-                self.entity = _ent[0]
-                self._is_initialized = True
-                self.update_weather_prognosis()
-                if len(_ent) > 1:
-                    _LOGGER.warning(
-                        f"Peaqev found more than one weather-entity. Using the first one: {self.entity}"
-                    )
-            else:
-                pass
-        except Exception as e:
-            msg = f"Peaqev was unable to get a single weather-entity. Disabling Weather-prognosis: {e}"
-            _LOGGER.error(msg)
-
     def update_weather_prognosis(self):
         if self.is_initialized:
             ret = self._hass.states.get(self.entity)
@@ -83,18 +63,12 @@ class WeatherPrognosis:
             else:
                 _LOGGER.error("could not get weather-prognosis.")
 
-    def _get_corrected_temp_delta(self, p, now):
-        c = p.DT - now
-        if c.seconds == 0:
-            return round(self._current_temperature - p.Temperature, 2)
-        return 0
-
-    def _get_temp(self, p, corrected_temp_delta, c):
-        if 3600 <= c.seconds <= 43200:
-            t1 = p.Temperature + corrected_temp_delta
-            t2 = t1 / int(c.seconds / 3600)
-            return round(t2, 1)
-        return p.Temperature
+    def get_weatherprognosis_adjustment(self, offsets) -> Tuple[dict, dict]:
+        self.update_weather_prognosis()
+        ret = {}, offsets[1]
+        for hour, temperature in offsets[0].items():
+            ret[0][hour] = self._get_weatherprognosis_hourly_adjustment(hour, temperature)
+        return {hour: -temperature for (hour, temperature) in ret[0].items()}, ret[1]
 
     def get_hvac_prognosis(self, current_temperature: float) -> list:
         ret = []
@@ -120,13 +94,7 @@ class WeatherPrognosis:
                     self._current_temperature - p.Temperature, 2
                 )
                 continue
-            if 3600 <= c.seconds <= 43200:
-                # correct the temp
-                t1 = p.Temperature + corrected_temp_delta
-                t2 = t1 / int(c.seconds / 3600)
-                temp = round(t2, 1)
-            else:
-                temp = p.Temperature
+            temp = self._get_temp(p, corrected_temp_delta, c)
             hourdiff = int(c.seconds / 3600)
             hour_prognosis = PrognosisExportModel(
                 prognosis_temp=p.Temperature,
@@ -141,19 +109,19 @@ class WeatherPrognosis:
         self._hvac_prognosis_list = ret
         return ret
 
-    def get_weatherprognosis_adjustment(self, offsets) -> Tuple[dict, dict]:
-        self.update_weather_prognosis()
-        ret = {}, offsets[1]
-        for hour, temperature in offsets[0].items():
-            ret[0][hour] = self._get_weatherprognosis_hourly_adjustment(hour, temperature)
-        return {hour: -temperature for (hour, temperature) in ret[0].items()}, ret[1]
+    def _get_temp(self, p, corrected_temp_delta, c):
+        if 3600 <= c.seconds <= 43200:
+            t1 = p.Temperature + corrected_temp_delta
+            t2 = t1 / int(c.seconds / 3600)
+            return round(t2, 1)
+        return p.Temperature
 
-    def _get_weatherprognosis_hourly_adjustment(self, hour, temperature):
+    def _get_weatherprognosis_hourly_adjustment(self, hour, offset):
         now = datetime.now()
         _next_prognosis = self._get_two_hour_prog(
             datetime(now.year, now.month, now.day, int(hour), 0, 0)
         )
-        ret = temperature
+        ret = offset
         if _next_prognosis is not None and int(hour) >= now.hour:
             divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
             adjustment_divisor = 2.5 if _next_prognosis.corrected_temp > -2 else 2.5
@@ -161,11 +129,10 @@ class WeatherPrognosis:
                 int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1
             )
             if adj != 0:
-                #_LOGGER.debug(f"for {hour} the temp {temperature}, delta {_next_prognosis.delta_temp_from_now}, corrected {_next_prognosis.corrected_temp}, adj {adj}")
-                if (temperature + adj) <= 0:
-                    ret = (temperature + (adj * -1))
+                if (offset + adj) <= 0 and self._current_temperature > _next_prognosis.prognosis_temp:
+                    ret = (offset + (adj * -1))
                 else:
-                    ret = (temperature + adj)
+                    ret = (offset + adj)
         return ret * -1
 
     def _set_prognosis(self, import_list: list):
@@ -203,3 +170,23 @@ class WeatherPrognosis:
             if c == 10800:
                 return p
         return None
+
+    def _setup_weather_prognosis(self):
+        try:
+            entities = template.integration_entities(self._hass, "met")
+            if len(entities) < 1:
+                _LOGGER.warning("no entities found for weather. Cannot use weather prognosis")
+            _ent = [e for e in entities if e.endswith("_hourly")]
+            if len(_ent) >= 1:
+                self.entity = _ent[0]
+                self._is_initialized = True
+                self.update_weather_prognosis()
+                if len(_ent) > 1:
+                    _LOGGER.warning(
+                        f"Peaqev found more than one weather-entity. Using the first one: {self.entity}"
+                    )
+            else:
+                pass
+        except Exception as e:
+            msg = f"Peaqev was unable to get a single weather-entity. Disabling Weather-prognosis: {e}"
+            _LOGGER.error(msg)
