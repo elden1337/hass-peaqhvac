@@ -68,7 +68,7 @@ class WeatherPrognosis:
         ret = {}, offsets[1]
         for hour, temperature in offsets[0].items():
             ret[0][hour] = self._get_weatherprognosis_hourly_adjustment(hour, temperature)
-        return {hour: -temperature for (hour, temperature) in ret[0].items()}, ret[1]
+        return {hour: temperature for (hour, temperature) in ret[0].items()}, ret[1]
 
     def get_hvac_prognosis(self, current_temperature: float) -> list:
         ret = []
@@ -110,30 +110,34 @@ class WeatherPrognosis:
         return ret
 
     def _get_temp(self, p, corrected_temp_delta, c):
-        if 3600 <= c.seconds <= 43200:
-            t1 = p.Temperature + corrected_temp_delta
-            t2 = t1 / int(c.seconds / 3600)
-            return round(t2, 1)
+        if 3600 <= c.seconds <= 14400:
+            decay_factor = 1 / (c.seconds / 3600)
+            corr = corrected_temp_delta * decay_factor
+            t3 = p.Temperature + corr
+            return round(t3, 1)
         return p.Temperature
 
     def _get_weatherprognosis_hourly_adjustment(self, hour, offset):
-        now = datetime.now()
-        _next_prognosis = self._get_two_hour_prog(
-            datetime(now.year, now.month, now.day, int(hour), 0, 0)
-        )
+        now = datetime.now().replace(hour=hour, minute=0, second=0, microsecond=0)
+        proghour = now
+        if now.minute > 30:
+            proghour = now + timedelta(hours=1)
+        _next_prognosis = self._get_two_hour_prog(proghour)
         ret = offset
         if _next_prognosis is not None and int(hour) >= now.hour:
             divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
             adjustment_divisor = 2.5 if _next_prognosis.corrected_temp > -2 else 2.5
-            adj = (
-                int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1
-            )
-            if adj != 0:
-                if (offset + adj) <= 0 and self._current_temperature > _next_prognosis.prognosis_temp:
-                    ret = (offset + (adj * -1))
-                else:
-                    ret = (offset + adj)
-        return ret * -1
+            adj = (int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1)
+            print(f"for {hour} the initial was {offset}, adjustment: {adj}, divisor:{divisor}, timedelta:{_next_prognosis.TimeDelta}")
+            #if adj != 0:
+            ret = offset + adj
+                # expecting_varmer = self._current_temperature < _next_prognosis.prognosis_temp
+                # if adj <= 0 and not expecting_varmer:
+                #     ret = offset - adj
+                # else:
+                #     ret = offset + adj
+                #ret = max(0, ret) if expecting_varmer else min(0,ret)
+        return ret
 
     def _set_prognosis(self, import_list: list):
         old_prognosis = self.prognosis_list

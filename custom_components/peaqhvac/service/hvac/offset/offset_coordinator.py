@@ -30,7 +30,7 @@ class OffsetCoordinator:
 
         self._hub.observer.add(ObserverTypes.PricesChanged, self.async_update_prices)
         self._hub.observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)
-        self._hub.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
+        #self._hub.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
         self._hub.observer.add(ObserverTypes.HvacPresetChanged, self._set_offset)
         self._hub.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
         self._hub.observer.add(ObserverTypes.HvacToleranceChanged, self._set_offset)
@@ -132,7 +132,8 @@ class OffsetCoordinator:
         if self.prices is not None:
             self.model.raw_offsets = self._update_offset()
             self.model.calculated_offsets = self.model.raw_offsets
-            if self.model.prognosis is not None:
+            #if self.model.prognosis is not None:
+            if len(self._hub.prognosis.prognosis) > 0:
                 try:
                     _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
                     if len(_weather_dict[0]) > 0:

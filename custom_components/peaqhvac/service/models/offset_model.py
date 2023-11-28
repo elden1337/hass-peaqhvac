@@ -74,7 +74,7 @@ class OffsetModel:
     def get_tolerance_difference(self, current_temp) -> int:
         """change the tolerance based on the current outside temperature"""
         match current_temp:
-            case _ if current_temp <= -10:
+            case _ if current_temp <= -15:
                 tolerance_difference = -2
             case _ if current_temp <= -7:
                 tolerance_difference = -1

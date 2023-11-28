@@ -218,10 +218,12 @@ class HouseHeaterCoordinator(IHeater):
         """in certain conditions, up the offset to keep the compressor running for energy savings"""
         dm_prediction = self._hvac.hub.sensors.dm_trend.predicted_time_at_value(0)
         now = datetime.now()
-        if (self._hvac.hvac_mode is not HvacMode.Heat or
-                self._hvac.hub.sensors.average_temp_outdoors.value >= 0 or
-                dm_prediction is None or
-                dm_prediction > now + timedelta(hours=1)):
+        if any([
+            self._hvac.hvac_mode is not HvacMode.Heat,
+            self._hvac.hub.sensors.average_temp_outdoors.value >= 0,
+            dm_prediction is None,
+            dm_prediction > now + timedelta(hours=1)
+        ]):
             return input_offset
         return input_offset + 1
 

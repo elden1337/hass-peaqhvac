@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from abc import abstractmethod
+import time
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Tuple
 
@@ -31,6 +32,7 @@ class IHvac(UpdateSystem):
     def __init__(self, hass: HomeAssistant, hub: Hub):
         self.hub = hub
         self._hass = hass
+        self._hvac_dm:int = None
         self.house_heater = HouseHeaterCoordinator(hvac=self)
         self.water_heater = WaterHeater(hvac=self, hub=hub)
         self.house_ventilation = HouseVentilation(hvac=self)
@@ -80,11 +82,9 @@ class IHvac(UpdateSystem):
         ret = self.get_value(SensorType.DegreeMinutes, int)
         if ret not in range(-10000, 101):
             _LOGGER.warning(f"DM is out of range: {ret}")
-        if not len(self.hub.sensors.dm_trend.samples_raw):
-            self.hub.sensors.dm_trend.add_reading(ret)
-        elif ret != self.hub.sensors.dm_trend.samples_raw[-1][1]:
-            _LOGGER.debug(f"DM: {ret} is not the same as last sample: {self.hub.sensors.dm_trend.samples_raw[-1][1]}")
-            self.hub.sensors.dm_trend.add_reading(ret)
+        if self._hvac_dm != ret:
+            self._hvac_dm = ret
+            self.hub.sensors.dm_trend.add_reading(ret, time.time())
         return ret
 
     @property
