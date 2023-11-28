@@ -134,6 +134,10 @@ class WaterHeater(IHeater):
             self.model.next_water_heater_start = ret
         return ret
 
+    """
+    non_hours = None,
+    high_demand_hours = None,
+"""
     async def async_reset_water_boost(self):
         self.model.water_boost.value = False
         await self.async_update_operation()
