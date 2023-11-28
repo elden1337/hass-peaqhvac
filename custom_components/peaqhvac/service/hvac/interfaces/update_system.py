@@ -8,7 +8,7 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 UPDATE_INTERVALS = {
-    HvacOperations.Offset: 900,
+    HvacOperations.Offset: 300,
     HvacOperations.VentBoost: 1800,
 }
 

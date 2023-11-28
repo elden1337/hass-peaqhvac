@@ -1,8 +1,10 @@
 from datetime import datetime
-
+import logging
 from homeassistant.helpers.restore_state import RestoreEntity
 from custom_components.peaqhvac.sensors.sensorbase import SensorBase
 
+
+_LOGGER = logging.getLogger(__name__)
 
 class TrendSensor(SensorBase, RestoreEntity):
     def __init__(self, hub, entry_id, name, icon, unit_of_measurement, sensor, negate_value = 1):
@@ -27,7 +29,7 @@ class TrendSensor(SensorBase, RestoreEntity):
     @property
     def state(self) -> float:
         fstate = float(self._state)
-        return fstate if abs(fstate) < 5 else 0
+        return fstate
 
     @property
     def icon(self) -> str:
@@ -44,8 +46,7 @@ class TrendSensor(SensorBase, RestoreEntity):
         return attr_dict
 
     async def async_update(self) -> None:
-
-        self._state = getattr(self.datasensor, "trend") * self._negate
+        self._state = getattr(self.datasensor, "trend")
         self._samples = getattr(self.datasensor, "samples")
         self._oldest_sample = getattr(self.datasensor, "oldest_sample")
         self._newest_sample = getattr(self.datasensor, "newest_sample")

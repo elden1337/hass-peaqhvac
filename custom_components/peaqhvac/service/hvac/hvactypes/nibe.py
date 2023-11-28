@@ -64,6 +64,15 @@ class Nibe(IHvac):
             else self._get_sensors_for_callback(types)
         )
 
+    # @property
+    # def compressor_frequency(self) -> int:
+    #     try:
+    #         freq = self.get_sensor(SensorType.CompressorFrequency)
+    #         return int(self._handle_sensor(freq))
+    #     except Exception as e:
+    #         _LOGGER.debug(f"Unable to get compressor frequency: {e}")
+    #         return 0
+
     @property
     def fan_speed(self) -> float:
         try:

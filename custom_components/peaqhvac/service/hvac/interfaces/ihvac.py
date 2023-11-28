@@ -88,6 +88,10 @@ class IHvac(UpdateSystem):
         return ret
 
     @property
+    def compressor_frequency(self) -> int:
+        return self.get_value(SensorType.CompressorFrequency, int)
+
+    @property
     def hvac_electrical_addon(self) -> float:
         return self.get_value(SensorType.ElectricalAddition, float)
 

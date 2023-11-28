@@ -78,16 +78,9 @@ class HouseHeaterCoordinator(IHeater):
         return ret
 
     def get_current_offset(self) -> Tuple[int, bool]:
-        # Get the current offsets and store them in an instance variable
         self._offsets = self._hvac.model.current_offset_dict_combined
-
-        # Initialize a flag to indicate whether an update is needed
         _force_update: bool = False
 
-        # Check if the outdoor temperature is above the threshold for stopping heating,
-        # or if the maximum price is lower than the temperature difference.
-        # If either condition is met and the outdoor temperature is non-negative,
-        # return the minimum offset value and a flag indicating that an update is needed.
         outdoor_temp = self._hvac.hub.sensors.average_temp_outdoors.value
         temp_diff = self._hvac.hub.sensors.get_tempdiff()
         stop_heating_temp = self._hvac.hub.options.heating_options.outdoor_temp_stop_heating
@@ -97,12 +90,11 @@ class HouseHeaterCoordinator(IHeater):
 
         # Get the calculated offset data and update the current offset to keep the compressor running
         offsetdata = self.get_calculated_offsetdata(_force_update)
-        offsetdata.current_offset = self.keep_compressor_running(offsetdata.current_offset)
+        self._keep_compressor_running(offsetdata)
 
-        # If the sum of the offset values and the current temperature difference are both non-positive,
-        # get the lower offset, update the current adjusted offset, and return it along with the update flag
+        # If offset will be < 0 and temp is lower than set temp, do special lowering to safe money
         if offsetdata.sum_values() <= 0 and self.current_tempdiff <= 0:
-            ret = self._get_lower_offset()
+            ret = self._get_lower_offset(offsetdata)
             self.current_adjusted_offset = ret
             return int(ret), _force_update
 
@@ -129,19 +121,18 @@ class HouseHeaterCoordinator(IHeater):
         self.current_adjusted_offset = int(ret)
         return self.current_adjusted_offset, _force_update
 
-    def _get_lower_offset(self) -> int:
+    def _get_lower_offset(self, offsetdata: CalculatedOffsetModel) -> int:
         return self._set_lower_offset_strong(
-                current_offset=self._current_offset,
-                temp_diff=self._temp_helper.get_tempdiff_inverted(self.current_offset),
-                temp_trend=self._temp_helper.get_temp_trend_offset(),
+                current_offset=offsetdata.current_offset,
+                temp_diff=offsetdata.current_tempdiff,
+                temp_trend=offsetdata.current_temp_trend_offset,
                 current_outside_temp=self._hvac.hub.sensors.average_temp_outdoors.value
             )
 
     def _should_adjust_offset(self, offsetdata: CalculatedOffsetModel) -> bool:
         return (
-                self._hvac.hub.offset.model.raw_offsets
-                != self._hvac.hub.offset.model.calculated_offsets
-                and offsetdata.sum_values() < 0
+                self._hvac.hub.offset.model.raw_offsets != self._hvac.hub.offset.model.calculated_offsets
+                and offsetdata.sum_values() != 0
         )
 
     def _adjust_offset(self, offsetdata: CalculatedOffsetModel) -> int:
@@ -214,35 +205,19 @@ class HouseHeaterCoordinator(IHeater):
             force_update = True
             self.current_offset = _offset
 
-    def keep_compressor_running(self, input_offset) -> int:
+    def _keep_compressor_running(self, offsetdata: CalculatedOffsetModel) -> None:
         """in certain conditions, up the offset to keep the compressor running for energy savings"""
-        dm_prediction = self._hvac.hub.sensors.dm_trend.predicted_time_at_value(0)
+        dm_zero_prediction = self._hvac.hub.sensors.dm_trend.predicted_time_at_value(0)
         now = datetime.now()
-        if any([
-            self._hvac.hvac_mode is not HvacMode.Heat,
-            self._hvac.hub.sensors.average_temp_outdoors.value >= 0,
-            dm_prediction is None,
-            dm_prediction > now + timedelta(hours=1)
-        ]):
-            return input_offset
-        return input_offset + 1
-
-    def _add_temp_boost(self, pre_offset: int) -> int:
-        #todo: is this one really needed?
-        if not self._latest_boost.is_timeout():
-            if self._hvac.hub.sensors.get_tempdiff() > 1:
-                pre_offset -= 1
-                self._latest_boost.reset()
-            return pre_offset
-        if not all([
-            self._hvac.hvac_mode == HvacMode.Idle,
-            self._hvac.hub.sensors.get_tempdiff() < 0,
-            self._hvac.hub.sensors.temp_trend_indoors.trend <= 0.3,
-        ]):
-            return pre_offset
-        _LOGGER.debug("Adding additional heating since there is no sunwarming happening and house is too cold.")
-        self._latest_boost.update()
-        return pre_offset + 1
+        if dm_zero_prediction is not None:
+            if all([
+                self._hvac.hvac_mode is HvacMode.Heat,
+                self._hvac.compressor_frequency > 0,
+                self._hvac.hub.sensors.average_temp_outdoors.value < 0,
+                dm_zero_prediction < now + timedelta(hours=1)
+            ]):
+                #_LOGGER.debug(f"adjusting keep compressor running. {offsetdata.current_offset + 1}")
+                offsetdata.current_offset += 1
 
     async def async_update_operation(self):
         pass

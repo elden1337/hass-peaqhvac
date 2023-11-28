@@ -149,6 +149,7 @@ class OffsetCoordinator:
                 _LOGGER.warning(f"Hub is ready but I'm unable to set offset. Prices num:{len(self.prices) if self.prices else 0}")
 
     def adjust_to_threshold(self, offsetdata: CalculatedOffsetModel) -> int:
+        #_LOGGER.debug(f"this is the offset: {offsetdata.current_offset}")
         adjustment = offsetdata.sum_values()
         if adjustment is None or self._hub.sensors.average_temp_outdoors.value > 13:
             return 0
