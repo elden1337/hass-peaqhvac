@@ -12,6 +12,7 @@
         "data": {
           "outdoor_temp_stop_heating": "[%key:common::config_flow::data::outdoor_temp_stop_heating%]",
           "non_hours_water_boost": "[%key:common::config_flow::data::non_hours_water_boost%]",
+          "demand_hours_water_boost": "[%key:common::config_flow::data::demand_hours_water_boost%]",
           "low_degree_minutes": "[%key:common::config_flow::data::low_degree_minutes%]",
           "very_cold_temp": "[%key:common::config_flow::data::very_cold_temp%]"
         }
@@ -34,6 +35,7 @@
           "outdoor_tempsensors": "[%key:common::config_flow::data::outdoor_tempsensors%]",
           "outdoor_temp_stop_heating": "[%key:common::config_flow::data::outdoor_temp_stop_heating%]",
           "non_hours_water_boost": "[%key:common::config_flow::data::non_hours_water_boost%]",
+          "demand_hours_water_boost": "[%key:common::config_flow::data::demand_hours_water_boost%]",
           "low_degree_minutes": "[%key:common::config_flow::data::low_degree_minutes%]",
           "very_cold_temp": "[%key:common::config_flow::data::very_cold_temp%]"
         }

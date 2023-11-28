@@ -12,6 +12,7 @@
         "data": {
           "outdoor_temp_stop_heating": "Stop heating temp",
           "non_hours_water_boost": "Nonhours waterboost",
+          "demand_hours_water_boost": "High demand hours waterboost",
           "low_degree_minutes": "Low DM-value",
           "very_cold_temp": "Very cold temp"
         }
@@ -37,6 +38,7 @@
           "outdoor_tempsensors": "Temp sensors outdoors. comma-separated",
           "outdoor_temp_stop_heating": "Stop heating temp",
           "non_hours_water_boost": "Nonhours waterboost",
+          "demand_hours_water_boost": "High demand hours waterboost",
           "low_degree_minutes": "Low DM-value",
           "very_cold_temp": "Very cold temp"
         }

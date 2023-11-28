@@ -73,6 +73,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         _outdoortemps = await self._get_existing_param("outdoor_tempsensors", "")
         _stopheatingtemp = await self._get_existing_param("outdoor_temp_stop_heating", 15)
         _nonhours_waterboost = await self._get_existing_param("non_hours_water_boost", [])
+        _demandhours_waterboost = await self._get_existing_param("demand_hours_water_boost", [])
         _lowdm = await self._get_existing_param("low_degree_minutes", "-600")
         _verycoldtemp = await self._get_existing_param("very_cold_temp", "-12")
 
@@ -83,6 +84,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional("indoor_tempsensors", default=_indoortemps): cv.string,
                 vol.Optional("outdoor_tempsensors", default=_outdoortemps): cv.string,
                 vol.Optional("outdoor_temp_stop_heating", default=_stopheatingtemp): cv.positive_int,
+                vol.Optional("demand_hours_water_boost", default=_demandhours_waterboost): cv.multi_select(
+                    list(range(0, 24))),
                 vol.Optional("non_hours_water_boost", default=_nonhours_waterboost): cv.multi_select(list(range(0, 24))),
                 vol.Optional("low_degree_minutes", default=_lowdm): cv.string,
                 vol.Optional("very_cold_temp", default=_verycoldtemp): cv.string,

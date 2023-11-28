@@ -21,6 +21,7 @@ class MiscOptions:
 class HeatingOptions:
     outdoor_temp_stop_heating: int = 999
     non_hours_water_boost: list[int] = field(default_factory=lambda: [])
+    demand_hours_water_boost: list[int] = field(default_factory=lambda: [])
     low_degree_minutes: int = -9999
     very_cold_temp: int = -999
 

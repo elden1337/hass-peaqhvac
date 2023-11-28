@@ -12,6 +12,7 @@
         "data": {
           "outdoor_temp_stop_heating": "Zastaviť ohrev tepl",
           "non_hours_water_boost": "Nonhours waterboost",
+          "demand_hours_water_boost": "High demand hours waterboost",
           "low_degree_minutes": "Nízka hodnota DM",
           "very_cold_temp": "Veľmi nízka teplota"
         }
@@ -37,6 +38,7 @@
           "outdoor_tempsensors": "Vonkajšie snímače teploty. oddelená čiarka",
           "outdoor_temp_stop_heating": "Zastaviť ohrev teploty",
           "non_hours_water_boost": "Nonhours waterboost",
+          "demand_hours_water_boost": "High demand hours waterboost",
           "low_degree_minutes": "Nízka hodnota DM",
           "very_cold_temp": "Veľmi nízka teplota"
         }

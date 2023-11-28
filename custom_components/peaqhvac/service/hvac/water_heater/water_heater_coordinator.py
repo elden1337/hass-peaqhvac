@@ -121,12 +121,12 @@ class WaterHeater(IHeater):
             prices_today=self._hub.spotprice.model.prices,
             prices_tomorrow=self._hub.spotprice.model.prices_tomorrow,
             min_price=self._hub.sensors.peaqev_facade.min_price,
-            demand=DEMAND_MINUTES[preset][demand],
             preset=preset,
             temp=self.current_temperature,
             temp_trend=self._temp_trend.gradient_raw,
             target_temp=target_temp,
             non_hours=self._hub.options.heating_options.non_hours_water_boost,
+            high_demand_hours=self._hub.options.heating_options.demand_hours_water_boost,
             latest_boost=datetime.fromtimestamp(self.model.latest_boost_call),
         )
         if ret != self.model.next_water_heater_start:
@@ -134,10 +134,6 @@ class WaterHeater(IHeater):
             self.model.next_water_heater_start = ret
         return ret
 
-    """
-    non_hours = None,
-    high_demand_hours = None,
-"""
     async def async_reset_water_boost(self):
         self.model.water_boost.value = False
         await self.async_update_operation()
