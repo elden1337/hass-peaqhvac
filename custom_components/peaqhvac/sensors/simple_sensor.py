@@ -32,7 +32,7 @@ class PeaqSimpleSensor(SensorBase, RestoreEntity):
         if ret is not None:
             if self._internal_entity == NEXT_WATER_START:
                 self._state = self._set_next_start(ret)
-                self._groups = self._create_groups_display(self._hub.hvac.water_heater.booster.groups)
+                self._groups = self._create_groups_display(self._hub.hvac.water_heater.booster.model.groups)
             else:
                 self._state = ret
 

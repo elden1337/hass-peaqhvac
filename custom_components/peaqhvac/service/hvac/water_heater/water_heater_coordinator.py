@@ -115,7 +115,6 @@ class WaterHeater(IHeater):
             """no need to calculate if we are already heating or trying to heat"""
             self.model.next_water_heater_start = datetime.max
             return self.model.next_water_heater_start
-        demand = self._get_demand()
         preset = self._hub.sensors.set_temp_indoors.preset
         ret = self.booster.next_predicted_demand(
             prices_today=self._hub.spotprice.model.prices,
