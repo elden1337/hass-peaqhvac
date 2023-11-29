@@ -9,7 +9,6 @@ from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 from custom_components.peaqhvac.service.hvac.water_heater.const import *
 
-
 # from enum import Enum
 
 # class GroupType(Enum):
@@ -139,7 +138,7 @@ class NextWaterBoostModel:
         if non_hours is None:
             non_hours = []
         if high_demand_hours is None:
-            high_demand_hours = {}
+            high_demand_hours = []
         self.min_price = min_price
         self.prices = prices_today + prices_tomorrow
         self.set_now_dt(now_dt)
@@ -164,13 +163,15 @@ class NextWaterBoostModel:
     def set_now_dt(self, now_dt=None) -> None:
         self.now_dt = datetime.now() if now_dt is None else now_dt
 
-    def set_floating_mean(self, now_dt=None) -> float:
+    def set_floating_mean(self, now_dt=None) -> None:
         self.floating_mean = mean(self.prices[self.now_dt.hour:])
 
     def _group_prices(self, prices_today: list, prices_tomorrow: list) -> None:
         today_len = len(prices_today)
         std_dev = stdev(self.prices)
         average = mean(self.prices)
+        std_dev_tomorrow = None
+        average_tomorrow = None
         if len(prices_tomorrow):
             std_dev_tomorrow = stdev(prices_tomorrow)
             average_tomorrow = mean(prices_tomorrow)
@@ -204,18 +205,6 @@ class NextWaterBoostModel:
 
 
 class NextWaterBoost:
-    """
-    make sure to take into account that temp may be way lower than now on calculated start.
-    ie, if now is 8am, and it's cold but expensive, the next start may be 8pm but then temp will be lower and may need more demand_minutes.
-
-    if we are approaching a high period, so that next water boost is calculated in approx 8hrs:
-    - what will the estimated temperature be of the water in 8hrs?
-    - when (if before) do we estimate the temperature to be below threshold?
-    - if there are high-demand hours between now and the 8hrs, what will the temperature be for each of those?
-	    >- if there is a high-demand hour coming up in let's say 5 hours, what would be the cheapest period from now til then to make sure water is warm enough?
-
-    """
-
     def __init__(self):
         self.model = NextWaterBoostModel()
 
@@ -232,9 +221,9 @@ class NextWaterBoost:
             non_hours=None,
             high_demand_hours=None,
             latest_boost: datetime = None,
-    ) -> datetime:
+    ) -> tuple[datetime, int | None]:
         if len(prices_today) < 1:
-            return datetime.max
+            return datetime.max, None
         self.model.init_vars(temp, temp_trend, target_temp, prices_today, prices_tomorrow, preset, min_price, non_hours,
                              high_demand_hours, now_dt, latest_boost)
 
@@ -242,7 +231,7 @@ class NextWaterBoost:
             delay_dt=None if self.model.cold_limit == now_dt else self.model.cold_limit
         )
 
-    def _get_next_start(self, delay_dt=None) -> datetime:
+    def _get_next_start(self, delay_dt=None) -> tuple[datetime, int | None]:
         last_known = self._last_known_price()
         latest_limit = self.model.latest_boost + timedelta(hours=24) if self.model.latest_boost else datetime.now()
 
@@ -252,10 +241,10 @@ class NextWaterBoost:
                 minute=self._set_minute_start(now_dt=datetime.now()),
                 second=0,
                 microsecond=0
-            )
+            ), None
 
         # calculate vanilla next start
-        next_dt = self._calculate_next_start()
+        next_dt = self._calculate_next_start(delay_dt)
 
         intersecting_non_hours = self._intersecting_special_hours(self.model.non_hours, next_dt)
         intersecting_demand_hours = self._intersecting_special_hours(self.model.demand_hours, next_dt)
@@ -264,19 +253,21 @@ class NextWaterBoost:
             best_match = self._get_best_match(intersecting_non_hours, intersecting_demand_hours)
             if best_match:
                 expected_temp = self._get_temperature_at_datetime(best_match)
-                return self._set_start_dt(
+                ret = self._set_start_dt(
                     low_period=0,
                     delayed_dt=best_match,
                     new_demand=max(DEMAND_MINUTES[self.model.preset][get_demand(expected_temp)], 24)
                     # special demand because demand_hour
-                )
+                ), max(DEMAND_MINUTES[self.model.preset][get_demand(expected_temp)], 24)
+                if ret[0] - self.model.latest_boost > timedelta(hours=1):
+                    return ret
 
         expected_temp = self._get_temperature_at_datetime(next_dt)
         return self._set_start_dt(
             low_period=0,
             delayed_dt=next_dt,
             new_demand=DEMAND_MINUTES[self.model.preset][get_demand(expected_temp)]
-        )
+        ), None
 
     @staticmethod
     def _get_best_match(non_hours, demand_hours) -> Any | None:
@@ -295,45 +286,17 @@ class NextWaterBoost:
             return []
         return list(sorted(intersection))
 
-    # def intersecting_demand_hour(self, next_dt) -> datetime|None:
-    #     intersections = self._intersecting_special_hours(self.model.demand_hours, next_dt)
-    #     if not len(intersections):
-    #         return None
-    #     next_intersecting_demand_hour = min(intersections)
-
-    #     new_start_hour = self._find_lowest_consecutive_combination({k:v for k, v in self.model.price_dt.items() if k >= self.model.now_dt and k <= next_intersecting_demand_hour}, 2)
-    #     new_demand = get_demand(self._get_temperature_at_datetime(new_start_hour+timedelta(hours=1)))
-    #     return self._set_start_dt(low_period=0, delayed_dt=new_start_hour, new_demand=DEMAND_MINUTES[self.model.preset][new_demand], delayed=True)
-
     def _get_temperature_at_datetime(self, target_dt) -> float:
         delay = (target_dt - self.model.now_dt).total_seconds() / 3600
         return self.model.current_temp + (delay * self.model.temp_trend)
 
-    # def _find_lowest_consecutive_combination(self, hours:dict, n) -> datetime:
-    #     min_sum = float('inf')
-    #     min_start_index = None
-    #     items = list(hours.items())
-    #     for i in range(len(items) - n + 1):
-    #         current_sum = sum(value for key, value in items[i:i+n])
-    #         if current_sum <= min_sum:
-    #             min_sum = current_sum
-    #             min_start_index = items[i][0]
-    #     return min_start_index
-
-    def _get_list_of_hours(self, start_dt: datetime, end_dt: datetime) -> list:
+    def _get_list_of_hours(self, start_dt: datetime, end_dt: datetime) -> set[datetime]:
         hours = []
         current = start_dt
         while current <= end_dt:
             hours.append(current.replace(minute=0, second=0, microsecond=0))
             current += timedelta(hours=1)
         return set(hours)
-
-    # def range_not_in_nonhours(self, _next_dt) -> bool:
-    #     if _next_dt.hour in self.model.non_hours:
-    #         return False
-    #     if _next_dt.hour + 1 in self.model.non_hours:
-    #         return False
-    #     return True
 
     def _last_known_price(self) -> datetime:
         try:
@@ -384,50 +347,25 @@ class NextWaterBoost:
             not any(item in checklist for item in non_hours)
         ])
 
-    def _calculate_next_start(self) -> datetime:
+    def _calculate_next_start(self, delay_dt=None) -> datetime:
+        check_dt = delay_dt if delay_dt else self.model.now_dt
+
         try:
-            if self.model.prices[self.model.now_dt.hour] < self.model.floating_mean and not any(
-                    [self.model.now_dt.hour in self.model.non_hours,
-                     self.model.now_dt.hour + 1 in self.model.non_hours]
+            if self.model.prices[check_dt.hour] < self.model.floating_mean and self.model.is_cold and not any(
+                    [check_dt.hour in self.model.non_hours,
+                     (check_dt + timedelta(hours=1)).hour in self.model.non_hours]
             ):
                 """This hour is cheap enough to start"""
                 low_period = self._get_low_period()
                 return self._set_start_dt(low_period=low_period)
-            print("checking A")
-            for i in range(self.model.now_dt.hour, len(self.model.prices) - 1):
+
+            for i in range(check_dt, len(self.model.prices) - 1):
                 """Search forward for other hours to start"""
                 if self._values_are_good(i):
                     return self._set_start_dt_params(i)
         except Exception as e:
             _LOGGER.error(f"Error on getting next start: {e}")
             return datetime.max
-
-    # def _calculate_last_start(self, group: list = []) -> datetime:
-    #     try:
-    #         _param_i = None
-    #         _range = range(self.model.now_dt.hour, min(len(self.model.prices) - 1, self.model.now_dt.hour + HOUR_LIMIT))
-    #         if len(group) > 1:
-    #             _range = range(self.model.now_dt.hour, max(group))
-    #         print("checking B", group)
-    #         for i in _range:
-    #             if self._values_are_good(i):
-    #                 _param_i = i
-    #         if _param_i is None:
-    #             return self._calculate_last_start_reverse()
-    #         return self._set_start_dt_params(_param_i)
-    #     except Exception as e:
-    #         _LOGGER.error(f"Error on getting last close start: {e}")
-    #         return datetime.max
-
-    # def _calculate_last_start_reverse(self):
-    #     try:
-    #         print("checking C")
-    #         for i in reversed(range(self.model.now_dt.hour,min(len(self.model.prices) - 1, self.model.now_dt.hour + HOUR_LIMIT))):
-    #             if self._values_are_good(i):
-    #                 return self._set_start_dt_params(i)
-    #     except Exception as e:
-    #         _LOGGER.error(f"Error on getting last start: {e}")
-    #         return datetime.max
 
     def _set_start_dt_params(self, i: int) -> datetime:
         delay = (i - self.model.now_dt.hour)
