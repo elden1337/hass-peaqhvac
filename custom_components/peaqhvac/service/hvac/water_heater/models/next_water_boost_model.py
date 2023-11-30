@@ -12,7 +12,7 @@ from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPre
 HOUR_LIMIT = 18
 DELAY_LIMIT = 48
 MIN_DEMAND = 26
-DEFAULT_TEMP_TREND = -0.4
+DEFAULT_TEMP_TREND = -0.5
 
 DEMAND_MINUTES = {
     HvacPresets.Normal: {
@@ -56,8 +56,11 @@ def get_demand(temp) -> Demand:
 
 @dataclass
 class NextWaterBoostModel:
-    prices: list = field(default_factory=lambda: [])
     min_price: float = None  # type: ignore
+    non_hours_raw: list[int] = field(default_factory=lambda: [], repr=False, compare=False)
+    demand_hours_raw: list[int] = field(default_factory=lambda: [], repr=False, compare=False)
+
+    prices: list = field(default_factory=lambda: [])
 
     preset: HvacPresets = HvacPresets.Normal
     now_dt: datetime = None  # type: ignore
@@ -72,18 +75,20 @@ class NextWaterBoostModel:
     non_hours: set = field(default_factory=lambda: [], init=False)
     demand_hours: set = field(default_factory=lambda: {}, init=False)
 
-    non_hours_raw: list[int] = field(default_factory=lambda: [], repr=False, compare=False)
-    demand_hours_raw: list[int] = field(default_factory=lambda: [], repr=False, compare=False)
-
     latest_calculation: datetime = field(default=None, init=False)
     should_update: bool = field(default=True, init=False)
+
+    def __post_init__(self):
+        self.now_dt = datetime.now() if self.now_dt is None else self.now_dt
+        self.non_hours = self._set_hours(self.non_hours_raw)
+        self.demand_hours = self._set_hours(self.demand_hours_raw)
 
     @property
     def cold_limit(self) -> datetime:
         if self.is_cold:
             return self.now_dt
         try:
-            hourdiff = (self.current_temp - self.target_temp) / self.temp_trend
+            hourdiff = (self.current_temp - self.target_temp) / -self.temp_trend
         except ZeroDivisionError:
             hourdiff = DELAY_LIMIT
         return self.now_dt + timedelta(hours=hourdiff)
@@ -111,14 +116,15 @@ class NextWaterBoostModel:
     def init_vars(self, temp, temp_trend, target_temp, prices_today: list, prices_tomorrow: list, preset: HvacPresets,
                   now_dt=None, latest_boost: datetime = None) -> None:
         self.set_now_dt(now_dt)
-
         new_prices = prices_today + prices_tomorrow
+        if new_prices != self.prices:
+            self.prices = new_prices
+            self.should_update = True
         new_non_hours = self._set_hours(self.non_hours_raw)
         new_demand_hours = self._set_hours(self.demand_hours_raw)
         new_temp_trend = DEFAULT_TEMP_TREND if temp_trend > DEFAULT_TEMP_TREND else temp_trend
 
         if any([
-            self.prices != new_prices,
             self.latest_boost != latest_boost,
             self.non_hours != new_non_hours,
             self.demand_hours != new_demand_hours,
@@ -126,7 +132,7 @@ class NextWaterBoostModel:
             self.temp_trend != new_temp_trend,
             self.current_temp != temp,
             self.target_temp != target_temp
-                ]):
+        ]) and not self.should_update:
             self.should_update = True
 
         self.prices = new_prices

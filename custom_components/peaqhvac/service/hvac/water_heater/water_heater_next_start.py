@@ -48,6 +48,7 @@ class NextWaterBoost:
         latest_limit = self.model.latest_boost + timedelta(hours=24) if self.model.latest_boost else datetime.now()
         if latest_limit < self.model.now_dt and self.model.is_cold:
             """It's been too long since last boost. Boost now."""
+            _LOGGER.debug(f"next boost now due to it being more than 24h since last time")
             return self.model.now_dt.replace(
                 minute=self._set_minute_start(now_dt=datetime.now()),
                 second=0,
@@ -57,7 +58,8 @@ class NextWaterBoost:
         next_dt = self._calculate_next_start(delay_dt)  # todo: must also use latestboost +24h in this.
 
         intersecting1 = self._check_intersecting(next_dt, last_known)
-        if intersecting1:
+        if intersecting1 and intersecting1[0] > self.model.cold_limit:
+            _LOGGER.debug(f"returning next boost based on intersection of hours. original: {next_dt}, inter: {intersecting1}")
             return intersecting1
 
         expected_temp = min(self._get_temperature_at_datetime(next_dt), 39)
@@ -73,7 +75,7 @@ class NextWaterBoost:
         if intersecting_demand_hours:
             best_match = self._get_best_match(intersecting_non_hours, intersecting_demand_hours)
             if best_match:
-                # print(f"best match: {best_match}")
+                print(f"best match: {best_match}")
                 expected_temp = min(self._get_temperature_at_datetime(best_match), 39)
                 ret = self._set_start_dt(
                     low_period=0,
@@ -92,7 +94,7 @@ class NextWaterBoost:
         for hour in range(first_demand.hour - 1, -1, -1):
             if hour not in non_hours:
                 if hour - 1 not in non_hours:
-                    return first_demand.replace(hour=hour - 1)
+                    return first_demand.replace(hour=hour)
         return None
 
     def _intersecting_special_hours(self, hourslist, next_dt) -> list[datetime]:
@@ -166,10 +168,7 @@ class NextWaterBoost:
 
     def _calculate_next_start(self, delay_dt=None) -> datetime:
         check_dt = (delay_dt if delay_dt else self.model.now_dt).replace(minute=0, second=0, microsecond=0)
-        if self.model.is_cold:
-            print("is cold")
-        else:
-            print("is not cold- will be at:", self.model.cold_limit)
+        print("is cold") if self.model.is_cold else print("is not cold- will be at:", self.model.cold_limit)
         try:
             if self.model.prices[check_dt.hour] < self.model.floating_mean and self.model.is_cold and not any(
                     [
@@ -196,8 +195,13 @@ class NextWaterBoost:
             current_sum = self.model.prices[i] + self.model.prices[i + 1]
             if current_sum < min_sum:
                 if self._values_are_good(i):
+                    if self.model.is_cold:
+                        print(f"it is cold so i'm returning {i} despite it not being the lowest hour")
+                        return i
+                    elif self.model.cold_limit < (self.model.now_dt.replace(hour=0) + timedelta(hours=i)):
+                        print(f"it is not cold yet but i'm returning {i} despite it not being the lowest hour since i think it will be cold by then")
+                        return i
                     # todo: should also check so that i is not more than 24hr from latest boost.
-                    # todo: should also check if we would bump into any demand hours before this hour. So we don't forget that.
                     min_sum = current_sum
                     min_start_index = i
         return min_start_index

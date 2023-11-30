@@ -77,10 +77,11 @@ class WaterHeater(IHeater):
 
     @current_temperature.setter
     def current_temperature(self, val):
+        floatval = float(val)
         try:
-            self.temp_trend.add_reading(val=float(val), t=time.time())
-            if self._current_temp != float(val):
-                self._current_temp = float(val)
+            self._check_and_add_trend_reading(floatval)
+            if self._current_temp != floatval:
+                self._current_temp = floatval
                 old_demand = self.demand.value
                 self.demand = self._current_temp
                 if self.demand.value != old_demand:
@@ -90,6 +91,16 @@ class WaterHeater(IHeater):
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
             self.model.water_boost.value = False
+
+    def _check_and_add_trend_reading(self, val):
+        raw = self.temp_trend.samples_raw
+        if len(raw) > 0:
+            last = raw[-1]
+            if last[1] != val or time.time() - last[0] > 300:
+                self.temp_trend.add_reading(val=val, t=time.time())
+            else:
+                return
+        self.temp_trend.add_reading(val=val, t=time.time())
 
     @property
     def demand(self) -> Demand:
