@@ -110,6 +110,8 @@ class NextWaterBoostModel:
 
     def init_vars(self, temp, temp_trend, target_temp, prices_today: list, prices_tomorrow: list, preset: HvacPresets,
                   now_dt=None, latest_boost: datetime = None) -> None:
+        self.set_now_dt(now_dt)
+
         new_prices = prices_today + prices_tomorrow
         new_non_hours = self._set_hours(self.non_hours_raw)
         new_demand_hours = self._set_hours(self.demand_hours_raw)
@@ -128,7 +130,6 @@ class NextWaterBoostModel:
             self.should_update = True
 
         self.prices = new_prices
-        self.set_now_dt(now_dt)
         self.latest_boost = latest_boost
         self.non_hours = new_non_hours
         self.demand_hours = new_demand_hours
