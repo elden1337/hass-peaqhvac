@@ -36,7 +36,12 @@ class WaterHeater(IHeater):
             max_age=3600, max_samples=50, precision=1, ignore=0, outlier=20
         )
         self.model = WaterBoosterModel(self._hub.state_machine)
-        self.booster = NextWaterBoost()
+        self.booster = NextWaterBoost(
+            min_price = self._hub.sensors.peaqev_facade.min_price,
+            non_hours = self._hub.options.heating_options.non_hours_water_boost,
+            demand_hours = self._hub.options.heating_options.demand_hours_water_boost
+        )
+
         self._hub.observer.add(ObserverTypes.OffsetsChanged, self._update_operation)
         self._hub.observer.add("water boost done", self.async_reset_water_boost)
         async_track_time_interval(
@@ -119,13 +124,10 @@ class WaterHeater(IHeater):
         ret, override_demand = self.booster.next_predicted_demand(
             prices_today=self._hub.spotprice.model.prices,
             prices_tomorrow=self._hub.spotprice.model.prices_tomorrow,
-            min_price=self._hub.sensors.peaqev_facade.min_price,
             preset=preset,
             temp=self.current_temperature,
             temp_trend=self.temp_trend.gradient_raw,
             target_temp=target_temp,
-            non_hours=self._hub.options.heating_options.non_hours_water_boost,
-            high_demand_hours=self._hub.options.heating_options.demand_hours_water_boost,
             latest_boost=datetime.fromtimestamp(self.model.latest_boost_call),
         )
         if ret != self.model.next_water_heater_start:

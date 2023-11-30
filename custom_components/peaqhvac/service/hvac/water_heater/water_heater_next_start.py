@@ -13,31 +13,31 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class NextWaterBoost:
-    def __init__(self):
-        self.model = NextWaterBoostModel()
-
+    def __init__(self, min_price: float = None, non_hours: list[int] = None, demand_hours: list[int] = None):
+        self.model = NextWaterBoostModel(min_price=min_price, non_hours_raw=non_hours, demand_hours_raw=demand_hours)
     def next_predicted_demand(
             self,
             prices_today: list,
             prices_tomorrow: list,
-            min_price: float,
             temp: float,
             temp_trend: float,
             target_temp: float,
             preset: HvacPresets = HvacPresets.Normal,
             now_dt=None,
-            non_hours=None,
-            high_demand_hours=None,
             latest_boost: datetime = None,
     ) -> tuple[datetime, int | None]:
         if len(prices_today) < 1:
             return datetime.max, None
-        self.model.init_vars(temp, temp_trend, target_temp, prices_today, prices_tomorrow, preset, min_price, non_hours,
-                             high_demand_hours, now_dt, latest_boost)
+        self.model.init_vars(temp, temp_trend, target_temp, prices_today, prices_tomorrow, preset, now_dt, latest_boost)
 
-        return self._get_next_start(
-            delay_dt=None if self.model.cold_limit == now_dt else self.model.cold_limit
-        )
+        next_start = self.model.latest_calculation
+        if self.model.should_update:
+            next_start = self._get_next_start(
+                delay_dt=None if self.model.cold_limit == now_dt else self.model.cold_limit
+            )
+            self.model.latest_calculation = next_start
+            self.model.should_update = False
+        return next_start
 
     def _get_next_start(self, delay_dt=None) -> tuple[datetime, int | None]:
         last_known = self._last_known_price()
@@ -67,7 +67,7 @@ class NextWaterBoost:
             new_demand=self.model.get_demand_minutes(expected_temp)
         ), None
 
-    def _check_intersecting(self, next_dt, last_known) -> datetime | None:
+    def _check_intersecting(self, next_dt, last_known) -> tuple[datetime, int | None]:
         intersecting_non_hours = self._intersecting_special_hours(self.model.non_hours, min(next_dt, last_known))
         intersecting_demand_hours = self._intersecting_special_hours(self.model.demand_hours, min(next_dt, last_known))
         if intersecting_demand_hours:

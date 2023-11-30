@@ -54,22 +54,29 @@ def get_demand(temp) -> Demand:
     return Demand.ErrorDemand
 
 
-
-
 @dataclass
 class NextWaterBoostModel:
     prices: list = field(default_factory=lambda: [])
     min_price: float = None  # type: ignore
-    groups: list = field(default_factory=lambda: [])
-    non_hours: set = field(default_factory=lambda: [])
-    demand_hours: set = field(default_factory=lambda: {})
+
     preset: HvacPresets = HvacPresets.Normal
     now_dt: datetime = None  # type: ignore
     latest_boost: datetime = None  # type: ignore
-    floating_mean: float = None  # type: ignore
+
     temp_trend: float = None  # type: ignore
     current_temp: float = None  # type: ignore
     target_temp: float = None  # type: ignore
+
+    floating_mean: float = field(default=None, init=False)
+    groups: list = field(default_factory=lambda: [], init=False)
+    non_hours: set = field(default_factory=lambda: [], init=False)
+    demand_hours: set = field(default_factory=lambda: {}, init=False)
+
+    non_hours_raw: list[int] = field(default_factory=lambda: [], repr=False, compare=False)
+    demand_hours_raw: list[int] = field(default_factory=lambda: [], repr=False, compare=False)
+
+    latest_calculation: datetime = field(default=None, init=False)
+    should_update: bool = field(default=True, init=False)
 
     @property
     def cold_limit(self) -> datetime:
@@ -102,22 +109,33 @@ class NextWaterBoostModel:
         return ret
 
     def init_vars(self, temp, temp_trend, target_temp, prices_today: list, prices_tomorrow: list, preset: HvacPresets,
-                  min_price: float, non_hours: list = None, high_demand_hours: dict = None, now_dt=None,
-                  latest_boost: datetime = None) -> None:
-        if non_hours is None:
-            non_hours = []
-        if high_demand_hours is None:
-            high_demand_hours = []
-        self.min_price = min_price
-        self.prices = prices_today + prices_tomorrow
+                  now_dt=None, latest_boost: datetime = None) -> None:
+        new_prices = prices_today + prices_tomorrow
+        new_non_hours = self._set_hours(self.non_hours_raw)
+        new_demand_hours = self._set_hours(self.demand_hours_raw)
+        new_temp_trend = DEFAULT_TEMP_TREND if temp_trend > DEFAULT_TEMP_TREND else temp_trend
+
+        if any([
+            self.prices != new_prices,
+            self.latest_boost != latest_boost,
+            self.non_hours != new_non_hours,
+            self.demand_hours != new_demand_hours,
+            self.preset != preset,
+            self.temp_trend != new_temp_trend,
+            self.current_temp != temp,
+            self.target_temp != target_temp
+                ]):
+            self.should_update = True
+
+        self.prices = new_prices
         self.set_now_dt(now_dt)
         self.latest_boost = latest_boost
-        self.non_hours = self._set_hours(non_hours)
-        self.demand_hours = self._set_hours(high_demand_hours)
+        self.non_hours = new_non_hours
+        self.demand_hours = new_demand_hours
         self.set_floating_mean()
         self._group_prices(prices_today, prices_tomorrow)
         self.preset = preset
-        self.temp_trend = DEFAULT_TEMP_TREND if temp_trend > DEFAULT_TEMP_TREND else temp_trend
+        self.temp_trend = new_temp_trend
         self.current_temp = temp
         self.target_temp = target_temp
 
