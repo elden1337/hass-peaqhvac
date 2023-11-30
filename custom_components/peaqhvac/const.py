@@ -7,6 +7,7 @@ PEAQENABLED = "enabled"
 TRENDSENSOR_INDOORS = "Temperature trend indoors"
 TRENDSENSOR_OUTDOORS = "Temperature trend outdoors"
 TRENDSENSOR_DM = "Degree Minutes trend"
+TRENDSENSOR_WATERTEMP = "Water temperature trend"
 
 AVERAGESENSOR_INDOORS = "Average temperature indoors"
 AVERAGESENSOR_OUTDOORS = "Average temperature outdoors"

@@ -15,7 +15,6 @@ class PeaqSensor(SensorBase, RestoreEntity):
         self._state = ""
 
         if self._sensorname == WATERDEMAND:
-            self._watertemp_trend = 0
             self._current_water_temperature = 0
             self._heat_water = False
             self._water_is_heating = False
@@ -29,7 +28,6 @@ class PeaqSensor(SensorBase, RestoreEntity):
         attr_dict = {}
 
         if self._sensorname == WATERDEMAND:
-            attr_dict["watertemp_trend °/h"] = self._watertemp_trend
             attr_dict["current_temperature"] = self._current_water_temperature
             attr_dict["heat_water"] = self._heat_water
             attr_dict["water_is_heating"] = self._water_is_heating
@@ -44,7 +42,6 @@ class PeaqSensor(SensorBase, RestoreEntity):
             self._state = self._hub.hvac.house_heater.demand.value
         elif self._sensorname == WATERDEMAND:
             self._state = self._hub.hvac.water_heater.demand.value
-            self._watertemp_trend = self._hub.hvac.water_heater.temperature_trend
             self._current_water_temperature = self._hub.hvac.hvac_watertemp
             self._heat_water = self._hub.hvac.water_heater.model.water_boost.value
             self._water_is_heating = self._hub.hvac.water_heater.water_heating

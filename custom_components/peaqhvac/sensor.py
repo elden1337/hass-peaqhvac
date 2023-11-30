@@ -6,7 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import AVERAGESENSORS, DEMANDSENSORS, DOMAIN, NEXT_WATER_START, LATEST_WATER_BOOST, \
-    TRENDSENSOR_DM, TRENDSENSOR_OUTDOORS, TRENDSENSOR_INDOORS
+    TRENDSENSOR_DM, TRENDSENSOR_OUTDOORS, TRENDSENSOR_INDOORS, TRENDSENSOR_WATERTEMP
 from .sensors.min_maxsensor import AverageSensor
 from .sensors.money_data_sensor import PeaqMoneyDataSensor
 from .sensors.offsetsensor import OffsetSensor
@@ -30,8 +30,6 @@ async def async_setup_entry(
     async_add_entities(peaqsensors, update_before_add=True)
 
 
-
-
 async def _gather_sensors(hub, config, hass) -> list:
     TRENDSENSORS = [
         {
@@ -53,6 +51,15 @@ async def _gather_sensors(hub, config, hass) -> list:
             "unit":   "DM/h",
             "extra_attributes": {
                 "time_at_zero": (hub.sensors.dm_trend.predicted_time_at_value, 0)
+            }
+        },
+        {
+            "name":                 TRENDSENSOR_WATERTEMP,
+            "sensor":           hub.hvac.water_heater.temp_trend,
+            "icon":             "mdi:thermometer-water",
+            "unit":             "°C/h",
+            "extra_attributes": {
+                "time_at_40": (hub.hvac.water_heater.temp_trend.predicted_time_at_value, 40)
             }
         }
     ]

@@ -32,8 +32,8 @@ class WaterHeater(IHeater):
         self._current_temp = None
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
-        self._temp_trend = Gradient(
-            max_age=3600, max_samples=10, precision=1, ignore=0, outlier=20
+        self.temp_trend = Gradient(
+            max_age=3600, max_samples=50, precision=1, ignore=0, outlier=20
         )
         self.model = WaterBoosterModel(self._hub.state_machine)
         self.booster = NextWaterBoost()
@@ -50,7 +50,7 @@ class WaterHeater(IHeater):
     @property
     def temperature_trend(self) -> float:
         """returns the current temp_trend in C/hour"""
-        return self._temp_trend.trend
+        return self.temp_trend.trend
 
     @property
     def latest_boost_call(self) -> str:
@@ -73,7 +73,7 @@ class WaterHeater(IHeater):
     @current_temperature.setter
     def current_temperature(self, val):
         try:
-            self._temp_trend.add_reading(val=float(val), t=time.time())
+            self.temp_trend.add_reading(val=float(val), t=time.time())
             if self._current_temp != float(val):
                 self._current_temp = float(val)
                 old_demand = self.demand.value
@@ -122,7 +122,7 @@ class WaterHeater(IHeater):
             min_price=self._hub.sensors.peaqev_facade.min_price,
             preset=preset,
             temp=self.current_temperature,
-            temp_trend=self._temp_trend.gradient_raw,
+            temp_trend=self.temp_trend.gradient_raw,
             target_temp=target_temp,
             non_hours=self._hub.options.heating_options.non_hours_water_boost,
             high_demand_hours=self._hub.options.heating_options.demand_hours_water_boost,
