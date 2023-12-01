@@ -51,7 +51,7 @@ class NextWaterBoost:
                 minute=self._set_minute_start()
             ), None
 
-        next_dt = self._calculate_next_start(delay_dt)  # todo: must also use latestboost +24h in this.
+        next_dt, override_demand = self._calculate_next_start(delay_dt)  # todo: must also use latestboost +24h in this.
         intersecting1 = self._check_intersecting(next_dt, last_known)
         if intersecting1[0] or next_dt == datetime.max:
             _LOGGER.debug(
@@ -64,7 +64,7 @@ class NextWaterBoost:
             low_period=0,
             delayed_dt=retval,
             new_demand=self.model.get_demand_minutes(expected_temp)
-        ), None
+        ), override_demand
 
     def _check_intersecting(self, next_dt, last_known) -> tuple[datetime, int | None]:
         intersecting_non_hours = self._intersecting_special_hours(self.model.non_hours, min(next_dt, last_known))
@@ -166,7 +166,7 @@ class NextWaterBoost:
             not any(item in checklist for item in non_hours)
         ])
 
-    def _calculate_next_start(self, delay_dt=None) -> datetime:
+    def _calculate_next_start(self, delay_dt=None) -> tuple[datetime, int | None]:
         check_dt = (delay_dt if delay_dt else self.model.now_dt).replace(minute=0)
         # print("is cold") if self.model.is_cold else print("is not cold- will be at:", self.model.cold_limit)
         try:
@@ -178,7 +178,7 @@ class NextWaterBoost:
             ):
                 """This hour is cheap enough to start"""
                 low_period = self._get_low_period()
-                return self._set_start_dt(low_period=low_period)
+                return self._set_start_dt(low_period=low_period), None
 
             if len(self.model.demand_hours):
                 loopstart = self.model.now_dt.hour
@@ -190,18 +190,20 @@ class NextWaterBoost:
                                           default=self.model.now_dt)
                 loopend = min(len(self.model.prices) - 1, int((
                                                                           min_demand_hour - self.model.now_dt).total_seconds() / 3600) + self.model.now_dt.hour)
+                override_demand = max(self.model.get_demand_minutes(self.model.current_temp), 26)
             else:
                 loopstart = int(
                     (self.model.cold_limit - self.model.now_dt).total_seconds() / 3600) + self.model.now_dt.hour
                 loopend = len(self.model.prices) - 1
                 use_floating_mean = True
+                override_demand = None
             i = self.find_lowest_2hr_combination(loopstart, loopend, use_floating_mean)
             if i:
-                return self._set_start_dt_params(i)
-            return datetime.max
+                return self._set_start_dt_params(i), override_demand
+            return datetime.max, None
         except Exception as e:
             _LOGGER.error(f"Error on getting next start: {e}")
-            return datetime.max
+            return datetime.max, None
 
     def find_lowest_2hr_combination(self, start_index: int, end_index: int, use_floating_mean: bool = True) -> int:
         min_sum = float('inf')
