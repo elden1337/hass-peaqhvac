@@ -59,11 +59,11 @@ class NextWaterBoostModel:
     min_price: float = None  # type: ignore
     non_hours_raw: list[int] = field(default_factory=lambda: [], repr=False, compare=False)
     demand_hours_raw: list[int] = field(default_factory=lambda: [], repr=False, compare=False)
-
+    initialized: bool = False
     prices: list = field(default_factory=lambda: [])
 
     preset: HvacPresets = HvacPresets.Normal
-    now_dt: datetime = None  # type: ignore
+    _now_dt: datetime = None  # type: ignore
     latest_boost: datetime = None  # type: ignore
 
     temp_trend: float = None  # type: ignore
@@ -71,7 +71,6 @@ class NextWaterBoostModel:
     target_temp: float = None  # type: ignore
 
     floating_mean: float = field(default=None, init=False)
-    groups: list = field(default_factory=lambda: [], init=False)
     non_hours: set = field(default_factory=lambda: [], init=False)
     demand_hours: set = field(default_factory=lambda: {}, init=False)
 
@@ -79,7 +78,7 @@ class NextWaterBoostModel:
     should_update: bool = field(default=True, init=False)
 
     def __post_init__(self):
-        self.now_dt = datetime.now() if self.now_dt is None else self.now_dt
+        self._now_dt = datetime.now() if self.now_dt is None else self.now_dt
         self.non_hours = self._set_hours(self.non_hours_raw)
         self.demand_hours = self._set_hours(self.demand_hours_raw)
         self.latest_boost = self.now_dt if self.latest_boost is None else self.latest_boost
@@ -107,15 +106,12 @@ class NextWaterBoostModel:
         return DEMAND_MINUTES[self.preset][self.demand]
 
     @property
-    def price_dt(self) -> dict[datetime, float]:
-        ret = {}
-        start_dt = self.now_dt.replace(hour=0, minute=0, second=0, microsecond=0)
-        for i, price in enumerate(self.prices):
-            ret[start_dt + timedelta(hours=i)] = price
-        return ret
+    def now_dt(self) -> datetime:
+        return self._now_dt.replace(second=0, microsecond=0) if self._now_dt else None
 
-    def init_vars(self, temp, temp_trend, target_temp, prices_today: list, prices_tomorrow: list, preset: HvacPresets,
+    def update(self, temp, temp_trend, target_temp, prices_today: list, prices_tomorrow: list, preset: HvacPresets,
                   now_dt=None, latest_boost: datetime = None) -> None:
+        _old_dt = self.now_dt
         self.set_now_dt(now_dt)
         new_prices = prices_today + prices_tomorrow
         if new_prices != self.prices:
@@ -126,6 +122,7 @@ class NextWaterBoostModel:
         new_temp_trend = DEFAULT_TEMP_TREND if temp_trend > DEFAULT_TEMP_TREND else temp_trend
 
         if any([
+            _old_dt.hour != self.now_dt.hour,
             self.latest_boost != latest_boost,
             self.non_hours != new_non_hours,
             self.demand_hours != new_demand_hours,
@@ -141,62 +138,25 @@ class NextWaterBoostModel:
         self.non_hours = new_non_hours
         self.demand_hours = new_demand_hours
         self.set_floating_mean()
-        self._group_prices(prices_today, prices_tomorrow)
         self.preset = preset
         self.temp_trend = new_temp_trend
         self.current_temp = temp
         self.target_temp = target_temp
+        self.initialized = True
 
     def get_demand_minutes(self, expected_temp) -> int:
         return DEMAND_MINUTES[self.preset][get_demand(expected_temp)]
 
     def _set_hours(self, input_hours: list) -> set:
         ret = set()
-        start_dt = self.now_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_dt = self.now_dt.replace(hour=0, minute=0)
         for i in range(0, len(self.prices)):
             if i in input_hours:
                 ret.add(start_dt + timedelta(hours=i))
         return ret
 
     def set_now_dt(self, now_dt=None) -> None:
-        self.now_dt = datetime.now() if now_dt is None else now_dt
+        self._now_dt = datetime.now() if now_dt is None else now_dt
 
     def set_floating_mean(self, now_dt=None) -> None:
         self.floating_mean = mean(self.prices[self.now_dt.hour:])
-
-    def _group_prices(self, prices_today: list, prices_tomorrow: list) -> None:
-        today_len = len(prices_today)
-        std_dev = stdev(self.prices)
-        average = mean(self.prices)
-        std_dev_tomorrow = None
-        average_tomorrow = None
-        if len(prices_tomorrow):
-            std_dev_tomorrow = stdev(prices_tomorrow)
-            average_tomorrow = mean(prices_tomorrow)
-        continuous_groups = []
-        current_group = [0]
-
-        def __set_group_type(_average, flat, average):
-            if flat:
-                return GroupType.FLAT
-            if _average < average or _average < self.min_price:
-                return GroupType.LOW
-            elif _average > 1.5 * average:
-                return GroupType.HIGH
-            else:
-                return GroupType.MID
-
-        for i in range(1, len(self.prices)):
-            if i == today_len:
-                std_dev = std_dev_tomorrow
-                average = average_tomorrow
-            if abs(self.prices[i] - self.prices[current_group[-1]]) <= std_dev and self.prices[i] not in self.non_hours:
-                current_group.append(i)
-            else:
-                group_type = __set_group_type(mean([self.prices[j] for j in current_group]), len(current_group) == 24,
-                                              average)
-                continuous_groups.append(Group(group_type, current_group))
-                current_group = [i]
-        group_type = __set_group_type(mean([self.prices[j] for j in current_group]), len(current_group) == 24, average)
-        continuous_groups.append(Group(group_type, current_group))
-        self.groups = continuous_groups
