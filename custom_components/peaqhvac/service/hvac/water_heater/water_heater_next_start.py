@@ -41,11 +41,8 @@ class NextWaterBoost:
 
     def _get_next_start(self, delay_dt=None) -> tuple[datetime, int | None]:
         last_known = self._last_known_price()
-        # check_dt: datetime = last_known
-        # if delay_dt:
-        #     check_dt = min(delay_dt, last_known)
+        latest_limit = self.model.latest_boost + timedelta(hours=24) if self.model.latest_boost else self.model.now_dt
 
-        latest_limit = self.model.latest_boost + timedelta(hours=24) if self.model.latest_boost else datetime.now()
         if latest_limit < self.model.now_dt and self.model.is_cold:
             """It's been too long since last boost. Boost now."""
             _LOGGER.debug(f"next boost now due to it being more than 24h since last time")
@@ -56,16 +53,16 @@ class NextWaterBoost:
             ), None
 
         next_dt = self._calculate_next_start(delay_dt)  # todo: must also use latestboost +24h in this.
-
         intersecting1 = self._check_intersecting(next_dt, last_known)
-        if intersecting1 and intersecting1[0] > self.model.cold_limit:
+        if intersecting1 and (intersecting1[0] > self.model.cold_limit or next_dt == datetime.max):
             _LOGGER.debug(f"returning next boost based on intersection of hours. original: {next_dt}, inter: {intersecting1}")
             return intersecting1
 
         expected_temp = min(self._get_temperature_at_datetime(next_dt), 39)
+        retval = min(next_dt, (latest_limit if latest_limit < last_known else datetime.max))
         return self._set_start_dt(
             low_period=0,
-            delayed_dt=next_dt,
+            delayed_dt=retval,
             new_demand=self.model.get_demand_minutes(expected_temp)
         ), None
 
@@ -75,7 +72,7 @@ class NextWaterBoost:
         if intersecting_demand_hours:
             best_match = self._get_best_match(intersecting_non_hours, intersecting_demand_hours)
             if best_match:
-                print(f"best match: {best_match}")
+                #print(f"best match: {best_match}")
                 expected_temp = min(self._get_temperature_at_datetime(best_match), 39)
                 ret = self._set_start_dt(
                     low_period=0,
@@ -157,18 +154,18 @@ class NextWaterBoost:
                 low_period += 60
         return low_period
 
-    def _values_are_good(self, i) -> bool:
+    def _values_are_good(self, i, use_floating_mean) -> bool:
         checklist = [i, i + 1, i - 23, i - 24]
         non_hours = [dt.hour for dt in self.model.non_hours]
         return all([
-            self.model.prices[i] < self.model.floating_mean or self.model.prices[i] < self.model.min_price,
-            self.model.prices[i + 1] < self.model.floating_mean or self.model.prices[i + 1] < self.model.min_price,
+            (self.model.prices[i] < self.model.floating_mean if use_floating_mean else True) or self.model.prices[i] < self.model.min_price,
+            (self.model.prices[i + 1] < self.model.floating_mean if use_floating_mean else True) or self.model.prices[i + 1] < self.model.min_price,
             not any(item in checklist for item in non_hours)
         ])
 
     def _calculate_next_start(self, delay_dt=None) -> datetime:
         check_dt = (delay_dt if delay_dt else self.model.now_dt).replace(minute=0, second=0, microsecond=0)
-        print("is cold") if self.model.is_cold else print("is not cold- will be at:", self.model.cold_limit)
+        #print("is cold") if self.model.is_cold else print("is not cold- will be at:", self.model.cold_limit)
         try:
             if self.model.prices[check_dt.hour] < self.model.floating_mean and self.model.is_cold and not any(
                     [
@@ -180,30 +177,41 @@ class NextWaterBoost:
                 low_period = self._get_low_period()
                 return self._set_start_dt(low_period=low_period)
 
-            loopstart = int((self.model.cold_limit - self.model.now_dt).total_seconds() / 3600) + self.model.now_dt.hour
-            i = self.find_lowest_2hr_combination(loopstart, len(self.model.prices) - 1)
+            if len(self.model.demand_hours):
+                loopstart = self.model.now_dt.hour
+                loopend = min(len(self.model.prices) -1, int((min(self.model.demand_hours) - self.model.now_dt).total_seconds() / 3600) + self.model.now_dt.hour)
+                use_floating_mean = False
+            else:
+                loopstart = int((self.model.cold_limit - self.model.now_dt).total_seconds() / 3600) + self.model.now_dt.hour
+                loopend = len(self.model.prices) - 1
+                use_floating_mean = True
+            #print(f"loopstart: {loopstart}, loopend: {loopend}")
+            i = self.find_lowest_2hr_combination(loopstart, loopend, use_floating_mean)
             if i:
                 return self._set_start_dt_params(i)
+            return datetime.max
         except Exception as e:
             _LOGGER.error(f"Error on getting next start: {e}")
             return datetime.max
 
-    def find_lowest_2hr_combination(self, start_index: int, end_index: int) -> int:
+    def find_lowest_2hr_combination(self, start_index: int, end_index: int, use_floating_mean: bool = True) -> int:
         min_sum = float('inf')
         min_start_index = None
-        for i in range(start_index, end_index - 1):
+        for i in range(start_index, end_index):
             current_sum = self.model.prices[i] + self.model.prices[i + 1]
             if current_sum < min_sum:
-                if self._values_are_good(i):
+                if self._values_are_good(i, use_floating_mean):
                     if self.model.is_cold:
-                        print(f"it is cold so i'm returning {i} despite it not being the lowest hour")
+                        #print(f"it is cold so i'm returning {i} despite it not being the lowest hour")
                         return i
                     elif self.model.cold_limit < (self.model.now_dt.replace(hour=0) + timedelta(hours=i)):
-                        print(f"it is not cold yet but i'm returning {i} despite it not being the lowest hour since i think it will be cold by then")
+                        #print(f"it is not cold yet but i'm returning {i} despite it not being the lowest hour since i think it will be cold by then")
                         return i
                     # todo: should also check so that i is not more than 24hr from latest boost.
                     min_sum = current_sum
                     min_start_index = i
+                # else:
+                #     print(f"values are not good for {i}. use: {use_floating_mean}")
         return min_start_index
 
     def _set_start_dt_params(self, i: int) -> datetime:

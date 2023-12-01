@@ -82,6 +82,7 @@ class NextWaterBoostModel:
         self.now_dt = datetime.now() if self.now_dt is None else self.now_dt
         self.non_hours = self._set_hours(self.non_hours_raw)
         self.demand_hours = self._set_hours(self.demand_hours_raw)
+        self.latest_boost = self.now_dt if self.latest_boost is None else self.latest_boost
 
     @property
     def cold_limit(self) -> datetime:
