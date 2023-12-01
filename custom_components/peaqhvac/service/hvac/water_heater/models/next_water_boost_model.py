@@ -79,8 +79,8 @@ class NextWaterBoostModel:
 
     def __post_init__(self):
         self._now_dt = datetime.now() if self.now_dt is None else self.now_dt
-        self.non_hours = self._set_hours(self.non_hours_raw)
-        self.demand_hours = self._set_hours(self.demand_hours_raw)
+        self.non_hours = self._set_hours(self.non_hours_raw, self.preset)
+        self.demand_hours = self._set_hours(self.demand_hours_raw, self.preset)
         self.latest_boost = self.now_dt if self.latest_boost is None else self.latest_boost
 
     @property
@@ -117,8 +117,8 @@ class NextWaterBoostModel:
         if new_prices != self.prices:
             self.prices = new_prices
             self.should_update = True
-        new_non_hours = self._set_hours(self.non_hours_raw)
-        new_demand_hours = self._set_hours(self.demand_hours_raw)
+        new_non_hours = self._set_hours(self.non_hours_raw, preset)
+        new_demand_hours = self._set_hours(self.demand_hours_raw, preset)
         new_temp_trend = DEFAULT_TEMP_TREND if temp_trend > DEFAULT_TEMP_TREND else temp_trend
 
         if any([
@@ -147,8 +147,10 @@ class NextWaterBoostModel:
     def get_demand_minutes(self, expected_temp) -> int:
         return DEMAND_MINUTES[self.preset][get_demand(expected_temp)]
 
-    def _set_hours(self, input_hours: list) -> set:
+    def _set_hours(self, input_hours: list, preset: HvacPresets) -> set:
         ret = set()
+        if preset == HvacPresets.Away:
+            return ret
         start_dt = self.now_dt.replace(hour=0, minute=0)
         for i in range(0, len(self.prices)):
             if i in input_hours:
