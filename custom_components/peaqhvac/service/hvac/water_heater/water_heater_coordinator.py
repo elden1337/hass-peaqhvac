@@ -33,7 +33,7 @@ class WaterHeater(IHeater):
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self.temp_trend = Gradient(
-            max_age=600, max_samples=50, precision=1, ignore=0, outlier=20
+            max_age=900, max_samples=50, precision=2, ignore=0, outlier=20
         )
         self.model = WaterBoosterModel(self._hub.state_machine)
         self.booster = NextWaterBoost(
@@ -96,7 +96,7 @@ class WaterHeater(IHeater):
         raw = self.temp_trend.samples_raw
         if len(raw) > 0:
             last = raw[0]
-            if last[1] != val or time.time() - last[0] > 60:
+            if last[1] != val or time.time() - last[0] > 600:
                 self.temp_trend.add_reading(val=val, t=time.time())
             else:
                 return
@@ -141,13 +141,10 @@ class WaterHeater(IHeater):
             target_temp=target_temp,
             latest_boost=datetime.fromtimestamp(self.model.latest_boost_call),
         )
-        if ret < datetime.now() +timedelta(days=3):
+        if ret < datetime.now() +timedelta(days=-3):
             ret = datetime.max
             override_demand = None
-        #if ret != self.model.next_water_heater_start:
-            #_LOGGER.debug(f"Next water heater start changed from {self.model.next_water_heater_start} to {ret}.")
         ret = min(ret, datetime.fromtimestamp(self.model.latest_boost_call)+timedelta(hours=24))
-        _LOGGER.debug(f"ret: {ret} {datetime.fromtimestamp(self.model.latest_boost_call)+timedelta(hours=24)}")
         self.model.next_water_heater_start = ret
         return ret, override_demand
 

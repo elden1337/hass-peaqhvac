@@ -33,12 +33,13 @@ class NextWaterBoost:
 
         next_start = self.model.latest_calculation
         if self.model.should_update and self.model.initialized:
-            next_start = self._get_next_start(
+            next_start, override_demand = self._get_next_start(
                 delay_dt=None if self.model.cold_limit == now_dt else self.model.cold_limit
             )
             self.model.latest_calculation = next_start
             self.model.should_update = False
-        return next_start[0] or datetime.max, next_start[1]
+        next_start = datetime.max if not next_start else next_start
+        return next_start, override_demand
 
     def _get_next_start(self, delay_dt=None) -> tuple[datetime, int | None]:
         last_known = self._last_known_price()
@@ -80,7 +81,7 @@ class NextWaterBoost:
                     new_demand=self.model.get_demand_minutes(expected_temp)
                     # special demand because demand_hour
                 ), self.model.get_demand_minutes(expected_temp)
-                if ret[0] - self.model.latest_boost > timedelta(hours=2) or ret[0] > self.model.cold_limit:
+                if (ret[0] - self.model.latest_boost > timedelta(hours=2) and self.model.current_temp < 50) or ret[0] > self.model.cold_limit:
                     return ret
         return None, None
 

@@ -2,8 +2,8 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from statistics import stdev, mean
 
-from custom_components.peaqhvac.service.hvac.water_heater.models.group import Group
-from custom_components.peaqhvac.service.models.enums.group_type import GroupType
+# from custom_components.peaqhvac.service.hvac.water_heater.models.group import Group
+# from custom_components.peaqhvac.service.models.enums.group_type import GroupType
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
