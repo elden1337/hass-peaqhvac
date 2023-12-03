@@ -33,7 +33,7 @@ class WaterHeater(IHeater):
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self.temp_trend = Gradient(
-            max_age=900, max_samples=50, precision=2, ignore=0, outlier=20
+            max_age=3600, max_samples=100, precision=2, ignore=0, outlier=20
         )
         self.model = WaterBoosterModel(self._hub.state_machine)
         self.booster = NextWaterBoost(
@@ -96,7 +96,7 @@ class WaterHeater(IHeater):
         raw = self.temp_trend.samples_raw
         if len(raw) > 0:
             last = raw[0]
-            if last[1] != val or time.time() - last[0] > 600:
+            if last[1] != val or time.time() - last[0] > 300:
                 self.temp_trend.add_reading(val=val, t=time.time())
             else:
                 return

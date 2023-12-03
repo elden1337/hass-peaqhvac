@@ -32,6 +32,7 @@ class NextWaterBoost:
         self.model.update(temp, temp_trend, target_temp, prices_today, prices_tomorrow, preset, now_dt, latest_boost)
 
         next_start = self.model.latest_calculation
+        override_demand = None
         if self.model.should_update and self.model.initialized:
             next_start, override_demand = self._get_next_start(
                 delay_dt=None if self.model.cold_limit == now_dt else self.model.cold_limit
@@ -39,6 +40,8 @@ class NextWaterBoost:
             self.model.latest_calculation = next_start
             self.model.should_update = False
         next_start = datetime.max if not next_start else next_start
+        if self.model.current_temp > 50:
+            next_start = datetime.max
         return next_start, override_demand
 
     def _get_next_start(self, delay_dt=None) -> tuple[datetime, int | None]:
