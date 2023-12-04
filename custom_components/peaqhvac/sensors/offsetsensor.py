@@ -48,17 +48,22 @@ class OffsetSensor(SensorBase):
         self._tempdiff_offset = data.current_tempdiff
         self._tempextremas_offset = data.current_temp_extremas
         self._temptrend_offset = data.current_temp_trend_offset
+        self._aux_dict = self._hub.hvac.house_heater.aux_offset_adjustments
 
     @property
     def extra_state_attributes(self) -> dict:
-        return {
-            "Current hour offset": self._current_offset,
-            "Tempdiff offset": self._tempdiff_offset,
+        ret = {
+            "Current hour offset":  self._current_offset,
+            "Tempdiff offset":      self._tempdiff_offset,
             "Temp extremas offset": self._tempextremas_offset,
-            "Temp trend offset": self._temptrend_offset,
-            "Today": self._offsets,
-            "Tomorrow": self._offsets_tomorrow,
-            "RawToday": self._raw_offsets,
-            "PeaksToday": self._peaks_today,
-            "PeaksTomorrow": self._peaks_tomorrow,
+            "Temp trend offset":    self._temptrend_offset,
+            "Today":                self._offsets,
+            "Tomorrow":             self._offsets_tomorrow,
+            "RawToday":             self._raw_offsets,
+            "PeaksToday":           self._peaks_today,
+            "PeaksTomorrow":        self._peaks_tomorrow,
         }
+        if self._aux_dict is not None:
+            for key, val in self._aux_dict.items():
+                ret[f"{key}"] = val
+        return ret

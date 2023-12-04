@@ -27,10 +27,13 @@ class HouseHeaterTemperatureHelper:
         if hot_large == cold_large:
             return 0
         is_cold = cold_large > hot_large
-        tolerance = self._determine_tolerance(is_cold, current_offset)
+        tolerance = self._determine_tolerance(is_cold, current_offset, False)
         if is_cold:
-            return self.temp_extremas_return(cold_diffs, tolerance)
-        return self.temp_extremas_return(hot_diffs, tolerance)
+            ret = self.temp_extremas_return(cold_diffs, tolerance)
+            return ret / max(len(hot_diffs),1)
+        ret= self.temp_extremas_return(hot_diffs, tolerance)
+        return ret / max(len(cold_diffs), 1)
+
 
     @staticmethod
     def temp_extremas_return(diffs, tolerance) -> float:
@@ -54,10 +57,13 @@ class HouseHeaterTemperatureHelper:
             ret = min(round(new_temp_diff, 1), 0)
         return min((round(ret / 2, 1)), 1) * -1
 
-    def _determine_tolerance(self, determinator, current_offset) -> float:
-        tolerances = self._hub.sensors.set_temp_indoors.adjusted_tolerances(
-            current_offset
-        )
+    def _determine_tolerance(self, determinator, current_offset, adjust_tolerances: bool = True) -> float:
+        if adjust_tolerances:
+            tolerances = self._hub.sensors.set_temp_indoors.adjusted_tolerances(
+                current_offset
+            )
+        else:
+           tolerances = self._hub.sensors.set_temp_indoors.min_tolerance, self._hub.sensors.set_temp_indoors.max_tolerance
         return (
             tolerances[0]
             if (determinator > 0 or determinator is True)

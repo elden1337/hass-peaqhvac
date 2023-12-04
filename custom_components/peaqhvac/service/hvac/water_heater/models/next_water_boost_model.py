@@ -66,7 +66,7 @@ class NextWaterBoostModel:
     _now_dt: datetime = None  # type: ignore
     latest_boost: datetime = None  # type: ignore
 
-    temp_trend: float = None  # type: ignore
+    temp_trend: float = DEFAULT_TEMP_TREND  # type: ignore
     current_temp: float = None  # type: ignore
     target_temp: float = None  # type: ignore
 

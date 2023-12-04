@@ -79,7 +79,7 @@ class Nibe(IHvac):
             speed = self.get_sensor(SensorType.FanSpeed)
             return float(self._handle_sensor(speed))
         except Exception as e:
-            _LOGGER.debug(f"Unable to get fan speed: {e}")
+            #_LOGGER.debug(f"Unable to get fan speed: {e}")
             return 0
 
     @property
