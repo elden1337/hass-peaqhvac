@@ -18,23 +18,23 @@ DEMAND_MINUTES = {
     HvacPresets.Normal: {
         Demand.ErrorDemand:  0,
         Demand.NoDemand:     0,
-        Demand.LowDemand:    26,
-        Demand.MediumDemand: 34,
-        Demand.HighDemand:   46
+        Demand.LowDemand:    20,
+        Demand.MediumDemand: 26,
+        Demand.HighDemand:   32
     },
     HvacPresets.Eco:    {
         Demand.ErrorDemand:  0,
         Demand.NoDemand:     0,
-        Demand.LowDemand:    26,
-        Demand.MediumDemand: 34,
-        Demand.HighDemand:   46
+        Demand.LowDemand:    20,
+        Demand.MediumDemand: 24,
+        Demand.HighDemand:   28
     },
     HvacPresets.Away:   {
         Demand.ErrorDemand:  0,
         Demand.NoDemand:     0,
         Demand.LowDemand:    0,
-        Demand.MediumDemand: 26,
-        Demand.HighDemand:   26
+        Demand.MediumDemand: 20,
+        Demand.HighDemand:   20
     }
 }
 
