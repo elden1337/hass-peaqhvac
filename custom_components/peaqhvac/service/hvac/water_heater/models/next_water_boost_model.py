@@ -60,8 +60,7 @@ class NextWaterBoostModel:
     non_hours_raw: list[int] = field(default_factory=lambda: [], repr=False, compare=False)
     demand_hours_raw: list[int] = field(default_factory=lambda: [], repr=False, compare=False)
     initialized: bool = False
-    prices: list = field(default_factory=lambda: [])
-
+    price_dict:dict = field(default_factory=lambda: {})
     preset: HvacPresets = HvacPresets.Normal
     _now_dt: datetime = None  # type: ignore
     latest_boost: datetime = None  # type: ignore
@@ -80,8 +79,6 @@ class NextWaterBoostModel:
 
     def __post_init__(self):
         self._now_dt = datetime.now() if self.now_dt is None else self.now_dt
-        self.non_hours = self._set_hours(self.non_hours_raw, self.preset)
-        self.demand_hours = self._set_hours(self.demand_hours_raw, self.preset)
         self.latest_boost = self.now_dt if self.latest_boost is None else self.latest_boost
 
     @property
@@ -110,13 +107,17 @@ class NextWaterBoostModel:
     def now_dt(self) -> datetime:
         return self._now_dt.replace(second=0, microsecond=0) if self._now_dt else None
 
+    def _create_price_dict(self, prices) -> dict:
+        startofday = self.now_dt.replace(hour=0, minute=0)
+        return {startofday + timedelta(hours=i): prices[i] for i in range(0, len(prices))}
+
     def update(self, temp, temp_trend, target_temp, prices_today: list, prices_tomorrow: list, preset: HvacPresets,
                   now_dt=None, latest_boost: datetime = None) -> None:
         _old_dt = self.now_dt
         self.set_now_dt(now_dt)
-        new_prices = prices_today + prices_tomorrow
-        if new_prices != self.prices:
-            self.prices = new_prices
+        new_price_dict = self._create_price_dict(prices_today + prices_tomorrow)
+        if new_price_dict != self.price_dict:
+            self.price_dict = new_price_dict
             self.should_update = True
         new_non_hours = self._set_hours(self.non_hours_raw, preset)
         new_demand_hours = self._set_hours(self.demand_hours_raw, preset)
@@ -134,7 +135,6 @@ class NextWaterBoostModel:
         ]) and not self.should_update:
             self.should_update = True
 
-        self.prices = new_prices
         self.latest_boost = latest_boost
         self.non_hours = new_non_hours
         self.demand_hours = new_demand_hours
@@ -149,17 +149,12 @@ class NextWaterBoostModel:
         return DEMAND_MINUTES[self.preset][get_demand(expected_temp)]
 
     def _set_hours(self, input_hours: list, preset: HvacPresets) -> set:
-        ret = set()
         if preset == HvacPresets.Away:
-            return ret
-        start_dt = self.now_dt.replace(hour=0, minute=0)
-        for i in range(0, len(self.prices)):
-            if i in input_hours:
-                ret.add(start_dt + timedelta(hours=i))
-        return ret
+            return set()
+        return {k for k in self.price_dict.keys() if k.hour in input_hours}
 
     def set_now_dt(self, now_dt=None) -> None:
         self._now_dt = datetime.now() if now_dt is None else now_dt
 
     def set_floating_mean(self, now_dt=None) -> None:
-        self.floating_mean = mean(self.prices[self.now_dt.hour:])
+        self.floating_mean = mean([v for k,v in self.price_dict.items() if k >=self.now_dt])
