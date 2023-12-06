@@ -58,8 +58,7 @@ class NextWaterBoost:
         next_dt, override_demand = self._calculate_next_start(delay_dt)  # todo: must also use latestboost +24h in this.
         intersecting1 = self._check_intersecting(next_dt, last_known)
         if intersecting1[0] or next_dt == datetime.max:
-            _LOGGER.debug(
-                f"returning next boost based on intersection of hours. original: {next_dt}, inter: {intersecting1}")
+            #_LOGGER.debug(f"returning next boost based on intersection of hours. original: {next_dt}, inter: {intersecting1}")
             return intersecting1
 
         expected_temp = min(self._get_temperature_at_datetime(next_dt), 39)
