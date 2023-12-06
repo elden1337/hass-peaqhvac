@@ -75,6 +75,7 @@ class NextWaterBoostModel:
     demand_hours: set = field(default_factory=lambda: {}, init=False)
 
     latest_calculation: datetime = field(default=None, init=False)
+    latest_override_demand: int = field(default=None, init=False)
     should_update: bool = field(default=True, init=False)
 
     def __post_init__(self):

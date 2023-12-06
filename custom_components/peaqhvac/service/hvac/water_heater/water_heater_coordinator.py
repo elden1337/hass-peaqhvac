@@ -169,15 +169,13 @@ class WaterHeater(IHeater):
                 self._set_water_heater_operation(LOWTEMP_THRESHOLD)
 
     def _set_water_heater_operation(self, target_temp: int) -> None:
-        ee = None
         next_start, override_demand = self._get_next_start(target_temp)
-        
+        #_LOGGER.debug(f"Next water heater start is {next_start}. Override demand is {override_demand}")
         try:
-            if not self.model.water_boost.value:
-                self.__set_toggle_boost_next_start(next_start, override_demand)
+            self.__set_toggle_boost_next_start(next_start, override_demand)
         except Exception as e:
             _LOGGER.error(
-                f"Could not check water-state: {e} with extended {ee}")
+                f"Could not check water-state: {e}")
 
     def __set_toggle_boost_next_start(self, next_start: datetime, override_demand: int = None) -> None:
         try:
@@ -193,7 +191,8 @@ class WaterHeater(IHeater):
                     self.model.latest_boost_call = time.time()
                     _LOGGER.debug("Next water heater start is now. Turning on water heating.")
                     self._hub.observer.broadcast("water boost start", demand_minutes*60)
-
+                elif override_demand is not None and demand_minutes == 0:
+                    _LOGGER.error("Should not be able to get here.")
         except Exception as e:
             _LOGGER.warning(f"Could not set water boost: {e}")
 

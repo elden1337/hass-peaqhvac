@@ -32,16 +32,15 @@ class NextWaterBoost:
         self.model.update(temp, temp_trend, target_temp, prices_today, prices_tomorrow, preset, now_dt, latest_boost)
 
         next_start = self.model.latest_calculation
-        override_demand = None
+        override_demand = self.model.latest_override_demand
         if self.model.should_update and self.model.initialized:
             next_start, override_demand = self._get_next_start(
                 delay_dt=None if self.model.cold_limit == now_dt else self.model.cold_limit
             )
             self.model.latest_calculation = next_start
+            self.model.latest_override_demand = override_demand
             self.model.should_update = False
-        next_start = datetime.max if not next_start else next_start
-        if self.model.current_temp > 50:
-            next_start = datetime.max
+        next_start = datetime.max if not next_start or self.model.current_temp > 50 else next_start
         return next_start, override_demand
 
     def _get_next_start(self, delay_dt=None) -> tuple[datetime, int | None]:
@@ -180,24 +179,21 @@ class NextWaterBoost:
                         (check_dt + timedelta(hours=1)) in self.model.non_hours
                     ]
             ):
-                """This hour is cheap enough to start"""
+                """This hour is cheap enough to start and it is cold"""
                 low_period = self._get_low_period()
                 return self._set_start_dt(low_period=low_period), None
 
             if len(self.model.demand_hours):
                 loopstart = self.model.now_dt.hour
                 use_floating_mean = False
-                min_demand_hour = min((hour for hour in self.model.demand_hours if hour > self.model.now_dt),
-                                      default=None)
+                min_demand_hour = min((hour for hour in self.model.demand_hours if hour > self.model.now_dt),default=None)
                 if min_demand_hour is None:  # If there's no demand hour later today, find the earliest one tomorrow
-                    min_demand_hour = min([h + timedelta(hours=24) for h in self.model.demand_hours],
-                                          default=self.model.now_dt)
-                loopend = min(len(self.model.prices) - 1, int((
-                                                                          min_demand_hour - self.model.now_dt).total_seconds() / 3600) + self.model.now_dt.hour)
+                    min_demand_hour = min([h + timedelta(hours=24) for h in self.model.demand_hours],default=self.model.now_dt)
+                loopend = min(len(self.model.prices) - 1, int((min_demand_hour - self.model.now_dt).total_seconds() / 3600) + self.model.now_dt.hour)
                 override_demand = max(self.model.get_demand_minutes(self.model.current_temp), 26)
             else:
-                loopstart = int(
-                    (self.model.cold_limit - self.model.now_dt).total_seconds() / 3600) + self.model.now_dt.hour
+                """start looping when we expect it to be cold"""
+                loopstart = int((self.model.cold_limit - self.model.now_dt).total_seconds() / 3600) + self.model.now_dt.hour
                 loopend = len(self.model.prices) - 1
                 use_floating_mean = True
                 override_demand = None
@@ -206,7 +202,6 @@ class NextWaterBoost:
                 return self._set_start_dt_params(i), override_demand
             return datetime.max, None
         except Exception as e:
-            _LOGGER.error(f"Error on getting next start: {e}")
             return datetime.max, None
 
     def find_lowest_2hr_combination(self, start_index: int, end_index: int, use_floating_mean: bool = True) -> int:
