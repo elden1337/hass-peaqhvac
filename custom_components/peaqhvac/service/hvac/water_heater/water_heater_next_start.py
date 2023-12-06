@@ -193,6 +193,7 @@ class NextWaterBoost:
         min_sum = float('inf')
         min_start_index = None
         current: datetime = start_index
+        print(start_index, end_index)
         while current < end_index:
             try:
                 current_sum = self.model.price_dict[current] + self.model.price_dict[current + timedelta(hours=1)]

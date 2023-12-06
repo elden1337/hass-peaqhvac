@@ -42,17 +42,20 @@ DEMAND_MINUTES = {
 def get_demand(temp) -> Demand:
     if temp is None:
         return Demand.NoDemand
-    if 0 < temp < 100:
-        if temp >= 40:
-            return Demand.NoDemand
-        if temp > 35:
-            return Demand.LowDemand
-        if temp >= 25:
-            return Demand.MediumDemand
-        if temp < 25:
-            return Demand.HighDemand
+    if temp > 70 or temp == 0:
+        return Demand.ErrorDemand
+    if temp >= 40:
+        return Demand.NoDemand
+    if temp > 35:
+        return Demand.LowDemand
+    if temp >= 25:
+        return Demand.MediumDemand
+    if temp < 25:
+        return Demand.HighDemand
     return Demand.ErrorDemand
 
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 
 @dataclass
 class NextWaterBoostModel:
@@ -89,7 +92,7 @@ class NextWaterBoostModel:
             hourdiff = (self.current_temp - self.target_temp) / -self.temp_trend
         except ZeroDivisionError:
             hourdiff = DELAY_LIMIT
-        return self.now_dt + timedelta(hours=hourdiff)
+        return max(self.now_dt + timedelta(hours=hourdiff), self._now_dt)
 
     @property
     def is_cold(self) -> bool:
