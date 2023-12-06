@@ -23,6 +23,8 @@ async def async_cycle_waterboost(timeout: int, async_update_system: callable, hu
                 break
         await asyncio.sleep(5)
     await async_update_system(operation=HvacOperations.WaterBoost, set_val=0)
+    await asyncio.sleep(180)
+    await async_update_system(operation=HvacOperations.WaterBoost, set_val=0)
     hub.observer.broadcast("water boost done")
     return True
 
