@@ -11,6 +11,7 @@ from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPre
 
 _LOGGER = logging.getLogger(__name__)
 
+REQUIRED_DEMAND_DELAY = 6
 
 class NextWaterBoost:
     def __init__(self, min_price: float = None, non_hours: list[int] = None, demand_hours: list[int] = None):
@@ -83,7 +84,7 @@ class NextWaterBoost:
                     new_demand=self.model.get_demand_minutes(expected_temp)
                     # special demand because demand_hour
                 ), self.model.get_demand_minutes(expected_temp)
-                if (ret[0] - self.model.latest_boost > timedelta(hours=2) and self.model.current_temp < 50) or ret[0] > self.model.cold_limit:
+                if (ret[0] - self.model.latest_boost > timedelta(hours=REQUIRED_DEMAND_DELAY) and self.model.current_temp < 50) or ret[0] > self.model.cold_limit:
                     return ret
         return None, None
 
@@ -184,7 +185,8 @@ class NextWaterBoost:
                 return self._set_start_dt(low_period=low_period), None
 
             if len(self.model.demand_hours):
-                loopstart = self.model.now_dt.hour
+                required_delay = self.model.latest_boost + timedelta(hours=REQUIRED_DEMAND_DELAY)
+                loopstart = max(self.model.now_dt, min(self.model.cold_limit, required_delay)).hour
                 use_floating_mean = False
                 min_demand_hour = min((hour for hour in self.model.demand_hours if hour > self.model.now_dt),default=None)
                 if min_demand_hour is None:  # If there's no demand hour later today, find the earliest one tomorrow
