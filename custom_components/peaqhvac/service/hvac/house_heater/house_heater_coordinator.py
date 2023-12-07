@@ -72,6 +72,7 @@ class HouseHeaterCoordinator(IHeater):
         if (outdoor_temp > stop_heating_temp or
             self._hvac.hub.offset.max_price_lower(temp_diff)) and outdoor_temp >= 0:
             self._helpers._aux_offset_adjustments[OffsetAdjustments.PeakHour] = OFFSET_MIN_VALUE
+            self.current_adjusted_offset = OFFSET_MIN_VALUE
             return OFFSET_MIN_VALUE, True
         else:
             self._helpers._aux_offset_adjustments[OffsetAdjustments.PeakHour] = 0
