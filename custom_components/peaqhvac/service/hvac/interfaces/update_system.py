@@ -29,8 +29,6 @@ async def async_cycle_waterboost(timeout: int, async_update_system: callable, hu
 
 class UpdateSystem:
     _force_update: bool = False
-    current_water_boost_state: int = 0
-    current_vent_boost_state: int = 0
     update_list: dict[HvacOperations, any] = {}
     periodic_update_timers: dict = {
         HvacOperations.Offset:     0,
@@ -46,10 +44,8 @@ class UpdateSystem:
     async def async_update_ventilation(self) -> None:
         if await self.async_ready_to_update(HvacOperations.VentBoost):
             _vent_state = int(self.house_ventilation.vent_boost)
-            if _vent_state != self.current_vent_boost_state:
-                self.update_list[HvacOperations.VentBoost]= _vent_state
-                _LOGGER.debug(f"Vent boost state changed to {_vent_state}. Added to update list.")
-                self.current_vent_boost_state = _vent_state
+            self.update_list[HvacOperations.VentBoost]= _vent_state
+            _LOGGER.debug(f"Vent boost state changed to {_vent_state}. Added to update list.")
 
     async def async_update_heat(self) -> None:
         if await self._hass.async_add_executor_job(self.update_offset):
