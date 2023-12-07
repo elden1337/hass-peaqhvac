@@ -28,6 +28,7 @@ class NextWaterBoost:
             preset: HvacPresets = HvacPresets.Normal,
             now_dt=None,
             latest_boost: datetime = None,
+            current_dm: int = None
     ) -> tuple[datetime, int | None]:
         if len(prices_today) < 1:
             return datetime.max, None
@@ -37,7 +38,8 @@ class NextWaterBoost:
         override_demand = self.model.latest_override_demand
         if self.model.should_update and self.model.initialized:
             next_start, override_demand = self._get_next_start(
-                delay_dt=None if self.model.cold_limit == now_dt else self.model.cold_limit
+                delay_dt=None if self.model.cold_limit == now_dt else self.model.cold_limit,
+                current_dm=current_dm
             )
             self.model.latest_calculation = next_start
             self.model.latest_override_demand = override_demand
@@ -45,7 +47,7 @@ class NextWaterBoost:
         next_start = datetime.max if not next_start or self.model.current_temp > 50 else next_start
         return next_start, override_demand
 
-    def _get_next_start(self, delay_dt=None) -> tuple[datetime, int | None]:
+    def _get_next_start(self, delay_dt=None, current_dm=None) -> tuple[datetime, int | None]:
         last_known = self._last_known_price()
         latest_limit = self.model.latest_boost + timedelta(hours=24) if self.model.latest_boost else self.model.now_dt
 
@@ -56,7 +58,7 @@ class NextWaterBoost:
                 minute=self._set_minute_start()
             ), None
 
-        next_dt, override_demand = self._calculate_next_start(delay_dt)  # todo: must also use latestboost +24h in this.
+        next_dt, override_demand = self._calculate_next_start(delay_dt, current_dm)  # todo: must also use latestboost +24h in this.
         intersecting1 = self._check_intersecting(next_dt, last_known)
         if intersecting1[0] or next_dt == datetime.max:
             # _LOGGER.debug(f"returning next boost based on intersection of hours. original: {next_dt}, inter: {intersecting1}")
@@ -145,13 +147,14 @@ class NextWaterBoost:
             (i + timedelta(hours=1)) not in self.model.non_hours
         ])
 
-    def _calculate_next_start(self, delay_dt=None) -> tuple[datetime, int | None]:
+    def _calculate_next_start(self, delay_dt=None, current_dm=None) -> tuple[datetime, int | None]:
         check_dt = self.norm_dt(delay_dt if delay_dt else self.model.now_dt)
         try:
             if self.model.price_dict[check_dt] < self.model.floating_mean and self.model.is_cold and not any(
                     [
                         check_dt in self.model.non_hours,
-                        (check_dt + timedelta(hours=1)) in self.model.non_hours
+                        (check_dt + timedelta(hours=1)) in self.model.non_hours,
+                        current_dm < -600
                     ]
             ):
                 """This hour is cheap enough to start and it is cold"""

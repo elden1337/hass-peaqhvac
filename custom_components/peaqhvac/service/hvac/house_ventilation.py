@@ -46,16 +46,13 @@ class HouseVentilation:
                 self._vent_boost_start("Vent boost night cooling")
             elif self._vent_boost_low_dm():
                 self._vent_boost_start("Vent boosting because of low degree minutes.")
-            #else:
-                #self.vent_boost = False
         if any([
             self._hvac.hvac_dm > self._hvac.hub.options.heating_options.low_degree_minutes + 100,
             self._hvac.hub.sensors.average_temp_outdoors.value < self._hvac.hub.options.heating_options.very_cold_temp
-            ]):
-            if self.vent_boost:
-                _LOGGER.debug(f"recovered dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} > {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
-                self.vent_boost = False
-                self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
+            ]) and self.vent_boost:
+            _LOGGER.debug(f"recovered dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} > {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
+            self.vent_boost = False
+            self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
 
     def _vent_boost_warmth(self) -> bool:
         return all(

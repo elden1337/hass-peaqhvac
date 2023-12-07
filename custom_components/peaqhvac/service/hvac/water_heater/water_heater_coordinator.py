@@ -1,3 +1,7 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from custom_components.peaqhvac.service.hub import Hub
 import logging
 import time
 from datetime import datetime, timedelta
@@ -27,7 +31,7 @@ make the signaling less complicated, just calculate the need and check whether h
 
 class WaterHeater(IHeater):
     def __init__(self, hvac, hub):
-        self._hub = hub
+        self._hub: Hub = hub
         super().__init__(hvac=hvac)
         self._current_temp = None
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
@@ -140,6 +144,7 @@ class WaterHeater(IHeater):
             temp_trend=self.temp_trend.gradient_raw,
             target_temp=target_temp,
             latest_boost=datetime.fromtimestamp(self.model.latest_boost_call),
+            current_dm=self._hub.hvac.hvac_dm
         )
         ret = min(ret, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=24))
         if ret < datetime.now() +timedelta(days=-3):
