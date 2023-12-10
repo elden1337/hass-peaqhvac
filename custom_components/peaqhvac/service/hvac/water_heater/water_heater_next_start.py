@@ -41,11 +41,19 @@ class NextWaterBoost:
                 delay_dt=None if self.model.cold_limit == now_dt else self.model.cold_limit,
                 current_dm=current_dm
             )
-            self.model.latest_calculation = next_start
-            self.model.latest_override_demand = override_demand
-            self.model.should_update = False
+            if self._use_new_calculation(self.model.latest_calculation, next_start):
+                self.model.latest_calculation = next_start
+                self.model.latest_override_demand = override_demand
+                self.model.should_update = False
         next_start = datetime.max if not next_start or self.model.current_temp > 50 else next_start
         return next_start, override_demand
+
+    @staticmethod
+    def _use_new_calculation(old_calculation: datetime, new_calculation: datetime) -> bool:
+        #todo: probably need more logic here.
+        if new_calculation == datetime.max or old_calculation == datetime.max:
+            return True
+        return new_calculation < old_calculation
 
     def _get_next_start(self, delay_dt=None, current_dm=None) -> tuple[datetime, int | None]:
         last_known = self._last_known_price()

@@ -37,7 +37,7 @@ class WaterHeater(IHeater):
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self.temp_trend = Gradient(
-            max_age=3600, max_samples=5, precision=2, ignore=0, outlier=20
+            max_age=3600, max_samples=100, precision=2, ignore=0, outlier=20, smoothing_average=3
         )
         self.model = WaterBoosterModel(self._hub.state_machine)
         self.booster = NextWaterBoost(
@@ -127,7 +127,7 @@ class WaterHeater(IHeater):
     def next_water_heater_start(self) -> datetime:
         next_start = self.model.next_water_heater_start
         if next_start < datetime.now()+timedelta(minutes=10):
-            self.model.bus_fire_once("peaqhvac.upcoming_water_heater_warning", {"new": True}, next_start)
+            self.model.bus_fire_once("peaqhvac.water_heater_warning", {"new": True}, next_start)
         return next_start
 
     def _get_next_start(self, target_temp: int) -> tuple[datetime, int|None]:
