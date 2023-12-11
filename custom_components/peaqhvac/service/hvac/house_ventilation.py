@@ -30,12 +30,17 @@ class HouseVentilation:
         if isinstance(val, bool):
             self._current_vent_state = val
 
+    @property
+    def booster_update(self) -> bool:
+        return (self._hvac.fan_speed >= 80) != self._current_vent_state
+
     def _check_hvac_fan_speed(self) -> None:
         if self._hvac.fan_speed != self._latest_seen_fan_speed:
             _LOGGER.debug("hvac ventilation speed changed from %s to %s", self._latest_seen_fan_speed, self._hvac.fan_speed)
             if self._latest_seen_fan_speed > self._hvac.fan_speed:
                 """Decreased"""
                 self._current_vent_state = False
+                self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
             self._latest_seen_fan_speed = self._hvac.fan_speed
 
     async def async_check_vent_boost(self, caller=None) -> None:

@@ -28,37 +28,47 @@ class NextWaterBoost:
             preset: HvacPresets = HvacPresets.Normal,
             now_dt=None,
             latest_boost: datetime = None,
-            current_dm: int = None
+            current_dm: int = None,
+            debug: bool = False
     ) -> tuple[datetime, int | None]:
         if len(prices_today) < 1:
             return datetime.max, None
         self.model.update(temp, temp_trend, target_temp, prices_today, prices_tomorrow, preset, now_dt, latest_boost)
 
-        next_start = self.model.latest_calculation
-        override_demand = self.model.latest_override_demand
         if self.model.should_update and self.model.initialized:
+            if debug:
+                _LOGGER.debug(f"updating next water boost")
             next_start, override_demand = self._get_next_start(
                 delay_dt=None if self.model.cold_limit == now_dt else self.model.cold_limit,
-                current_dm=current_dm
+                current_dm=current_dm, debug=debug
             )
-            if self._use_new_calculation(self.model.latest_calculation, next_start):
+
+            next_start = datetime.max if not next_start or self._get_temperature_at_datetime(next_start) > 50 else next_start
+            if self._use_new_calculation(self.model.latest_calculation, next_start, debug):
                 self.model.latest_calculation = next_start
                 self.model.latest_override_demand = override_demand
                 self.model.should_update = False
-        next_start = datetime.max if not next_start or self.model.current_temp > 50 else next_start
-        return next_start, override_demand
+        return self.model.latest_calculation, self.model.latest_override_demand
 
     @staticmethod
-    def _use_new_calculation(old_calculation: datetime, new_calculation: datetime) -> bool:
-        #todo: probably need more logic here.
-        if new_calculation == datetime.max or old_calculation == datetime.max:
+    def _use_new_calculation(old_calculation: datetime, new_calculation: datetime, debug) -> bool:
+        if debug:
+            _LOGGER.debug(f"new calculation: {new_calculation}, old calculation: {old_calculation}")
+        if old_calculation is None:
+            return True
+        if (new_calculation == datetime.max) ^ (old_calculation == datetime.max):
+            _LOGGER.debug(
+                f"returning next boost because one of the calculations is max. original: {old_calculation}, new: {new_calculation}")
+            return True
+        if new_calculation == datetime.max and old_calculation == datetime.max:
             return True
         return new_calculation < old_calculation
 
-    def _get_next_start(self, delay_dt=None, current_dm=None) -> tuple[datetime, int | None]:
+    def _get_next_start(self, delay_dt=None, current_dm=None, debug=False) -> tuple[datetime, int | None]:
         last_known = self._last_known_price()
         latest_limit = self.model.latest_boost + timedelta(hours=24) if self.model.latest_boost else self.model.now_dt
-
+        if debug:
+            _LOGGER.debug(f"last known: {last_known}, latest limit: {latest_limit}")
         if latest_limit < self.model.now_dt and self.model.is_cold:
             """It's been too long since last boost. Boost now."""
             _LOGGER.debug(f"next boost now due to it being more than 24h since last time")
@@ -67,12 +77,17 @@ class NextWaterBoost:
             ), None
 
         next_dt, override_demand = self._calculate_next_start(delay_dt, current_dm)  # todo: must also use latestboost +24h in this.
+        if debug:
+            _LOGGER.debug(f"next boost vanilla: {next_dt}, override demand: {override_demand}")
         intersecting1 = self._check_intersecting(next_dt, last_known)
         if intersecting1[0] or next_dt == datetime.max:
-            # _LOGGER.debug(f"returning next boost based on intersection of hours. original: {next_dt}, inter: {intersecting1}")
+            if debug:
+                _LOGGER.debug(f"returning next boost based on intersection of hours. original: {next_dt}, inter: {intersecting1}")
             return intersecting1
         expected_temp = min(self._get_temperature_at_datetime(next_dt), 39)
         retval = min(next_dt, (latest_limit if latest_limit < last_known else datetime.max))
+        if debug:
+            _LOGGER.debug(f"returning next boost based on expected temp. original: {next_dt}, expected temp: {expected_temp}")
         return self._set_start_dt(
             delayed_dt=retval,
             new_demand=self.model.get_demand_minutes(expected_temp)

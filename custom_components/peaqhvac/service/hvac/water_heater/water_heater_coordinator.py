@@ -130,7 +130,7 @@ class WaterHeater(IHeater):
             self.model.bus_fire_once("peaqhvac.water_heater_warning", {"new": True}, next_start)
         return next_start
 
-    def _get_next_start(self, target_temp: int) -> tuple[datetime, int|None]:
+    def _get_next_start(self, target_temp: int, debug:bool = False) -> tuple[datetime, int|None]:
         if self.water_heating:
             """no need to calculate if we are already heating or trying to heat"""
             self.model.next_water_heater_start = datetime.max
@@ -144,7 +144,8 @@ class WaterHeater(IHeater):
             temp_trend=self.temp_trend.gradient_raw,
             target_temp=target_temp,
             latest_boost=datetime.fromtimestamp(self.model.latest_boost_call),
-            current_dm=self._hub.hvac.hvac_dm
+            current_dm=self._hub.hvac.hvac_dm,
+            debug=debug
         )
         ret = min(ret, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=24))
         if ret < datetime.now() +timedelta(days=-3):
@@ -192,9 +193,10 @@ class WaterHeater(IHeater):
                     demand_minutes = DEMAND_MINUTES[preset].get(self._get_demand(), DEFAULT_WATER_BOOST)
 
                 if demand_minutes > 0:
+                    self._get_next_start(target_temp=HIGHTEMP_THRESHOLD, debug=True)
+                    _LOGGER.debug("Next water heater start is now. Turning on water heating.")
                     self.model.water_boost.value = True
                     self.model.latest_boost_call = time.time()
-                    _LOGGER.debug("Next water heater start is now. Turning on water heating.")
                     self._hub.observer.broadcast("water boost start", demand_minutes*60)
                 elif override_demand is not None and demand_minutes == 0:
                     _LOGGER.error("Should not be able to get here.")

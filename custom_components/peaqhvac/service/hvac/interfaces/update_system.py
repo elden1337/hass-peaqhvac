@@ -26,8 +26,8 @@ async def async_cycle_waterboost(timeout: int, async_update_system: callable, hu
     await asyncio.sleep(180)
     await async_update_system(operation=HvacOperations.WaterBoost, set_val=0)
     hub.observer.broadcast("water boost done")
+    hub.state_machine.bus.fire("peaqhvac.water_heater_warning", {"new": False})
     return True
-
 
 class UpdateSystem:
     _force_update: bool = False
@@ -44,10 +44,12 @@ class UpdateSystem:
         await self.async_perform_periodic_updates()
 
     async def async_update_ventilation(self) -> None:
-        if await self.async_ready_to_update(HvacOperations.VentBoost):
-            _vent_state = int(self.house_ventilation.vent_boost)
-            self.update_list[HvacOperations.VentBoost]= _vent_state
-            _LOGGER.debug(f"Vent boost state changed to {_vent_state}. Added to update list.")
+        if self.house_ventilation.booster_update:
+            if await self.async_ready_to_update(HvacOperations.VentBoost):
+                _vent_state = int(self.house_ventilation.vent_boost)
+                if _vent_state != self.update_list.get(HvacOperations.VentBoost, None):
+                    _LOGGER.debug(f"Vent boost state changed to {_vent_state}. Adding to update list.")
+                    self.update_list[HvacOperations.VentBoost] = _vent_state
 
     async def async_update_heat(self) -> None:
         if await self._hass.async_add_executor_job(self.update_offset):
