@@ -54,12 +54,14 @@ class NextWaterBoost:
     def _use_new_calculation(old_calculation: datetime, new_calculation: datetime, debug) -> bool:
         if debug:
             _LOGGER.debug(f"new calculation: {new_calculation}, old calculation: {old_calculation}")
-        if old_calculation is None:
+        if old_calculation is None or old_calculation == datetime.max:
             return True
-        if (new_calculation == datetime.max) ^ (old_calculation == datetime.max):
-            _LOGGER.debug(
-                f"returning next boost because one of the calculations is max. original: {old_calculation}, new: {new_calculation}")
-            return True
+        if new_calculation is None or new_calculation == datetime.max:
+            return False
+        # if (new_calculation == datetime.max) ^ (old_calculation == datetime.max):
+        #     _LOGGER.debug(
+        #         f"returning next boost because one of the calculations is max. original: {old_calculation}, new: {new_calculation}")
+        #     return True
         if new_calculation == datetime.max and old_calculation == datetime.max:
             return True
         return new_calculation < old_calculation
