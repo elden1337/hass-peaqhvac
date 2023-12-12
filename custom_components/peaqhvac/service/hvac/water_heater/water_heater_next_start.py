@@ -44,24 +44,24 @@ class NextWaterBoost:
             )
 
             next_start = datetime.max if not next_start or self._get_temperature_at_datetime(next_start) > 50 else next_start
-            if self._use_new_calculation(self.model.latest_calculation, next_start, debug):
+            if self._use_new_calculation(self.model.latest_calculation, next_start, self.model.latest_boost, debug):
                 self.model.latest_calculation = next_start
                 self.model.latest_override_demand = override_demand
                 self.model.should_update = False
         return self.model.latest_calculation, self.model.latest_override_demand
 
     @staticmethod
-    def _use_new_calculation(old_calculation: datetime, new_calculation: datetime, debug) -> bool:
+    def _use_new_calculation(old_calculation: datetime, new_calculation: datetime, latest_boost: datetime = None, debug:bool = False) -> bool:
+        latest = latest_boost if latest_boost else datetime.min
         if debug:
             _LOGGER.debug(f"new calculation: {new_calculation}, old calculation: {old_calculation}")
         if old_calculation is None or old_calculation == datetime.max:
             return True
         if new_calculation is None or new_calculation == datetime.max:
             return False
-        # if (new_calculation == datetime.max) ^ (old_calculation == datetime.max):
-        #     _LOGGER.debug(
-        #         f"returning next boost because one of the calculations is max. original: {old_calculation}, new: {new_calculation}")
-        #     return True
+        if old_calculation < latest + timedelta(hours=1):
+            """we have just boosted. don't boost again"""
+            return True
         if new_calculation == datetime.max and old_calculation == datetime.max:
             return True
         return new_calculation < old_calculation
