@@ -17,8 +17,10 @@ from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.models.offsets_exportmodel import OffsetsExportModel
 from custom_components.peaqhvac.service.observer.observer_coordinator import Observer
 from custom_components.peaqhvac.extensionmethods import async_iscoroutine
-from peaqevcore.common.spotprice.spotprice_factory import SpotPriceFactory
-from peaqevcore.common.models.peaq_system import PeaqSystem
+import sys
+if 'pytest' not in sys.modules:
+    from peaqevcore.common.spotprice.spotprice_factory import SpotPriceFactory
+    from peaqevcore.common.models.peaq_system import PeaqSystem
 
 _LOGGER = logging.getLogger(__name__)
 

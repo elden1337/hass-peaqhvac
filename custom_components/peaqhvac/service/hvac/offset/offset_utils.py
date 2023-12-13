@@ -89,6 +89,7 @@ def _deviation_from_mean(prices: list[float], min_price: float, dt: datetime) ->
         devi2 = stdev(prices[13:])
 
     deviation_dict = {}
+    #standardized_prices = [(p - avg) / devi for p in prices]
     for i, num in enumerate(prices):
         _devi = devi if i < 13 else devi2
         _avg = avg if i < 13 else avg2
