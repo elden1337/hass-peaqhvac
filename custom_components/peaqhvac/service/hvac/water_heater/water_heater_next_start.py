@@ -82,7 +82,7 @@ class NextWaterBoost:
         if debug:
             _LOGGER.debug(f"next boost vanilla: {next_dt}, override demand: {override_demand}")
         intersecting1 = self._check_intersecting(next_dt, last_known)
-        if intersecting1[0] or next_dt == datetime.max:
+        if intersecting1[0]:
             if debug:
                 _LOGGER.debug(f"returning next boost based on intersection of hours. original: {next_dt}, inter: {intersecting1}")
             return intersecting1
