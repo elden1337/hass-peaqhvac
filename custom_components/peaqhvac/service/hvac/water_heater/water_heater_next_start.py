@@ -196,8 +196,7 @@ class NextWaterBoost:
 
             if len(self.model.demand_hours):
                 required_delay = self.model.latest_boost + timedelta(hours=REQUIRED_DEMAND_DELAY)
-                loopstart = max(self.model.now_dt,
-                                min(self.norm_dt(self.model.cold_limit), self.norm_dt(required_delay)))
+                loopstart = max(self.norm_dt(self.model.now_dt),min(self.norm_dt(self.model.cold_limit), self.norm_dt(required_delay)))
                 use_floating_mean = False
                 min_demand_hour = min(
                     (hour for hour in self.model.demand_hours if hour > max(loopstart, self.model.cold_limit)),

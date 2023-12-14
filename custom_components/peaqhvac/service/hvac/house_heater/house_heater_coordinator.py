@@ -63,7 +63,7 @@ class HouseHeaterCoordinator(IHeater):
 
     @property
     def current_tempdiff(self):
-        return get_tempdiff_inverted(self.current_offset, self._hvac.hub.sensors.get_tempdiff())
+        return get_tempdiff_inverted(self.current_offset, self._hvac.hub.sensors.get_tempdiff(), self._current_tolerances)
 
     def get_current_offset(self) -> Tuple[int, bool]:
         self._offsets = self._hvac.model.current_offset_dict_combined
