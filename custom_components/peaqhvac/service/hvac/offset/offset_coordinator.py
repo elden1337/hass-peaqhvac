@@ -148,20 +148,6 @@ class OffsetCoordinator:
             if self._hub.is_initialized:
                 _LOGGER.warning(f"Hub is ready but I'm unable to set offset. Prices num:{len(self.prices) if self.prices else 0}")
 
-    def adjust_to_threshold(self, offsetdata: CalculatedOffsetModel) -> int:
-        #_LOGGER.debug(f"this is the offset: {offsetdata.current_offset}")
-        adjustment = offsetdata.sum_values()
-        if adjustment is None or self._hub.sensors.average_temp_outdoors.value > 13:
-            return 0
-        tolerance = 3 if self.model.tolerance is None else self.model.tolerance
-        ret = (
-            min(adjustment, tolerance)
-            if adjustment >= 0
-            else max(adjustment, tolerance * -1)
-        )
-        #_LOGGER.debug(f"adjusting offset to threshold: {ret}. The adjustment was: {adjustment} and returning value will be {int(round(ret, 0))}")
-        return int(round(ret, 0))
-
     def _update_model(self) -> None:
         self.model.peaks_today = identify_peaks(self.prices)
         self.model.peaks_tomorrow = identify_peaks(self.prices_tomorrow)

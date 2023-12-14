@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from statistics import mean, stdev
 
+from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
 from custom_components.peaqhvac.service.models.enums.hvac_presets import \
     HvacPresets
 
@@ -34,7 +35,10 @@ def offset_per_day(
     if tolerance is not None:
         tolerance -= flat_day_lower_tolerance(all_prices)
         for k, v in day_values.items():
-            ret[k] = int(round((day_values[k] *tolerance) * -1, 0))
+            setval = int(round((day_values[k] *tolerance) * -1, 0))
+            if abs(setval) > tolerance:
+                setval = tolerance * -1
+            ret[k] = setval
             if indoors_preset is HvacPresets.Away:
                 ret[k] -= 1
     return list(ret.values())
@@ -118,3 +122,16 @@ def max_price_lower_internal(tempdiff: float, peaks_today: list) -> bool:
             if datetime.now().hour + 1 in peaks_today:
                 return True
     return False
+
+
+def adjust_to_threshold(offsetdata: CalculatedOffsetModel, outdoors_value:int, tolerance:int) -> int:
+    adjustment = offsetdata.sum_values()
+    if adjustment is None or outdoors_value > 13:
+        return 0
+    _tolerance = 3 if tolerance is None else tolerance
+    ret = (
+        min(adjustment, _tolerance)
+        if adjustment >= 0
+        else max(adjustment, _tolerance * -1)
+    )
+    return int(round(ret, 0))

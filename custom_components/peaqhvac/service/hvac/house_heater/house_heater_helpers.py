@@ -120,6 +120,4 @@ class HouseHeaterHelpers:
             self._aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = 0
         if ret != self._temp_lower_offset_num:
             self._temp_lower_offset_num = ret
-            #if ret != input_offset.current_offset * 1:
-               # _LOGGER.debug(f"Lowering offset {ret}.")
         return ret

@@ -10,6 +10,7 @@ from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offs
 from custom_components.peaqhvac.service.hvac.house_heater.models.offset_adjustments import OffsetAdjustments
 from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper import HouseHeaterTemperatureHelper
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
+from custom_components.peaqhvac.service.hvac.offset.offset_utils import adjust_to_threshold
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 
 _LOGGER = logging.getLogger(__name__)
@@ -90,7 +91,11 @@ class HouseHeaterCoordinator(IHeater):
         # If the offset should be adjusted, adjust it, update the current adjusted offset,
         # and return it along with the update flag
         if self._helpers._should_adjust_offset(offsetdata):
-            ret = self._hvac.hub.offset.adjust_to_threshold(offsetdata)
+            ret = adjust_to_threshold(
+                offsetdata,
+                self._hvac.hub.sensors.average_temp_outdoors.value,
+                self._hvac.hub.offset.model.tolerance
+            )
             self.current_adjusted_offset = ret
             return int(ret), _force_update
 
@@ -106,7 +111,11 @@ class HouseHeaterCoordinator(IHeater):
 
         # Adjust the offset to the threshold, update the current adjusted offset,
         # and return it along with the update flag
-        ret = self._hvac.hub.offset.adjust_to_threshold(offsetdata)
+        ret = adjust_to_threshold(
+            offsetdata,
+            self._hvac.hub.sensors.average_temp_outdoors.value,
+            self._hvac.hub.offset.model.tolerance
+        )
         self.current_adjusted_offset = int(ret)
         return self.current_adjusted_offset, _force_update
 
