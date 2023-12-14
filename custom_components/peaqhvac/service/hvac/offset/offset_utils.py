@@ -78,19 +78,19 @@ def _deviation_from_mean(prices: list[float], min_price: float, dt: datetime) ->
         return {}
     delta = _get_timedelta(prices)
     dt_lister = dt.replace(hour=0)
-
-    avg = mean(prices)
-    devi = stdev(prices)
+    standardized_prices = [(p - mean(prices)) / stdev(prices) for p in prices]
+    avg = mean(standardized_prices)
+    devi = stdev(standardized_prices)
     avg2 = avg
     devi2 = devi
 
     if dt.hour >= 13:
-        avg2 = mean(prices[13:])
-        devi2 = stdev(prices[13:])
+        avg2 = mean(standardized_prices[13:])
+        devi2 = stdev(standardized_prices[13:])
 
     deviation_dict = {}
-    #standardized_prices = [(p - avg) / devi for p in prices]
-    for i, num in enumerate(prices):
+
+    for i, num in enumerate(standardized_prices):
         _devi = devi if i < 13 else devi2
         _avg = avg if i < 13 else avg2
         deviation = (num - _avg) / _devi
