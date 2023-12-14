@@ -43,7 +43,10 @@ class PeaqSimpleSensor(SensorBase, RestoreEntity):
         state = await super().async_get_last_state()
         if state:
             self._state = state.state
-            if self._internal_entity == LATEST_WATER_BOOST and self._state != "-":
+            if self._internal_entity == LATEST_WATER_BOOST:
                 self._hub.hvac.water_heater.import_latest_boost_call(self._state)
+                self._hub.hvac.water_heater.is_initialized = True
         else:
             self._state = "-"
+            if self._internal_entity == LATEST_WATER_BOOST:
+                self._hub.hvac.water_heater.is_initialized = True

@@ -34,6 +34,7 @@ class WaterHeater(IHeater):
         self._hub: Hub = hub
         super().__init__(hvac=hvac)
         self._current_temp = None
+        self._is_initialized: bool = False
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self.temp_trend = Gradient(
@@ -54,7 +55,11 @@ class WaterHeater(IHeater):
 
     @property
     def is_initialized(self) -> bool:
-        return self._current_temp is not None
+        return self._current_temp is not None and self._is_initialized
+
+    @is_initialized.setter
+    def is_initialized(self, val: bool) -> None:
+        self._is_initialized = val
 
     @property
     def temperature_trend(self) -> float:
@@ -131,6 +136,8 @@ class WaterHeater(IHeater):
         return next_start
 
     def _get_next_start(self, target_temp: int, debug:bool = False) -> tuple[datetime, int|None]:
+        if not self.is_initialized:
+            return datetime.max, None
         if self.water_heating:
             """no need to calculate if we are already heating or trying to heat"""
             self.model.next_water_heater_start = datetime.max
