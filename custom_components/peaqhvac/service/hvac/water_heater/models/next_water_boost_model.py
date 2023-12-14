@@ -83,6 +83,7 @@ class NextWaterBoostModel:
     def __post_init__(self):
         self._now_dt = datetime.now() if self.now_dt is None else self.now_dt
         self.latest_boost = self.now_dt if self.latest_boost is None else self.latest_boost
+        self.min_price = -float('inf') if self.min_price is None else self.min_price
 
     @property
     def cold_limit(self) -> datetime:

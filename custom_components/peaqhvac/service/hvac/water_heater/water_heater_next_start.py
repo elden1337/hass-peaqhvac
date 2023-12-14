@@ -15,7 +15,7 @@ REQUIRED_DEMAND_DELAY = 6
 
 
 class NextWaterBoost:
-    def __init__(self, min_price: float = None, non_hours: list[int] = None, demand_hours: list[int] = None):
+    def __init__(self, min_price: float = None, non_hours: list[int] = [], demand_hours: list[int] = []):
         self.model = NextWaterBoostModel(min_price=min_price, non_hours_raw=non_hours, demand_hours_raw=demand_hours)
 
     def next_predicted_demand(
@@ -86,8 +86,10 @@ class NextWaterBoost:
             if debug:
                 _LOGGER.debug(f"returning next boost based on intersection of hours. original: {next_dt}, inter: {intersecting1}")
             return intersecting1
+
         expected_temp = min(self._get_temperature_at_datetime(next_dt), 39)
         retval = min(next_dt, (latest_limit if latest_limit < last_known else datetime.max))
+        #print("ex", expected_temp, "at:",next_dt,  self._get_datetime_at_temperature(40))
         if debug:
             _LOGGER.debug(f"returning next boost based on expected temp. original: {next_dt}, expected temp: {expected_temp}")
         return self._set_start_dt(
@@ -135,6 +137,10 @@ class NextWaterBoost:
         delay = (target_dt - self.model.now_dt).total_seconds() / 3600
         return self.model.current_temp + (delay * self.model.temp_trend)
 
+    def _get_datetime_at_temperature(self, target_temp: float) -> datetime:
+        time_diff = (target_temp - self.model.current_temp) / self.model.temp_trend
+        return self.model.now_dt + timedelta(hours=time_diff)
+
     def _get_list_of_hours(self, start_dt: datetime, end_dt: datetime) -> set[datetime]:
         hours = []
         current = start_dt
@@ -163,7 +169,7 @@ class NextWaterBoost:
         return now_dt.replace(minute=start_minute)
 
     def _values_are_good(self, i: datetime, use_floating_mean: bool) -> bool:
-        return all([
+        ret = all([
             (self.model.price_dict[i] < self.model.floating_mean if use_floating_mean else True) or
             self.model.price_dict[i] < self.model.min_price,
             (self.model.price_dict[i + timedelta(hours=1)] < self.model.floating_mean if use_floating_mean else True) or
@@ -171,9 +177,11 @@ class NextWaterBoost:
             i not in self.model.non_hours,
             (i + timedelta(hours=1)) not in self.model.non_hours
         ])
+        return ret
 
     def _calculate_next_start(self, delay_dt=None, current_dm=None) -> tuple[datetime, int | None]:
         check_dt = self.norm_dt(delay_dt if delay_dt else self.model.now_dt)
+
         try:
             if self.model.price_dict[check_dt] < self.model.floating_mean and self.model.is_cold and not any(
                     [
@@ -183,6 +191,7 @@ class NextWaterBoost:
                     ]
             ):
                 """This hour is cheap enough to start and it is cold"""
+
                 return self._set_start_dt(), None
 
             if len(self.model.demand_hours):
@@ -204,12 +213,13 @@ class NextWaterBoost:
                 loopend = max(self.model.price_dict.keys())
                 use_floating_mean = True
                 override_demand = None
+
             i = self.find_lowest_2hr_combination(loopstart, loopend, use_floating_mean)
             if i:
                 return self._set_start_dt_params(i), override_demand
             return datetime.max, None
         except Exception as e:
-            print(e)
+            _LOGGER.exception("_calculate_next_start",e)
             return datetime.max, None
 
     @staticmethod
@@ -221,7 +231,6 @@ class NextWaterBoost:
         min_sum = float('inf')
         min_start_index = None
         current: datetime = start_index
-        print(start_index, end_index)
         while current < end_index:
             try:
                 current_sum = self.model.price_dict[current] + self.model.price_dict[current + timedelta(hours=1)]
@@ -233,7 +242,7 @@ class NextWaterBoost:
                             break
                 current += timedelta(hours=1)
             except Exception as e:
-                print("2hr combo", e)
+                _LOGGER.exception("2hr combo", e)
                 break
         return min_start_index
 
