@@ -5,10 +5,12 @@ from datetime import datetime, timedelta
 from typing import Tuple
 
 from peaqevcore.common.models.observer_types import ObserverTypes
+
+from custom_components.peaqhvac.service.hub.target_temp import adjusted_tolerances
 from custom_components.peaqhvac.service.hvac.house_heater.house_heater_helpers import HouseHeaterHelpers
 from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
 from custom_components.peaqhvac.service.hvac.house_heater.models.offset_adjustments import OffsetAdjustments
-from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper import HouseHeaterTemperatureHelper
+from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper import get_tempdiff_inverted, get_temp_extremas, get_temp_trend_offset
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.hvac.offset.offset_utils import adjust_to_threshold
 from custom_components.peaqhvac.service.models.enums.demand import Demand
@@ -25,7 +27,7 @@ class HouseHeaterCoordinator(IHeater):
         self._current_offset: int = 0
         self._offsets: dict = {}
         self._current_adjusted_offset: int = 0
-        self._temp_helper = HouseHeaterTemperatureHelper(hub=hvac.hub)
+        #self._temp_helper = HouseHeaterTemperatureHelper(hub=hvac.hub)
         self._helpers = HouseHeaterHelpers(hvac=hvac)
         super().__init__(hvac=hvac)
 
@@ -61,7 +63,7 @@ class HouseHeaterCoordinator(IHeater):
 
     @property
     def current_tempdiff(self):
-        return self._temp_helper.get_tempdiff_inverted(self.current_offset)
+        return get_tempdiff_inverted(self.current_offset, self._hvac.hub.sensors.get_tempdiff())
 
     def get_current_offset(self) -> Tuple[int, bool]:
         self._offsets = self._hvac.model.current_offset_dict_combined
@@ -122,12 +124,35 @@ class HouseHeaterCoordinator(IHeater):
     def _get_demand(self) -> Demand:
         return self._helpers._helper_get_demand()
 
+    def _current_tolerances(self, determinator: bool, current_offset: int, adjust_tolerances: bool = True) -> float:
+        if adjust_tolerances:
+            tolerances = adjusted_tolerances(
+                current_offset,
+                self._hvac.hub.sensors.set_temp_indoors.min_tolerance,
+                self._hvac.hub.sensors.set_temp_indoors.max_tolerance
+            )
+        else:
+            tolerances = self._hvac.hub.sensors.set_temp_indoors.min_tolerance, self._hvac.hub.sensors.set_temp_indoors.max_tolerance
+        return tolerances[0] if (determinator > 0 or determinator is True) else tolerances[1]
+
     def get_calculated_offsetdata(self, _force_update: bool = False) -> CalculatedOffsetModel:
         self._check_next_hour_offset(force_update=_force_update)
         return CalculatedOffsetModel(self.current_offset,
-                                     self._temp_helper.get_tempdiff_inverted(self.current_offset),
-                                     self._temp_helper.get_temp_extremas(self.current_offset),
-                                     self._temp_helper.get_temp_trend_offset())
+                                     get_tempdiff_inverted(
+                                         self.current_offset,
+                                         self._hvac.hub.sensors.get_tempdiff(),
+                                         self._current_tolerances
+                                     ),
+                                     get_temp_extremas(
+                                        self.current_offset,
+                                        [self._hvac.hub.sensors.set_temp_indoors.adjusted_temp - t for t in self._hvac.hub.sensors.average_temp_indoors.all_values],
+                                        self._current_tolerances
+                                     ),
+                                     get_temp_trend_offset(
+                                         self._hvac.hub.sensors.temp_trend_indoors.is_clean,
+                                         self._hvac.hub.predicted_temp,
+                                         self._hvac.hub.sensors.set_temp_indoors.adjusted_temp
+                                     ))
 
     async def async_update_operation(self):
         pass
