@@ -91,10 +91,11 @@ class Hub:
         try:
             ret = self.state_machine.states.get("sensor.peaqev_threshold")
             if ret is not None:
-                _LOGGER.debug(
-                    "Discovered Peaqev-entities, will adhere to peak-shaving."
-                )
-                return True
+                if ret.state:
+                    _LOGGER.debug(
+                        "Discovered Peaqev-entities, will adhere to peak-shaving."
+                    )
+                    return True
             _LOGGER.debug(
                 "Unable to discover Peaqev-entities, will not adhere to peak-shaving."
             )
