@@ -87,8 +87,9 @@ class OffsetCoordinator:
                 tomorrow_values = cached_tomorrow.offsets
             elif cached_today:
                 #_LOGGER.debug("Using cached values for today")
-                today_values = cached_today.offsets
-                d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price, {})
+                existing_data = {datetime.now().date(): cached_today.offsets}
+                d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price, existing_data)
+                today_values = d.get(datetime.now().date(), {})
                 tomorrow_values = d.get((datetime.now() + timedelta(days=1)).date(), {})
                 cache.update_cache((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow, tomorrow_values)
             elif cached_midnight_problem:

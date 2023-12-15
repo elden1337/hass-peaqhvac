@@ -12,7 +12,7 @@ class CacheDict:
     id: uuid = field(init=False)
     today: bool
     prices: List[float]
-    offsets: List[float]
+    offsets: dict[int, float]
     dt: date
 
     def __post_init__(self):
@@ -40,7 +40,7 @@ def get_cache_for_today(dt: date, prices: list) -> CacheDict:
     return None
 
 
-def update_cache(list_dt: date, prices: List[float], offsets: List[float], now_dt: datetime = datetime.now()):
+def update_cache(list_dt: date, prices: List[float], offsets: dict[int, float], now_dt: datetime = datetime.now()):
     global _offsetCache
     if len(prices) < 1 or len(offsets) < 1:
         """Don't update cache if no data is available"""
