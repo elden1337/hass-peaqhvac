@@ -81,7 +81,7 @@ class NextWaterBoost:
         next_dt, override_demand = self._calculate_next_start(delay_dt, current_dm)  # todo: must also use latestboost +24h in this.
         if debug:
             _LOGGER.debug(f"next boost vanilla: {next_dt}, override demand: {override_demand}")
-        intersecting1 = self._check_intersecting(next_dt, last_known)
+        intersecting1 = self._check_intersecting(next_dt, last_known, current_dm)
         if intersecting1[0]:
             if debug:
                 _LOGGER.debug(f"returning next boost based on intersection of hours. original: {next_dt}, inter: {intersecting1}")
@@ -97,11 +97,11 @@ class NextWaterBoost:
             new_demand=self.model.get_demand_minutes(expected_temp)
         ), override_demand
 
-    def _check_intersecting(self, next_dt: datetime, last_known: datetime) -> tuple[datetime, int | None]:
+    def _check_intersecting(self, next_dt: datetime, last_known: datetime, current_dm) -> tuple[datetime, int | None]:
         intersecting_non_hours = self._intersecting_special_hours(self.model.non_hours, min(next_dt, last_known))
         intersecting_demand_hours = self._intersecting_special_hours(self.model.demand_hours, min(next_dt, last_known))
         if intersecting_demand_hours:
-            best_match = self._get_best_match(intersecting_non_hours, intersecting_demand_hours)
+            best_match = self._get_best_match(intersecting_non_hours, intersecting_demand_hours, current_dm)
             if best_match:
                 # print(f"best match: {best_match}")
                 expected_temp = min(self._get_temperature_at_datetime(best_match), 39)
@@ -116,12 +116,15 @@ class NextWaterBoost:
                     return ret
         return None, None
 
-    @staticmethod
-    def _get_best_match(non_hours, demand_hours) -> datetime | None:
-        first_demand = min(demand_hours)
+    def _get_best_match(self, non_hours: list[datetime], demand_hours: list[datetime], current_dm) -> datetime | None:
+        """even if demand hour intersect we cannot boost more often than every 2 hours if dm are low"""
+        if current_dm and current_dm < -500:
+            first_demand = min([d for d in demand_hours if d > self.model.latest_boost + timedelta(hours=2)])
+        else:
+            first_demand = min([d for d in demand_hours if d > self.model.latest_boost])
         non_hours = [hour.hour for hour in non_hours]
         for hour in range(first_demand.hour - 1, -1, -1):
-            if hour not in non_hours:
+            if hour not in non_hours and hour:
                 if hour - 1 not in non_hours:
                     return first_demand.replace(hour=hour)
         return None

@@ -31,12 +31,6 @@ class HouseHeaterHelpers:
                 current_outside_temp=self._hvac.hub.sensors.average_temp_outdoors.value
             )
 
-    def _should_adjust_offset(self, offsetdata: CalculatedOffsetModel) -> bool:
-        return (
-                self._hvac.hub.offset.model.raw_offsets != self._hvac.hub.offset.model.calculated_offsets
-                and offsetdata.sum_values() != 0
-        )
-
     def _lower_offset_addon(self) -> bool:
         if self._hvac.hvac_electrical_addon > 0:
             _LOGGER.debug("Lowering offset because electrical addon is on.")
@@ -57,22 +51,7 @@ class HouseHeaterHelpers:
                 return True
         return False
 
-    def _keep_compressor_running(self, offsetdata: CalculatedOffsetModel) -> None:
-        """in certain conditions, up the offset to keep the compressor running for energy savings"""
-        dm_zero_prediction = self._hvac.hub.sensors.dm_trend.predicted_time_at_value(0)
-        now = datetime.now()
-        if dm_zero_prediction is not None:
-            if all([
-                self._hvac.hvac_mode is HvacMode.Heat,
-                self._hvac.compressor_frequency > 0,
-                self._hvac.hub.sensors.average_temp_outdoors.value < 0,
-                dm_zero_prediction < now + timedelta(hours=1)
-            ]):
-                #_LOGGER.debug(f"adjusting keep compressor running. {offsetdata.current_offset + 1}")
-                offsetdata.current_offset += 1
-                self._aux_offset_adjustments[OffsetAdjustments.KeepCompressorRunning] = 1
-        else:
-            self._aux_offset_adjustments[OffsetAdjustments.KeepCompressorRunning] = 0
+
 
     def _set_lower_offset_strong(self, current_offset, temp_diff, temp_trend,current_outside_temp) -> int:
         calc = sum([current_offset, temp_diff, temp_trend])
@@ -104,20 +83,40 @@ class HouseHeaterHelpers:
             )
             return Demand.ErrorDemand
 
-    def _temporarily_lower_offset(self, input_offset) -> int:
-        ret = input_offset.current_offset * 1
+    def _keep_compressor_running(self, offsetdata: CalculatedOffsetModel, force_update: bool) -> None:
+        """in certain conditions, up the offset to keep the compressor running for energy savings"""
+        dm_zero_prediction = self._hvac.hub.sensors.dm_trend.predicted_time_at_value(0)
+        now = datetime.now()
+        if dm_zero_prediction is not None:
+            if all([
+                self._hvac.hvac_mode is HvacMode.Heat,
+                self._hvac.compressor_frequency > 0,
+                self._hvac.hub.sensors.average_temp_outdoors.value < 0,
+                dm_zero_prediction < now + timedelta(hours=1)
+            ]):
+                #_LOGGER.debug(f"adjusting keep compressor running. {offsetdata.current_offset + 1}")
+                offsetdata.current_offset += 1
+                force_update = True
+                self._aux_offset_adjustments[OffsetAdjustments.KeepCompressorRunning] = 1
+        else:
+            self._aux_offset_adjustments[OffsetAdjustments.KeepCompressorRunning] = 0
+
+    def _temporarily_lower_offset(self, offsetdata: CalculatedOffsetModel, force_update: bool) -> None:
+        #ret = input_offset.current_offset * 1
         if self._wait_timer_breach.is_timeout():
             if any(
                 [self._lower_offset_threshold_breach(), self._lower_offset_addon()]
             ):
                 self._aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = -2
-                ret -= 2
+                offsetdata.current_offset -= 2
+                force_update = True
         elif self._hvac.hub.sensors.peaqev_installed:
             if self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes:
                 self._aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = -1
-                ret -= 1
+                offsetdata.current_offset -= 1
+                force_update = True
         else:
             self._aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = 0
-        if ret != self._temp_lower_offset_num:
-            self._temp_lower_offset_num = ret
-        return ret
+        # if ret != self._temp_lower_offset_num:
+        #     self._temp_lower_offset_num = ret
+        # return ret

@@ -7,10 +7,11 @@ class CalculatedOffsetModel:
     current_temp_extremas: float
     current_temp_trend_offset: float
 
-    def sum_values(self) -> float:
+    def sum_values(self, extra_current: int = None) -> float:
+        current = extra_current if extra_current is not None else self.current_offset
         return sum(
             [
-                self.current_offset,
+                current,
                 self.current_tempdiff,
                 self.current_temp_extremas,
                 self.current_temp_trend_offset,

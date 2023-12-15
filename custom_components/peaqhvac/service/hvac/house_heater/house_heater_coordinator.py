@@ -80,45 +80,19 @@ class HouseHeaterCoordinator(IHeater):
         else:
             self._helpers._aux_offset_adjustments[OffsetAdjustments.PeakHour] = 0
 
-        # Get the calculated offset data and update the current offset to keep the compressor running
         offsetdata = self.get_calculated_offsetdata(_force_update)
-        self._helpers._keep_compressor_running(offsetdata)
+        self._helpers._keep_compressor_running(offsetdata, _force_update)
+        self._helpers._temporarily_lower_offset(offsetdata, _force_update)
 
-        # If offset will be < 0 and temp is lower than set temp, do special lowering to safe money
-        if offsetdata.sum_values() <= 0 and self.current_tempdiff <= 0:
-            ret = self._helpers._get_lower_offset(offsetdata)
-            self.current_adjusted_offset = ret
-            return int(ret), _force_update
-
-        # If the offset should be adjusted, adjust it, update the current adjusted offset,
-        # and return it along with the update flag
-        if self._helpers._should_adjust_offset(offsetdata):
+        if self.current_adjusted_offset != int(offsetdata.sum_values()):
             ret = adjust_to_threshold(
                 offsetdata,
                 self._hvac.hub.sensors.average_temp_outdoors.value,
                 self._hvac.hub.offset.model.tolerance
             )
-            self.current_adjusted_offset = ret
-            return int(ret), _force_update
-
-        # Temporarily lower the offset if necessary and update the update flag
-        lowered_offset = self._helpers._temporarily_lower_offset(offsetdata)
-        if lowered_offset < offsetdata.sum_values():
-            offsetdata.current_offset = lowered_offset
-            _force_update = True
-
-        # If an update is needed, broadcast an update operation
-        if _force_update:
-            self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
-
-        # Adjust the offset to the threshold, update the current adjusted offset,
-        # and return it along with the update flag
-        ret = adjust_to_threshold(
-            offsetdata,
-            self._hvac.hub.sensors.average_temp_outdoors.value,
-            self._hvac.hub.offset.model.tolerance
-        )
-        self.current_adjusted_offset = int(ret)
+            self.current_adjusted_offset = int(ret)
+            if _force_update:
+                self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
         return self.current_adjusted_offset, _force_update
 
     def _get_demand(self) -> Demand:

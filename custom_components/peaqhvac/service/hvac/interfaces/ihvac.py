@@ -137,7 +137,7 @@ class IHvac(UpdateSystem):
             self.model.current_offset_dict_tomorrow = ret.calculated_offsets[1]
             self.model.current_offset_dict_combined = self.set_combined_offsets(ret.calculated_offsets)
 
-    def set_combined_offsets(self, offsets: Tuple[dict, dict]) -> dict:
+    def set_combined_offsets(self, offsets: Tuple[dict, dict]) -> dict: #todo: remove this, duplicate code.
         ret:dict[datetime, int] = {}
         for hour in range(0, 24):
             ret[datetime.now().replace(hour=hour, minute=0, second=0, microsecond=0)] = offsets[0].get(hour, 0)
