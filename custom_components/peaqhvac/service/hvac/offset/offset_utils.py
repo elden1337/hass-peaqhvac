@@ -60,10 +60,10 @@ def set_offset_dict(prices: list[float], dt: datetime, min_price: float, existin
         len(existing.get(dt_date, {})),
         not len([k.hour for k,v in all_offsets.items() if k.date() ==dt_date + timedelta(days=1)])
         ]):
-        _LOGGER.debug(f"Today: {datetime.now().date()}. Using existing offset for {dt_date}. Existing: {existing[dt_date]}")
+        #_LOGGER.debug(f"Today: {datetime.now().date()}. Using existing offset for {dt_date}. Existing: {existing[dt_date]}")
         ret[dt_date] = existing[dt_date]
     elif len(existing.get(dt_date, {})):
-        _LOGGER.debug(f"Today: {datetime.now().date()}. Using existing offset for {dt_date} up until hour {dt.hour}")
+        #_LOGGER.debug(f"Today: {datetime.now().date()}. Using existing offset for {dt_date} up until hour {dt.hour}")
         today_dict = {}
         today_dict.update({k: v for k, v in existing[dt_date].items() if k <= dt.hour})
         today_dict.update({k.hour: v for k, v in all_offsets.items() if k.date() == dt_date and k.hour > dt.hour})

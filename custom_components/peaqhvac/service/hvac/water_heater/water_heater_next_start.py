@@ -78,7 +78,8 @@ class NextWaterBoost:
                 minute=self._set_minute_start()
             ), None
 
-        next_dt, override_demand = self._calculate_next_start(delay_dt, current_dm)  # todo: must also use latestboost +24h in this.
+        delay_dt_check = min(last_known, delay_dt) if delay_dt else None
+        next_dt, override_demand = self._calculate_next_start(delay_dt_check, current_dm)  # todo: must also use latestboost +24h in this.
         if debug:
             _LOGGER.debug(f"next boost vanilla: {next_dt}, override demand: {override_demand}")
         intersecting1 = self._check_intersecting(next_dt, last_known, current_dm)
@@ -187,7 +188,7 @@ class NextWaterBoost:
             check_dt = self.norm_dt(delay_dt if delay_dt else self.model.now_dt)
             current_price = self.model.price_dict.get(check_dt, None)
             if current_price:
-                if self.model.price_dict[check_dt] < self.model.floating_mean and self.model.is_cold and not any(
+                if current_price < self.model.floating_mean and self.model.is_cold and not any(
                         [
                             check_dt in self.model.non_hours,
                             (check_dt + timedelta(hours=1)) in self.model.non_hours,
