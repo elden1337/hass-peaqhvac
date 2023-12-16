@@ -12,6 +12,7 @@ P231214 = [1.17, 1.15, 1.16, 1.16, 1.19, 1.24, 1.47, 1.81, 1.97, 2.19, 2.19, 1.9
               1.81, 1.99, 2.19, 2.73, 2.73, 2.63, 2.11, 1.81, 1.62, 1.43, 1.41, 1.28]
 P231215 =[1.28,1.24,1.2,1.15,1.13,1.2,1.42,1.57,1.78,1.72,1.61,1.51,1.39,1.31,1.28,1.3,1.42,1.37,1.26,1.19,1.15,1.14,0.93,1.05]
 P231216 = [0.69,0.62,0.56,0.45,0.38,0.32,0.31,0.31,0.31,0.3,0.3,0.27,0.26,0.25,0.26,0.27,0.28,0.27,0.24,0.23,0.15,0.11,0.08,0.08]
+P231217 = [0.06,0.06,0.06,0.06,0.07,0.08,0.08,0.08,0.1,0.11,0.11,0.13,0.11,0.13,0.11,0.14,0.16,0.24,0.27,0.27,0.25,0.24,0.17,0.16]
 
 def test_offsets_cent_and_normal_match():
     prices = P231213 + P231214
@@ -19,6 +20,10 @@ def test_offsets_cent_and_normal_match():
     r1 = set_offset_dict(prices, now_dt, 0, {})
     r2 = set_offset_dict([p*100 for p in prices], now_dt, 0, {})
     assert r1 == r2
+
+def test_assert_cheaper_hours_tomorrow_not_lower_offset_than_today():
+    """error with 231217 last hours having another offset than the same price for 231216"""
+    pass
 
 def test_offsets_correct_curve_over_night_cached_today():
     _tolerance = 3

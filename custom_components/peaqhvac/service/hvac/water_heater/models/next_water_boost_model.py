@@ -121,6 +121,11 @@ class NextWaterBoostModel:
         self.set_now_dt(now_dt)
         new_price_dict = self._create_price_dict(prices_today + prices_tomorrow)
         if new_price_dict != self.price_dict:
+            if all([
+                any([k for k in new_price_dict.keys() if k.date() != self.now_dt.date()]),
+                not any([k for k in self.price_dict.keys() if k.date() != self.now_dt.date()])
+            ]):
+                self.latest_calculation = None
             self.price_dict = new_price_dict
             self.should_update = True
         new_non_hours = self._set_hours(self.non_hours_raw, preset)
