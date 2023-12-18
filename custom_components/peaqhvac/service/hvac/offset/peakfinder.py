@@ -1,4 +1,5 @@
 import statistics
+from datetime import timedelta
 from typing import Tuple
 
 
@@ -77,54 +78,75 @@ def find_single_valleys(prices: list) -> list[int]:
     return ret
 
 
-def _find_single_anomalies(adj: list) -> list[int]:
-    for idx, p in enumerate(adj):
-        if idx <= 1 or idx >= len(adj) - 1:
-            pass
-        else:
-            if all([adj[idx - 1] == adj[idx + 1], adj[idx - 1] != adj[idx]]):
-                _prev = adj[idx - 1]
-                _curr = adj[idx]
-                diff = max(_prev, _curr) - min(_prev, _curr)
-                if int(diff / 2) > 0:
-                    if _prev > _curr:
-                        adj[idx] += int(diff / 2)
-                    else:
-                        adj[idx] -= int(diff / 2)
+# def _find_single_anomalies(adj: list) -> list[int]:
+#     for idx, p in enumerate(adj):
+#         if idx <= 1 or idx >= len(adj) - 1:
+#             pass
+#         else:
+#             if all([adj[idx - 1] == adj[idx + 1], adj[idx - 1] != adj[idx]]):
+#                 _prev = adj[idx - 1]
+#                 _curr = adj[idx]
+#                 diff = max(_prev, _curr) - min(_prev, _curr)
+#                 if int(diff / 2) > 0:
+#                     if _prev > _curr:
+#                         adj[idx] += int(diff / 2)
+#                     else:
+#                         adj[idx] -= int(diff / 2)
+#     return adj
+
+def _find_single_anomalies(adj: dict) -> dict:
     return adj
+    # for k, v in adj.items():
+    #     if all([k+timedelta(hours=-1) in adj.items, k+timedelta(hours=+1) in adj.items]):
 
-
-def _smooth_upwards_transitions(start_list, tolerance):
-    for idx, v in enumerate(start_list):
-        if idx < len(start_list) - 1:
-            if start_list[idx + 1] >= start_list[idx] + tolerance:
-                start_list[idx] += 1
+def _smooth_upwards_transitions(start_list: dict, tolerance):
+    for k, v in start_list.items():
+        if k+timedelta(hours=+1) in start_list.items():
+            if start_list[k + timedelta(hours=1)] >= start_list[k] + tolerance:
+                start_list[k] += 1
     return start_list
 
+# def _smooth_upwards_transitions(start_list, tolerance):
+#     for idx, v in enumerate(start_list):
+#         if idx < len(start_list) - 1:
+#             if start_list[idx + 1] >= start_list[idx] + tolerance:
+#                 start_list[idx] += 1
+#     return start_list
 
-def smooth_transitions(
-    today: list, tomorrow: list, tolerance: int
-) -> Tuple[dict, dict]:
+#
+# def smooth_transitions(
+#     today: list, tomorrow: list, tolerance: int
+# ) -> Tuple[dict, dict]:
+#     if tolerance is not None:
+#         tolerance = min(tolerance, 3)
+#     else:
+#         tolerance = 3
+#
+#     start_list: list = []
+#     ret: Tuple[dict, dict] = {}, {}
+#
+#     start_list.extend(today)
+#     if 23 <= len(tomorrow) <= 25:
+#         start_list.extend(tomorrow)
+#     if len(start_list) < 24:
+#         return ret
+#
+#     start_list = _find_single_anomalies(start_list)
+#     start_list = _smooth_upwards_transitions(start_list, tolerance)
+#
+#     for hour in range(0, 24):
+#         ret[0][hour] = start_list[hour]
+#     if 23 <= len(tomorrow) <= 25:
+#         for hour in range(24, min(len(tomorrow) + 24, 48)):
+#             ret[1][hour - 24] = start_list[hour]
+#     return ret
+def smooth_transitions(vals: dict, tolerance: int) -> dict:
     if tolerance is not None:
         tolerance = min(tolerance, 3)
     else:
         tolerance = 3
 
-    start_list: list = []
-    ret: Tuple[dict, dict] = {}, {}
+    ret = _find_single_anomalies(vals)
+    ret = _smooth_upwards_transitions(ret, tolerance)
 
-    start_list.extend(today)
-    if 23 <= len(tomorrow) <= 25:
-        start_list.extend(tomorrow)
-    if len(start_list) < 24:
-        return ret
-
-    start_list = _find_single_anomalies(start_list)
-    start_list = _smooth_upwards_transitions(start_list, tolerance)
-
-    for hour in range(0, 24):
-        ret[0][hour] = start_list[hour]
-    if 23 <= len(tomorrow) <= 25:
-        for hour in range(24, min(len(tomorrow) + 24, 48)):
-            ret[1][hour - 24] = start_list[hour]
     return ret

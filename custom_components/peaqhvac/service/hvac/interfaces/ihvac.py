@@ -133,16 +133,9 @@ class IHvac(UpdateSystem):
     def get_offsets(self) -> None:  # todo: make async
         ret = self.hub.offset.get_offset()
         if ret is not None:
-            self.model.current_offset_dict = ret.calculated_offsets[0]
-            self.model.current_offset_dict_tomorrow = ret.calculated_offsets[1]
-            self.model.current_offset_dict_combined = self.set_combined_offsets(ret.calculated_offsets)
-
-    def set_combined_offsets(self, offsets: Tuple[dict, dict]) -> dict: #todo: remove this, duplicate code.
-        ret:dict[datetime, int] = {}
-        for hour in range(0, 24):
-            ret[datetime.now().replace(hour=hour, minute=0, second=0, microsecond=0)] = offsets[0].get(hour, 0)
-            ret[datetime.now().replace(hour=hour, minute=0, second=0,microsecond=0) + timedelta(days=1)] = offsets[1].get(hour, 0)
-        return ret
+            self.model.current_offset_dict = {k: v for k, v in ret.calculated_offsets.items() if k.date() == datetime.now().date()}
+            self.model.current_offset_dict_tomorrow = {k: v for k, v in ret.calculated_offsets.items() if k.date() == datetime.now().date()+timedelta(days=1)}
+            self.model.current_offset_dict_combined = ret.calculated_offsets
 
     @staticmethod
     def _get_sensors_for_callback(types: dict) -> list:

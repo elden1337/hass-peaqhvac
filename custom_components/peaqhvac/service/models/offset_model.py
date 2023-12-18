@@ -10,8 +10,8 @@ _LOGGER = logging.getLogger(__name__)
 class OffsetModel:
     _peaks_today: list = []
     _peaks_tomorrow: list = []
-    calculated_offsets = {}, {}
-    raw_offsets = {}, {}
+    calculated_offsets = {}
+    raw_offsets = {}
     _tolerance = None
     tolerance_raw = None
     prognosis = None

@@ -139,7 +139,7 @@ class Hub:
     async def async_offset_export_model(self) -> OffsetsExportModel:
         ret = OffsetsExportModel(
         (self.offset.model.peaks_today, self.offset.model.peaks_tomorrow))
-        ret.raw_offsets = self.offset.model.raw_offsets[0]
+        ret.raw_offsets = self.offset.model.raw_offsets
         ret.current_offset = self.hvac.model.current_offset_dict
         ret.current_offset_tomorrow = self.hvac.model.current_offset_dict_tomorrow
         return ret

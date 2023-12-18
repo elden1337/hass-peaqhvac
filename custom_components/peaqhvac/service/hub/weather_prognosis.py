@@ -63,12 +63,15 @@ class WeatherPrognosis:
             else:
                 _LOGGER.error("could not get weather-prognosis.")
 
-    def get_weatherprognosis_adjustment(self, offsets) -> Tuple[dict, dict]:
+    def get_weatherprognosis_adjustment(self, offsets:dict[datetime, int]) -> dict:
         self.update_weather_prognosis()
-        ret = {}, offsets[1]
-        for hour, offset in offsets[0].items():
-            ret[0][hour] = self._get_weatherprognosis_hourly_adjustment(hour, offset)
-        return {hour: offset for (hour, offset) in ret[0].items()}, ret[1]
+        ret = {k:v for k,v in offsets.items() if k.date == datetime.now().date()+timedelta(days=1)}
+        rr = {k:self._get_weatherprognosis_hourly_adjustment(k.hour, v) for k,v in offsets.items() if k.date == datetime.now().date()}
+        ret.update(rr)
+        return ret
+        # for hour, offset in offsets[0].items():
+        #     ret[0][hour] = self._get_weatherprognosis_hourly_adjustment(hour, offset)
+        # return {hour: offset for (hour, offset) in ret[0].items()}, ret[1]
 
     def get_hvac_prognosis(self, current_temperature: float) -> list:
         ret = []

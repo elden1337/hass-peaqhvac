@@ -13,6 +13,8 @@ P231214 = [1.17, 1.15, 1.16, 1.16, 1.19, 1.24, 1.47, 1.81, 1.97, 2.19, 2.19, 1.9
 P231215 =[1.28,1.24,1.2,1.15,1.13,1.2,1.42,1.57,1.78,1.72,1.61,1.51,1.39,1.31,1.28,1.3,1.42,1.37,1.26,1.19,1.15,1.14,0.93,1.05]
 P231216 = [0.69,0.62,0.56,0.45,0.38,0.32,0.31,0.31,0.31,0.3,0.3,0.27,0.26,0.25,0.26,0.27,0.28,0.27,0.24,0.23,0.15,0.11,0.08,0.08]
 P231217 = [0.06,0.06,0.06,0.06,0.07,0.08,0.08,0.08,0.1,0.11,0.11,0.13,0.11,0.13,0.11,0.14,0.16,0.24,0.27,0.27,0.25,0.24,0.17,0.16]
+P231218 = [0.22, 0.2, 0.17, 0.15, 0.16, 0.22, 0.3, 0.38, 0.43, 0.4, 0.38, 0.36, 0.32, 0.32, 0.32, 0.33, 0.36, 0.4, 0.39, 0.35, 0.32, 0.29, 0.26, 0.22]
+P231219 = [0.19, 0.15, 0.11, 0.1, 0.14, 0.2, 0.28, 0.41, 0.51, 0.52, 0.54, 0.51, 0.45, 0.41, 0.41, 0.4, 0.37, 0.36, 0.37, 0.32, 0.3, 0.27, 0.25, 0.24]
 
 def test_offsets_cent_and_normal_match():
     prices = P231213 + P231214
@@ -23,7 +25,31 @@ def test_offsets_cent_and_normal_match():
 
 def test_assert_cheaper_hours_tomorrow_not_lower_offset_than_today():
     """error with 231217 last hours having another offset than the same price for 231216"""
-    pass
+    _tolerance = 3
+    indoors_preset = HvacPresets.Normal
+    prices = P231218
+    prices_tomorrow = P231219
+    now_dt = datetime(2023, 12, 18, 20, 43, 0)
+    offset_dict = set_offset_dict(prices + prices_tomorrow, now_dt, 0, {})
+    offs2 = offset_per_day(
+        all_prices=prices + prices_tomorrow,
+        day_values=offset_dict,
+        tolerance=_tolerance,
+        indoors_preset=indoors_preset,
+    )
+
+    ret = smooth_transitions(
+        today=[v for k,v in offs2.items() if k.date() == now_dt.date()],
+        tomorrow=[v for k,v in offs2.items() if k.date() == now_dt.date()+timedelta(days=1)],
+        tolerance=_tolerance,
+    )
+
+    print(offset_dict)
+    print(offs2)
+    print(ret)
+
+    assert 1 > 2
+
 
 def test_offsets_correct_curve_over_night_cached_today():
     _tolerance = 3
