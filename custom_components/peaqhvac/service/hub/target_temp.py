@@ -6,6 +6,7 @@ from peaqevcore.common.models.observer_types import ObserverTypes
 from custom_components.peaqhvac.service.models.enums.hvac_presets import \
     HvacPresets
 from custom_components.peaqhvac.service.observer.observer_broadcaster import ObserverBroadcaster
+from custom_components.peaqhvac.service.observer.property_observer import PropertyObserver
 
 MINTEMP = 15
 MAXTEMP = 27
@@ -72,6 +73,7 @@ class TargetTemp(ObserverBroadcaster):
         old_preset = self._preset
         self._preset = HvacPresets.get_type(val)
         if old_preset != self._preset:
+            PropertyObserver.publish("indoors_preset", self._preset)
             self.hub.observer.broadcast(ObserverTypes.HvacPresetChanged)
         self._set_temperature_and_tolerances()
 

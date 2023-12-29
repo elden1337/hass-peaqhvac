@@ -16,6 +16,8 @@ from custom_components.peaqhvac.service.hvac.offset.offset_utils import (
 from custom_components.peaqhvac.service.hvac.offset.peakfinder import (
     identify_peaks, smooth_transitions)
 from custom_components.peaqhvac.service.models.offset_model import OffsetModel
+from custom_components.peaqhvac.service.observer.observable_property import ObservableProperty
+from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,11 +31,11 @@ class OffsetCoordinator:
         self.latest_raw_offset_update_hour: int = -1
 
         self._hub.observer.add(ObserverTypes.PricesChanged, self.async_update_prices)
-        self._hub.observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)
-        #self._hub.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
+        self._hub.observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)        
         self._hub.observer.add(ObserverTypes.HvacPresetChanged, self._set_offset)
         self._hub.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
         self._hub.observer.add(ObserverTypes.HvacToleranceChanged, self._set_offset)
+        self.indoors_preset = ObservableProperty("indoors_preset", HvacPresets)
 
     @property
     @abstractmethod
@@ -126,12 +128,11 @@ class OffsetCoordinator:
 
     def _calculate_offset_per_day(self, day_values: dict, weather_adjusted_today: dict | None = None) -> dict:
         if weather_adjusted_today is None:
-            indoors_preset = self._hub.sensors.set_temp_indoors.preset
             return offset_per_day(
                 all_prices=self.prices+self.prices_tomorrow,
                 day_values=day_values,
                 tolerance=self.model.tolerance,
-                indoors_preset=indoors_preset,
+                indoors_preset=self.indoors_preset,
             )
         else:
             return weather_adjusted_today
