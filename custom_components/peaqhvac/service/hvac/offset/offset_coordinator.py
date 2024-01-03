@@ -80,6 +80,7 @@ class OffsetCoordinator:
         cached_tomorrow = cache.get_cache_for_today((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow)
         cached_midnight_problem = cache.get_cache_for_today(datetime.now().date() - timedelta(days=1), self.prices)
 
+        #todo: re-add caching
         try:
             # if all([cached_today, cached_tomorrow]):
             #     #_LOGGER.debug("Using cached values for today and tomorrow")
