@@ -58,9 +58,9 @@ class UpdateSystem:
 
     async def async_boost_water(self, timer:int) -> None:
         if self.hub.hvac.water_heater.control_module:
-            _LOGGER.debug(f"init water boost process")
+            #_LOGGER.debug(f"init water boost process")
             self.hub.state_machine.async_create_task(async_cycle_waterboost(timer, self.async_update_system, self.hub))
-            _LOGGER.debug(f"return from water boost process")
+            #_LOGGER.debug(f"return from water boost process")
 
     async def async_perform_periodic_updates(self) -> None:
         removelist = []

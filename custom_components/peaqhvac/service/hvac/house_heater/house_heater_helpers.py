@@ -46,7 +46,7 @@ class HouseHeaterHelpers:
                     self._hvac.hub.sensors.peaqev_facade.above_stop_threshold
                 ]
             ):
-                _LOGGER.debug("Lowering offset because of peak about to be breached.")
+                #_LOGGER.debug("Lowering offset because of peak about to be breached.")
                 self._wait_timer_breach.update()
                 return True
         return False
