@@ -155,7 +155,7 @@ class WaterHeater(IHeater):
             debug=debug
         )
         ret = min(ret, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=24))
-        if ret < datetime.now() +timedelta(days=-3):
+        if ret < datetime.now() +timedelta(days=-100):
             ret = datetime.max
             override_demand = None
         self.model.next_water_heater_start = ret
