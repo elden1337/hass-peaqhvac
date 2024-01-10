@@ -30,7 +30,7 @@ class OffsetCoordinator:
 
         self._hub.observer.add(ObserverTypes.PricesChanged, self.async_update_prices)
         self._hub.observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)
-        #self._hub.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
+        self._hub.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
         self._hub.observer.add(ObserverTypes.HvacPresetChanged, self._set_offset)
         self._hub.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
         self._hub.observer.add(ObserverTypes.HvacToleranceChanged, self._set_offset)
@@ -153,6 +153,8 @@ class OffsetCoordinator:
                     _LOGGER.warning(
                         f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
                     )
+            else:
+                _LOGGER.debug("No prognosis available, using normal calculation")
             self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
         else:
             if self._hub.is_initialized:

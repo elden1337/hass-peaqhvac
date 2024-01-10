@@ -13,8 +13,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def adjusted_tolerances(offset: int, min_tolerance, max_tolerance) -> Tuple[float, float]:
-    if abs(offset) <= 1:
-        return min_tolerance, max_tolerance
+    # if abs(offset) <= 1:
+    return min_tolerance, max_tolerance
     _max_tolerance = (
         max_tolerance + (offset / 15) if offset > 0 else max_tolerance
     )

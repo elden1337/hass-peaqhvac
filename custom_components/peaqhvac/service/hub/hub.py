@@ -47,10 +47,7 @@ class Hub:
         await self.async_setup_trackers()
 
     async def async_setup_trackers(self):
-        self.trackerentities = []
-        self.trackerentities.append(self.spotprice.entity)
-        self.trackerentities.extend(self.options.indoor_tempsensors)
-        self.trackerentities.extend(self.options.outdoor_tempsensors)
+        self.trackerentities = [self.spotprice.entity, self.options.indoor_tempsensors, self.options.outdoor_tempsensors]
         await self.states.async_initialize_values()
         async_track_state_change(
             self.state_machine, self.trackerentities, self.async_state_changed
@@ -123,7 +120,6 @@ class Hub:
             + self.sensors.temp_trend_indoors.trend
         )
 
-
     async def async_get_internal_sensor(self, entity):
         lookup = {
         LATEST_WATER_BOOST: partial(getattr, self.hvac.water_heater, "latest_boost_call"),
@@ -142,5 +138,6 @@ class Hub:
         ret.raw_offsets = self.offset.model.raw_offsets
         ret.current_offset = self.hvac.model.current_offset_dict
         ret.current_offset_tomorrow = self.hvac.model.current_offset_dict_tomorrow
+        #_LOGGER.debug(f"offset_export_model: {ret}")
         return ret
 
