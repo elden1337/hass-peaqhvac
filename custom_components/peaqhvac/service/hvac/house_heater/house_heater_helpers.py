@@ -46,7 +46,7 @@ class HouseHeaterHelpers:
                     self._hvac.hub.sensors.peaqev_facade.above_stop_threshold
                 ]
             ):
-                #_LOGGER.debug("Lowering offset because of peak about to be breached.")
+                _LOGGER.debug("Lowering offset because of peak about to be breached.")
                 self._wait_timer_breach.update()
                 return True
         return False
@@ -111,7 +111,7 @@ class HouseHeaterHelpers:
                 offsetdata.current_offset -= 2
                 force_update = True
         elif self._hvac.hub.sensors.peaqev_installed:
-            if self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes:
+            if self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes and self._hvac.hub.sensors.average_temp_outdoors.value > -10:
                 self._aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = -1
                 offsetdata.current_offset -= 1
                 force_update = True

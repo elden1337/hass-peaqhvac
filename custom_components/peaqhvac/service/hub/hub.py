@@ -47,7 +47,10 @@ class Hub:
         await self.async_setup_trackers()
 
     async def async_setup_trackers(self):
-        self.trackerentities = [self.spotprice.entity, self.options.indoor_tempsensors, self.options.outdoor_tempsensors]
+        self.trackerentities = []
+        self.trackerentities.append(self.spotprice.entity)
+        self.trackerentities.extend(self.options.indoor_tempsensors)
+        self.trackerentities.extend(self.options.outdoor_tempsensors)
         await self.states.async_initialize_values()
         async_track_state_change(
             self.state_machine, self.trackerentities, self.async_state_changed
@@ -119,6 +122,7 @@ class Hub:
             self.sensors.average_temp_indoors.value
             + self.sensors.temp_trend_indoors.trend
         )
+
 
     async def async_get_internal_sensor(self, entity):
         lookup = {
