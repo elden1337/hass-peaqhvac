@@ -166,4 +166,4 @@ class NextWaterBoostModel:
         self._now_dt = datetime.now() if now_dt is None else now_dt
 
     def set_floating_mean(self, now_dt=None) -> None:
-        self.floating_mean = mean([v for k,v in self.price_dict.items() if k >=self.now_dt])
+        self.floating_mean = mean([v for k,v in self.price_dict.items() if k >=self.now_dt])*0.9

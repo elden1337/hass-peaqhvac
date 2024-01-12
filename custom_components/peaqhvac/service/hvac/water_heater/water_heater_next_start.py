@@ -120,7 +120,7 @@ class NextWaterBoost:
     def _get_best_match(self, non_hours: list[datetime], demand_hours: list[datetime], current_dm) -> datetime | None:
         """even if demand hour intersect we cannot boost more often than every 2 hours if dm are low"""
         try:
-            if current_dm and current_dm < -500:
+            if current_dm and current_dm < -100:
                 first_demand = min([d for d in demand_hours if d > self.model.latest_boost + timedelta(hours=2)])
             else:
                 first_demand = min([d for d in demand_hours if d > self.model.latest_boost])
@@ -195,7 +195,7 @@ class NextWaterBoost:
                         [
                             check_dt in self.model.non_hours,
                             (check_dt + timedelta(hours=1)) in self.model.non_hours,
-                            current_dm < -600
+                            current_dm < -800
                         ]
                 ):
                     """This hour is cheap enough to start and it is cold"""
