@@ -2,7 +2,7 @@
     "domain": "peaqhvac",
     "name": "peaqhvac",
     "after_dependencies": [
-      "nibe",
+      "myuplink",
       "nordpool",
       "peaqev",
       "met"
@@ -22,6 +22,6 @@
     "requirements": [
       "peaqevcore==19.6.6"
     ],
-    "version": "2.4.5"
+    "version": "3.0.0"
   }
 

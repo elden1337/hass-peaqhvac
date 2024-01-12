@@ -75,7 +75,8 @@ class IHvac(UpdateSystem):
 
     @property
     def hvac_offset(self) -> int:
-        return self.get_value(SensorType.Offset, int)
+        return 0  #todo: myuplink fix
+        #return self.get_value(SensorType.Offset, int)
 
     @property
     def hvac_dm(self) -> int:
@@ -93,11 +94,13 @@ class IHvac(UpdateSystem):
 
     @property
     def hvac_electrical_addon(self) -> float:
-        return self.get_value(SensorType.ElectricalAddition, float)
+        return 0.0  #todo: myuplink fix
+        #return self.get_value(SensorType.ElectricalAddition, float)
 
     @property
     def hvac_compressor_start(self) -> int:
-        return self.get_value(SensorType.DMCompressorStart, int)
+        return -250 #todo: myuplink fix
+        #return self.get_value(SensorType.DMCompressorStart, int)
 
     @property
     def hvac_watertemp(self) -> float:

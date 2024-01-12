@@ -10,5 +10,7 @@ class SensorType(Enum):
     HvacMode = 6
     DMCompressorStart = 7
     HvacTemp = 8
-    CondenserReturn = 9
+    HotWaterReturn = 9
     FanSpeed = 10
+    HotWaterBoost = 11
+    VentilationBoost = 12

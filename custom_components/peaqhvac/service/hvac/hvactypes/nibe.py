@@ -16,47 +16,28 @@ class Nibe(IHvac):
     domain = "Nibe"
     water_heater_entity = None
 
-    _servicecall_types = {
-        HvacOperations.Offset: 47011,
-        HvacOperations.VentBoost: "ventilation_boost",
-        HvacOperations.WaterBoost: "hot_water_boost",
-    }
+    def _servicecall_types(self):
+        return {
+            HvacOperations.Offset: 47011,
+            HvacOperations.VentBoost: self.get_sensor(SensorType.VentilationBoost),
+            HvacOperations.WaterBoost: self.get_sensor(SensorType.HotWaterBoost),
+        }
 
-    def _get_water_heater(self) -> str:
-        """Fix to handle both new and old water heater entity naming."""
-        if self.water_heater_entity:
-            return self.water_heater_entity
-        try:
-            w1 = self.hub.state_machine.states.get(f"water_heater.nibe_{self.hub.options.systemid}_40014_47387")
-            if w1:
-                attr1 = w1.attributes.get("current_temperature")
-                if attr1:
-                    self.water_heater_entity = f"water_heater.nibe_{self.hub.options.systemid}_40014_47387|current_temperature"
-                    _LOGGER.debug(f"Found water_heater entity: {self.water_heater_entity}")
-                    return self.water_heater_entity
-            w2 = self.hub.state_machine.states.get(f"water_heater.nibe_hot_water")
-            if w2:
-                attr2 = w2.attributes.get("current_temperature")
-                if attr2:
-                    self.water_heater_entity = f"water_heater.nibe_hot_water|current_temperature"
-                    _LOGGER.debug(f"Found water_heater entity: {self.water_heater_entity}")
-                    return self.water_heater_entity
-        except Exception as e:
-            _LOGGER.error("Unable to set water_heater_entity", e)
-            return None
-
+#f730_cu_3x400v_magnus_nibef_f730_cu_3x400v
     def get_sensor(self, sensor: SensorType = None):
         types = {
-            SensorType.HvacMode: f"climate.nibe_{self.hub.options.systemid}_s1_supply|hvac_action",
-            SensorType.Offset: f"climate.nibe_{self.hub.options.systemid}_s1_supply|offset_heat",
-            SensorType.DegreeMinutes: f"sensor.nibe_{self.hub.options.systemid}_43005",
-            SensorType.WaterTemp: self._get_water_heater(),
-            SensorType.HvacTemp: f"climate.nibe_{self.hub.options.systemid}_s1_supply|current_temperature",
-            SensorType.CondenserReturn: f"sensor.nibe_{self.hub.options.systemid}_40012",
-            SensorType.ElectricalAddition: f"sensor.nibe_{self.hub.options.systemid}_43084",
-            SensorType.CompressorFrequency: f"sensor.nibe_{self.hub.options.systemid}_43136",
-            SensorType.DMCompressorStart: f"sensor.nibe_{self.hub.options.systemid}_47206",
-            SensorType.FanSpeed: f"sensor.nibe_{self.hub.options.systemid}_10001|raw_value",
+            #SensorType.HvacMode: f"climate.nibe_{self.hub.options.systemid}_s1_supply|hvac_action",
+            #SensorType.Offset: f"climate.nibe_{self.hub.options.systemid}_s1_supply|offset_heat", #only exists with spa active (ie not usable)
+            SensorType.DegreeMinutes: f"sensor.{self.hub.options.systemid}_degree_minutes",
+            SensorType.WaterTemp: f"sensor.{self.hub.options.systemid}_hot_water_charging_bt6",
+            SensorType.HvacTemp: f"sensor.{self.hub.options.systemid}_supply_line_bt2",
+            SensorType.HotWaterReturn: f"sensor.{self.hub.options.systemid}_return_line_bt3",
+            #SensorType.ElectricalAddition: f"sensor.nibe_{self.hub.options.systemid}_43084",
+            SensorType.CompressorFrequency: f"sensor.{self.hub.options.systemid}_current_compressor_frequency",
+            #SensorType.DMCompressorStart: f"sensor.nibe_{self.hub.options.systemid}_47206",
+            #SensorType.FanSpeed: f"sensor.nibe_{self.hub.options.systemid}_10001|raw_value",
+            SensorType.HotWaterBoost: f"select.{self.hub.options.systemid}_temporary_lux",
+            SensorType.VentilationBoost: f"select.{self.hub.options.systemid}_increased_ventilation",
         }
         return (
             types[sensor]
@@ -64,29 +45,21 @@ class Nibe(IHvac):
             else self._get_sensors_for_callback(types)
         )
 
-    # @property
-    # def compressor_frequency(self) -> int:
-    #     try:
-    #         freq = self.get_sensor(SensorType.CompressorFrequency)
-    #         return int(self._handle_sensor(freq))
-    #     except Exception as e:
-    #         _LOGGER.debug(f"Unable to get compressor frequency: {e}")
-    #         return 0
-
     @property
     def fan_speed(self) -> float:
-        try:
-            speed = self.get_sensor(SensorType.FanSpeed)
-            return float(self._handle_sensor(speed))
-        except Exception as e:
-            #_LOGGER.debug(f"Unable to get fan speed: {e}")
-            return 0
+        return 57  #todo: myuplink fix
+        # try:
+        #     speed = self.get_sensor(SensorType.FanSpeed)
+        #     return float(self._handle_sensor(speed))
+        # except Exception as e:
+        #     #_LOGGER.debug(f"Unable to get fan speed: {e}")
+        #     return 0
 
     @property
     def delta_return_temp(self):
         try:
             temp = self.get_sensor(SensorType.HvacTemp)
-            returntemp = self.get_sensor(SensorType.CondenserReturn)
+            returntemp = self.get_sensor(SensorType.HotWaterReturn)
             return round(float(self._handle_sensor(temp)) - float(self._handle_sensor(returntemp)),2,)
         except Exception as e:
             _LOGGER.debug(f"Unable to calculate delta return: {e}")
@@ -94,14 +67,15 @@ class Nibe(IHvac):
 
     @property
     def hvac_mode(self) -> HvacMode:
-        sensor = self.get_sensor(SensorType.HvacMode)
-        ret = self._handle_sensor(sensor)
-        if ret is not None:
-            if ret.lower() == "heating":
-                return HvacMode.Heat
-            elif ret.lower() == "idle":
-                return HvacMode.Idle
-        return HvacMode.Unknown
+        return HvacMode.Heat  #todo: myuplink fix
+        # sensor = self.get_sensor(SensorType.HvacMode)
+        # ret = self._handle_sensor(sensor)
+        # if ret is not None:
+        #     if ret.lower() == "heating":
+        #         return HvacMode.Heat
+        #     elif ret.lower() == "idle":
+        #         return HvacMode.Idle
+        # return HvacMode.Unknown
 
     async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):
         match operation:
@@ -112,13 +86,17 @@ class Nibe(IHvac):
         raise ValueError(f"Operation {operation} not supported")
 
     def _set_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
-        call_operation = "set_parameter"
+        call_operation = "select_option" #todo: make dynamic
+        service_domain = "select" #todo: make dynamic
         params = {
-            "system": int(self.hub.options.systemid),
-            "parameter": self._servicecall_types[operation],
-            "value": int(_value),
+            "data": {
+                "option": _value
+            },
+            "target": {
+                "entity_id": self._servicecall_types()[operation]
+            }
         }
-        return call_operation, params, self.domain
+        return call_operation, params, service_domain
 
     @staticmethod
     def _cap_nibe_offset_value(val: int):
