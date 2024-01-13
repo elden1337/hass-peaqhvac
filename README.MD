@@ -10,6 +10,8 @@
 
 <img src="https://raw.githubusercontent.com/elden1337/hass-peaq/main/assets/icon.png" width="125">
 
+### This integration does not support the myuplink-migraton for Nibe as of 2024-01-13. if you have updated your hvac to firmware with forced migration you may not use this integration until it's been updated (will be 3.0.0)
+
 PeaqHvac is a custom component for Nibe F-series users. As of 2022-12-20 the tested versions are exhaust-air pumps F730 and F750, but it probably works fine with other similar ones as well.
 In future releases other brands might be added.
 
