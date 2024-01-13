@@ -77,6 +77,13 @@ class Nibe(IHvac):
         #         return HvacMode.Idle
         # return HvacMode.Unknown
 
+    def _transform_servicecall_value(self, value: any, operation: HvacOperations) -> any:
+        match operation:
+            case HvacOperations.Offset:
+                return value
+            case HvacOperations.VentBoost | HvacOperations.WaterBoost:
+                return "on" if value == 1 else "off"
+
     async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):
         match operation:
             case HvacOperations.Offset:
@@ -90,7 +97,7 @@ class Nibe(IHvac):
         service_domain = "select" #todo: make dynamic
         params = {
             "data": {
-                "option": _value
+                "option": self._transform_servicecall_value(_value, operation)
             },
             "target": {
                 "entity_id": self._servicecall_types()[operation]
