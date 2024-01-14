@@ -98,9 +98,10 @@ class Nibe(IHvac):
         params = {
             "data": {
                 "option": self._transform_servicecall_value(_value, operation)
-            },
-            "target": {
-                "entity_id": self._servicecall_types()[operation]
+                ,
+                "target": {
+                    "entity_id": self._servicecall_types()[operation]
+                }
             }
         }
         return call_operation, params, service_domain
