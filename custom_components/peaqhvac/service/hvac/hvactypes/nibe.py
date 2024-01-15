@@ -96,14 +96,10 @@ class Nibe(IHvac):
         call_operation = "select_option" #todo: make dynamic
         service_domain = "select" #todo: make dynamic
         params = {
-            "data": {
-                "option": self._transform_servicecall_value(_value, operation)
-                ,
-                "target": {
-                    "entity_id": self._servicecall_types()[operation]
-                }
+                "option": self._transform_servicecall_value(_value, operation),
+                "entity_id": self._servicecall_types()[operation]
             }
-        }
+
         return call_operation, params, service_domain
 
     @staticmethod

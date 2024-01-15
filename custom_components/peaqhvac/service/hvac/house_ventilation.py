@@ -18,7 +18,16 @@ class HouseVentilation:
         self._wait_timer_boost = WaitTimer(timeout=WAITTIMER_VENT, init_now=False)
         self._current_vent_state: bool = False
         self._latest_seen_fan_speed: float = 0
+        self._control_module: bool = False
         async_track_time_interval(self._hvac.hub.state_machine, self.async_check_vent_boost, timedelta(seconds=30))
+
+    @property
+    def control_module(self) -> bool:
+        return self._control_module
+
+    @control_module.setter
+    def control_module(self, val) -> None:
+        self._control_module = val
 
     @property
     def vent_boost(self) -> bool:
@@ -90,7 +99,7 @@ class HouseVentilation:
                 )
 
     def _vent_boost_start(self, msg) -> None:
-        if not self.vent_boost:
+        if not self.vent_boost and self.control_module:
             _LOGGER.debug(msg)
             self._wait_timer_boost.update()
             self.vent_boost = True
