@@ -35,7 +35,7 @@ class Nibe(IHvac):
             #SensorType.ElectricalAddition: f"sensor.nibe_{self.hub.options.systemid}_43084",
             SensorType.CompressorFrequency: f"sensor.{self.hub.options.systemid}_current_compressor_frequency",
             #SensorType.DMCompressorStart: f"sensor.nibe_{self.hub.options.systemid}_47206",
-            #SensorType.FanSpeed: f"sensor.nibe_{self.hub.options.systemid}_10001|raw_value",
+            SensorType.FanSpeed: f"sensor.{self.hub.options.systemid}_current_fan_mode",
             SensorType.HotWaterBoost: f"select.{self.hub.options.systemid}_temporary_lux",
             SensorType.VentilationBoost: f"select.{self.hub.options.systemid}_increased_ventilation",
         }
@@ -47,13 +47,12 @@ class Nibe(IHvac):
 
     @property
     def fan_speed(self) -> float:
-        return 57  #todo: myuplink fix
-        # try:
-        #     speed = self.get_sensor(SensorType.FanSpeed)
-        #     return float(self._handle_sensor(speed))
-        # except Exception as e:
-        #     #_LOGGER.debug(f"Unable to get fan speed: {e}")
-        #     return 0
+        try:
+            speed = self.get_sensor(SensorType.FanSpeed)
+            return float(self._handle_sensor(speed))
+        except Exception as e:
+            #_LOGGER.debug(f"Unable to get fan speed: {e}")
+            return 0
 
     @property
     def delta_return_temp(self):

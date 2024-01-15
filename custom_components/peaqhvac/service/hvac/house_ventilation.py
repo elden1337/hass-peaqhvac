@@ -41,7 +41,7 @@ class HouseVentilation:
 
     @property
     def booster_update(self) -> bool:
-        return (self._hvac.fan_speed >= 80) != self._current_vent_state
+        return (self._hvac.fan_speed >= 3) != self._current_vent_state
 
     def _check_hvac_fan_speed(self) -> None:
         if self._hvac.fan_speed != self._latest_seen_fan_speed:
