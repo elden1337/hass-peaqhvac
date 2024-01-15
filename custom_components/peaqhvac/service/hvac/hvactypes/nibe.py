@@ -26,13 +26,13 @@ class Nibe(IHvac):
 #f730_cu_3x400v_magnus_nibef_f730_cu_3x400v
     def get_sensor(self, sensor: SensorType = None):
         types = {
-            #SensorType.HvacMode: f"climate.nibe_{self.hub.options.systemid}_s1_supply|hvac_action",
+            SensorType.HvacMode: f"sensor.{self.hub.options.systemid}_priority",
             #SensorType.Offset: f"climate.nibe_{self.hub.options.systemid}_s1_supply|offset_heat", #only exists with spa active (ie not usable)
             SensorType.DegreeMinutes: f"sensor.{self.hub.options.systemid}_degree_minutes",
             SensorType.WaterTemp: f"sensor.{self.hub.options.systemid}_hot_water_charging_bt6",
             SensorType.HvacTemp: f"sensor.{self.hub.options.systemid}_supply_line_bt2",
             SensorType.HotWaterReturn: f"sensor.{self.hub.options.systemid}_return_line_bt3",
-            #SensorType.ElectricalAddition: f"sensor.nibe_{self.hub.options.systemid}_43084",
+            SensorType.ElectricalAddition: f"sensor.{self.hub.options.systemid}_int_elec_add_heat",
             SensorType.CompressorFrequency: f"sensor.{self.hub.options.systemid}_current_compressor_frequency",
             #SensorType.DMCompressorStart: f"sensor.nibe_{self.hub.options.systemid}_47206",
             SensorType.FanSpeed: f"sensor.{self.hub.options.systemid}_current_fan_mode",
@@ -66,15 +66,55 @@ class Nibe(IHvac):
 
     @property
     def hvac_mode(self) -> HvacMode:
-        return HvacMode.Heat  #todo: myuplink fix
-        # sensor = self.get_sensor(SensorType.HvacMode)
-        # ret = self._handle_sensor(sensor)
-        # if ret is not None:
-        #     if ret.lower() == "heating":
-        #         return HvacMode.Heat
-        #     elif ret.lower() == "idle":
-        #         return HvacMode.Idle
-        # return HvacMode.Unknown
+        """
+            'enumValues': [
+          {
+            'value': '10',
+            'text': 'Off',
+            'icon': ''
+          },
+          {
+            'value': '20',
+            'text': 'Hot water',
+            'icon': ''
+          },
+          {
+            'value': '30',
+            'text': 'Heating',
+            'icon': ''
+          },
+          {
+            'value': '40',
+            'text': 'Pool',
+            'icon': ''
+          },
+          {
+            'value': '41',
+            'text': 'Pool 2',
+            'icon': ''
+          },
+          {
+            'value': '50',
+            'text': 'Transfer',
+            'icon': ''
+          },
+          {
+            'value': '60',
+            'text': 'Cooling',
+            'icon': ''
+          }
+        ],
+        """
+        value_lookup = {
+            "10": HvacMode.Idle,
+            "20": HvacMode.Water,
+            "30": HvacMode.Heat,
+        }
+        sensor = self.get_sensor(SensorType.HvacMode)
+        ret = self._handle_sensor(sensor)
+        if ret is not None:
+            return value_lookup.get(ret, HvacMode.Unknown)
+        return HvacMode.Unknown
 
     def _transform_servicecall_value(self, value: any, operation: HvacOperations) -> any:
         match operation:

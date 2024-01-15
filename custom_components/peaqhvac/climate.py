@@ -111,7 +111,7 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
         match self._hub.hvac.hvac_mode:
             case HvacModeInternal.Heat:
                 return HVACAction.HEATING
-            case HvacModeInternal.Idle:
+            case HvacModeInternal.Idle | HvacModeInternal.Water:
                 return HVACAction.IDLE
             case _:
                 return HVACAction.OFF
