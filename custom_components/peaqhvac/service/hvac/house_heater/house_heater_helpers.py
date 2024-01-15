@@ -32,7 +32,7 @@ class HouseHeaterHelpers:
             )
 
     def _lower_offset_addon(self) -> bool:
-        if self._hvac.hvac_electrical_addon > 0:
+        if self._hvac.hvac_electrical_addon:
             _LOGGER.debug("Lowering offset because electrical addon is on.")
             self._wait_timer_breach.update()
             return True

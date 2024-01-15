@@ -93,9 +93,57 @@ class IHvac(UpdateSystem):
         return self.get_value(SensorType.CompressorFrequency, int)
 
     @property
-    def hvac_electrical_addon(self) -> float:
-        return 0.0  #todo: myuplink fix
-        #return self.get_value(SensorType.ElectricalAddition, float)
+    def hvac_electrical_addon(self) -> bool:
+        """
+            'enumValues': [
+          {
+            'value': '0',
+            'text': 'Alarm',
+            'icon': ''
+          },
+          {
+            'value': '1',
+            'text': 'Alarm',
+            'icon': ''
+          },
+          {
+            'value': '2',
+            'text': 'Active',
+            'icon': ''
+          },
+          {
+            'value': '3',
+            'text': 'Off',
+            'icon': ''
+          },
+          {
+            'value': '4',
+            'text': 'Blocked',
+            'icon': ''
+          },
+          {
+            'value': '5',
+            'text': 'Off',
+            'icon': ''
+          },
+          {
+            'value': '6',
+            'text': 'Active',
+            'icon': ''
+          }
+        ],
+        """
+        value_conversion = {
+            0: False,
+            1: False,
+            2: True,
+            3: False,
+            4: False,
+            5: False,
+            6: True,
+        }
+        ret= self.get_value(SensorType.ElectricalAddition, float)
+        return value_conversion.get(ret, False)
 
     @property
     def hvac_compressor_start(self) -> int:
