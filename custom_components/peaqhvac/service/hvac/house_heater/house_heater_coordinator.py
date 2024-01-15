@@ -135,7 +135,7 @@ class HouseHeaterCoordinator(IHeater):
         if not len(self._offsets):
             return
         hour = datetime.now().replace(minute=0, second=0, microsecond=0)
-        if datetime.now().minute >= 40:
+        if datetime.now().minute >= 55:
             hour += timedelta(hours=1)
         try:
             if self._hvac.hub.price_below_min(hour):

@@ -13,10 +13,13 @@ UPDATE_INTERVALS = {
 }
 
 
-async def async_cycle_waterboost(timeout: int, async_update_system: callable, hub) -> bool:
-    end_time = time.time() + timeout
+async def async_cycle_waterboost(target_temp:float, async_update_system: callable, hub) -> bool:
+    end_time = time.time() + 1200
     await async_update_system(operation=HvacOperations.WaterBoost, set_val=1)
-    while time.time() < end_time:
+    while all([
+        time.time() < end_time,
+        hub.hvac.water_heater.current_temperature < target_temp
+    ]):
         if hub.sensors.peaqev_installed:
             if all([hub.sensors.peaqev_facade.above_stop_threshold, 20 <= datetime.now().minute < 55]):
                 _LOGGER.debug("Peak is being breached. Turning off water heating")
@@ -56,10 +59,10 @@ class UpdateSystem:
             if await self.async_ready_to_update(HvacOperations.Offset):
                 self.update_list[HvacOperations.Offset] = self.current_offset
 
-    async def async_boost_water(self, timer:int) -> None:
+    async def async_boost_water(self, target_temp:float) -> None:
         if self.hub.hvac.water_heater.control_module:
             _LOGGER.debug(f"init water boost process")
-            self.hub.state_machine.async_create_task(async_cycle_waterboost(timer, self.async_update_system, self.hub))
+            self.hub.state_machine.async_create_task(async_cycle_waterboost(target_temp, self.async_update_system, self.hub))
             _LOGGER.debug(f"return from water boost process")
 
     async def async_perform_periodic_updates(self) -> None:
