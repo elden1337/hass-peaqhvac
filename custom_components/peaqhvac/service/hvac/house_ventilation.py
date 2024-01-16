@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import logging
 
 from peaqevcore.common.models.observer_types import ObserverTypes
+from peaqevcore.models.hub.hubmember import HubMember
 
 from custom_components.peaqhvac.service.hvac.const import WAITTIMER_TIMEOUT, WAITTIMER_VENT
 from peaqevcore.common.wait_timer import WaitTimer
@@ -18,16 +19,16 @@ class HouseVentilation:
         self._wait_timer_boost = WaitTimer(timeout=WAITTIMER_VENT, init_now=False)
         self._current_vent_state: bool = False
         self._latest_seen_fan_speed: float = 0
-        self._control_module: bool = True
+        self._control_module: HubMember = HubMember(data_type=bool, initval=False)
         async_track_time_interval(self._hvac.hub.state_machine, self.async_check_vent_boost, timedelta(seconds=30))
 
     @property
     def control_module(self) -> bool:
-        return self._control_module
+        return self._control_module.value
 
     @control_module.setter
     def control_module(self, val) -> None:
-        self._control_module = val
+        self._control_module.value = val
 
     @property
     def vent_boost(self) -> bool:
