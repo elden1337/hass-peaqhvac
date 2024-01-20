@@ -38,7 +38,7 @@ class WaterHeater(IHeater):
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self._wait_timer_peak = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
         self.temp_trend = Gradient(
-            max_age=3600, max_samples=100, precision=2, ignore=0, outlier=20, smoothing_average=3
+            max_age=900, max_samples=5, precision=2, ignore=0, outlier=20
         )
         self.model = WaterBoosterModel(self._hub.state_machine)
         self.booster = NextWaterBoost(

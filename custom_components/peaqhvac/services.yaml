@@ -10,5 +10,5 @@ set_mode:
 
 boost_water:
   fields:
-    timeout:
-      example: 1200
+    targettemp:
+      example: 47

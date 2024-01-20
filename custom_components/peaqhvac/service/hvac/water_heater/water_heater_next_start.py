@@ -40,10 +40,10 @@ def _get_temperature_at_datetime(now_dt, target_dt, current_temp, temp_trend) ->
 def get_next_start(prices: list, demand_hours: list, non_hours: list, current_temp: float, temp_trend: float,
                    latest_boost: datetime = None) -> tuple[datetime,float|None]:
     water_limit = 40
-    now_dt = datetime(2024, 1, 16, 10, 50, 0)
+    now_dt = datetime.now()
     trend = -0.5 if -0.5 < temp_trend < 0 else temp_trend
     if latest_boost is not None:
-        if now_dt - latest_boost < timedelta(hours=2):
+        if now_dt - latest_boost < timedelta(hours=1):
             return datetime.max, TARGET_TEMP
 
     start_idx = now_dt.hour
@@ -72,6 +72,9 @@ def get_next_start(prices: list, demand_hours: list, non_hours: list, current_te
             break
 
     if selected is None:
+       # for d in data:
+            #if d.is_cold:
+                #_LOGGER.debug(d)
         return datetime.max, None
 
     # cheaper in the vicinity?
