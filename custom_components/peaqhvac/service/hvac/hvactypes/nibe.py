@@ -106,9 +106,9 @@ class Nibe(IHvac):
         ],
         """
         value_lookup = {
-            "10": HvacMode.Idle,
-            "20": HvacMode.Water,
-            "30": HvacMode.Heat,
+            "Off": HvacMode.Idle,
+            "Hot water": HvacMode.Water,
+            "Heating": HvacMode.Heat,
         }
         sensor = self.get_sensor(SensorType.HvacMode)
         ret = self._handle_sensor(sensor)

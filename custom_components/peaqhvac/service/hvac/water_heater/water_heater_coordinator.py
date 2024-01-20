@@ -14,7 +14,7 @@ from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from peaqevcore.common.wait_timer import WaitTimer
 from custom_components.peaqhvac.service.hvac.water_heater.const import *
 from custom_components.peaqhvac.service.hvac.water_heater.water_heater_next_start import NextWaterBoost, get_demand, \
-    DEMAND_MINUTES
+    DEMAND_MINUTES, get_next_start
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import \
     HvacPresets
@@ -142,24 +142,45 @@ class WaterHeater(IHeater):
             """no need to calculate if we are already heating or trying to heat"""
             self.model.next_water_heater_start = datetime.max
             return self.model.next_water_heater_start, None
-        preset = self._hub.sensors.set_temp_indoors.preset
-        ret, override_demand = self.booster.next_predicted_demand(
-            prices_today=self._hub.spotprice.model.prices,
-            prices_tomorrow=self._hub.spotprice.model.prices_tomorrow,
-            preset=preset,
-            temp=self.current_temperature,
+
+        ret, target_temp = get_next_start(
+            prices=self._hub.spotprice.model.prices+self._hub.spotprice.model.prices_tomorrow,
+            non_hours=self._hub.options.heating_options.non_hours_water_boost,
+            demand_hours=self._hub.options.heating_options.demand_hours_water_boost,
+            current_temp=self.current_temperature,
             temp_trend=self.temp_trend.gradient_raw,
-            target_temp=target_temp,
-            latest_boost=datetime.fromtimestamp(self.model.latest_boost_call),
-            current_dm=self._hub.hvac.hvac_dm,
-            debug=debug
-        )
+            latest_boost=datetime.fromtimestamp(self.model.latest_boost_call))
+
         ret = min(ret, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=24))
         if ret < datetime.now() +timedelta(days=-100):
             ret = datetime.max
-            override_demand = None
+            target_temp = None
         self.model.next_water_heater_start = ret
-        return ret, override_demand
+        return ret, target_temp
+        # if not self.is_initialized:
+        #     return datetime.max, None
+        # if self.water_heating:
+        #     """no need to calculate if we are already heating or trying to heat"""
+        #     self.model.next_water_heater_start = datetime.max
+        #     return self.model.next_water_heater_start, None
+        # preset = self._hub.sensors.set_temp_indoors.preset
+        # ret, override_demand = self.booster.next_predicted_demand(
+        #     prices_today=self._hub.spotprice.model.prices,
+        #     prices_tomorrow=self._hub.spotprice.model.prices_tomorrow,
+        #     preset=preset,
+        #     temp=self.current_temperature,
+        #     temp_trend=self.temp_trend.gradient_raw,
+        #     target_temp=target_temp,
+        #     latest_boost=datetime.fromtimestamp(self.model.latest_boost_call),
+        #     current_dm=self._hub.hvac.hvac_dm,
+        #     debug=debug
+        # )
+        # ret = min(ret, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=24))
+        # if ret < datetime.now() +timedelta(days=-100):
+        #     ret = datetime.max
+        #     override_demand = None
+        # self.model.next_water_heater_start = ret
+        # return ret, override_demand
 
     async def async_reset_water_boost(self):
         self.model.water_boost.value = False
@@ -182,31 +203,27 @@ class WaterHeater(IHeater):
                 self._set_water_heater_operation(LOWTEMP_THRESHOLD)
 
     def _set_water_heater_operation(self, target_temp: int) -> None:
-        next_start, override_demand = self._get_next_start(target_temp)
+        next_start, target = self._get_next_start(target_temp)
         #_LOGGER.debug(f"Next water heater start is {next_start}. Override demand is {override_demand}")
         try:
-            self.__set_toggle_boost_next_start(next_start, override_demand)
+            self.__set_toggle_boost_next_start(next_start, target)
         except Exception as e:
             _LOGGER.error(
                 f"Could not check water-state: {e}")
 
-    def __set_toggle_boost_next_start(self, next_start: datetime, override_demand: int = None) -> None:
+    def __set_toggle_boost_next_start(self, next_start: datetime, target: float = None) -> None:
         try:
             if next_start <= datetime.now() and not self.model.water_boost.value:
-                preset = self._hub.sensors.set_temp_indoors.preset
-                if override_demand is not None:
-                    demand_minutes = override_demand
-                else:
-                    demand_minutes = DEMAND_MINUTES[preset].get(self._get_demand(), DEFAULT_WATER_BOOST)
+                #preset = self._hub.sensors.set_temp_indoors.preset
+                # if target is not None:
+                #     demand_minutes = override_demand
+                # else:
+                #     demand_minutes = DEMAND_MINUTES[preset].get(self._get_demand(), DEFAULT_WATER_BOOST)
 
-                if demand_minutes > 0:
-                    self._get_next_start(target_temp=HIGHTEMP_THRESHOLD, debug=True)
-                    _LOGGER.debug("Next water heater start is now. Turning on water heating.")
+                if target is not None and target > self.current_temperature:
                     self.model.water_boost.value = True
                     self.model.latest_boost_call = time.time()
-                    self._hub.observer.broadcast("water boost start", demand_minutes*60)
-                elif override_demand is not None and demand_minutes == 0:
-                    _LOGGER.error("Should not be able to get here.")
+                    self._hub.observer.broadcast("water boost start", target)
         except Exception as e:
             _LOGGER.warning(f"Could not set water boost: {e}")
 

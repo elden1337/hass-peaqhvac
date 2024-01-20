@@ -134,15 +134,12 @@ class IHvac(UpdateSystem):
         ],
         """
         value_conversion = {
-            0: False,
-            1: False,
-            2: True,
-            3: False,
-            4: False,
-            5: False,
-            6: True,
+            "Alarm": False,
+            "Blocked": False,
+            "Off": False,
+            "Active": True,
         }
-        ret= self.get_value(SensorType.ElectricalAddition, float)
+        ret= self.get_value(SensorType.ElectricalAddition, str)
         return value_conversion.get(ret, False)
 
     @property

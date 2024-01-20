@@ -13,6 +13,86 @@ _LOGGER = logging.getLogger(__name__)
 
 REQUIRED_DEMAND_DELAY = 6
 
+#--------------------------------
+
+from datetime import datetime, timedelta
+from statistics import mean
+from dataclasses import dataclass
+
+
+@dataclass
+class PriceData:
+    price: float
+    price_spread: float
+    time: datetime
+    water_temp: float
+    is_cold: bool
+    is_demand: bool
+    is_non: bool
+
+TARGET_TEMP = 47
+
+def _get_temperature_at_datetime(now_dt, target_dt, current_temp, temp_trend) -> float:
+    delay = (target_dt - now_dt).total_seconds() / 3600
+    return round(current_temp + (delay * temp_trend), 1)
+
+
+def get_next_start(prices: list, demand_hours: list, non_hours: list, current_temp: float, temp_trend: float,
+                   latest_boost: datetime = None) -> tuple[datetime,float|None]:
+    water_limit = 40
+    now_dt = datetime(2024, 1, 16, 10, 50, 0)
+    trend = -0.5 if -0.5 < temp_trend < 0 else temp_trend
+    if latest_boost is not None:
+        if now_dt - latest_boost < timedelta(hours=2):
+            return datetime.max, TARGET_TEMP
+
+    start_idx = now_dt.hour
+    data = []
+
+    for idx, p in enumerate(prices[start_idx:]):
+        new_hour = (now_dt + timedelta(hours=idx)).replace(minute=50, second=0, microsecond=0)
+        second_hour = (now_dt + timedelta(hours=idx + 1))
+        temp_at_time = _get_temperature_at_datetime(now_dt, new_hour, current_temp, trend)
+        data.append(PriceData(
+            p,
+            round(p / mean(prices), 2),
+            new_hour,
+            temp_at_time,
+            temp_at_time <= water_limit,
+            new_hour.hour in demand_hours or second_hour.hour in demand_hours,
+            new_hour.hour in non_hours or second_hour.hour in non_hours
+        )
+        )
+
+    selected: PriceData = None
+
+    for d in data:
+        if d.is_cold and (d.price_spread < 1 or d.is_demand) and not d.is_non:
+            selected = d
+            break
+
+    if selected is None:
+        return datetime.max, None
+
+    # cheaper in the vicinity?
+    filtered = [d for d in data if max(d.time, selected.time) - min(d.time, selected.time) <= timedelta(hours=2)]
+
+    for fdemand in [d for d in filtered if d.is_demand and not d.is_non]:
+        if fdemand.is_cold and fdemand.price_spread < selected.price_spread:
+            selected = fdemand
+            return selected.time, TARGET_TEMP
+
+    for d in sorted(filtered, key=lambda x: (not x.is_demand, x.price_spread)):
+        if not d.is_non and d.price_spread < selected.price_spread and not selected.is_demand:
+            selected = d
+            break
+
+    return selected.time, TARGET_TEMP
+
+
+#--------------------------------
+
+
 
 class NextWaterBoost:
     def __init__(self, min_price: float = None, non_hours: list[int] = [], demand_hours: list[int] = []):
