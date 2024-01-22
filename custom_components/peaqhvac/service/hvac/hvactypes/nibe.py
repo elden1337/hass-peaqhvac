@@ -23,7 +23,6 @@ class Nibe(IHvac):
             HvacOperations.WaterBoost: self.get_sensor(SensorType.HotWaterBoost),
         }
 
-#f730_cu_3x400v_magnus_nibef_f730_cu_3x400v
     def get_sensor(self, sensor: SensorType = None):
         types = {
             SensorType.HvacMode: f"sensor.{self.hub.options.systemid}_priority",
