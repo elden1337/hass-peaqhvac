@@ -66,11 +66,11 @@
     },
     "boost_water": {
       "name": "Boost Water",
-      "description": "Override-service to call booster for x minutes (min 10, max 60). Remember delay to Nibe-api",
+      "description": "Override-service to call booster til the desired temp is reached (max 30min booster time)",
       "fields": {
-        "timeout": {
-          "name": "Timeout",
-          "description": "The timeout in minutes."
+        "targettemp": {
+          "name": "Target temp",
+          "description": "The desired target temperature."
         }
       }
     }

@@ -66,11 +66,11 @@
     },
     "boost_water": {
       "name": "Posilnite vodu",
-      "description": "Override-service na volanie booster na x minút (min 10, max 60). Pamätajte na meškanie do Nibe-api",
+      "description": "Override-service to call booster til the desired temp is reached (max 30min booster time)",
       "fields": {
-        "timeout": {
-          "name": "Čas vypršal",
-          "description": "Časový limit v minútach."
+        "targettemp": {
+          "name": "Target temp",
+          "description": "The desired target temperature."
         }
       }
     }
