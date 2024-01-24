@@ -151,7 +151,7 @@ class WaterHeater(IHeater):
             temp_trend=self.temp_trend.gradient_raw,
             latest_boost=datetime.fromtimestamp(self.model.latest_boost_call))
 
-        ret = min(ret, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=24))
+        ret = min(ret, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=48))
         if ret < datetime.now() +timedelta(days=-100):
             ret = datetime.max
             target_temp = None

@@ -37,19 +37,9 @@ def _get_temperature_at_datetime(now_dt, target_dt, current_temp, temp_trend) ->
     return round(current_temp + (delay * temp_trend), 1)
 
 
-def get_next_start(prices: list, demand_hours: list, non_hours: list, current_temp: float, temp_trend: float,
-                   latest_boost: datetime = None) -> tuple[datetime,float|None]:
-    water_limit = 40
-    now_dt = datetime.now()
-    trend = -0.5 if -0.5 < temp_trend < 0 else temp_trend
-    if latest_boost is not None:
-        if now_dt - latest_boost < timedelta(hours=1):
-            return datetime.max, TARGET_TEMP
-
-    start_idx = now_dt.hour
+def _add_data_list(now_dt: datetime, prices:list, current_temp: float, trend: float, water_limit: float, demand_hours:list, non_hours: list) -> list:
     data = []
-
-    for idx, p in enumerate(prices[start_idx:]):
+    for idx, p in enumerate(prices[now_dt.hour:]):
         new_hour = (now_dt + timedelta(hours=idx)).replace(minute=50, second=0, microsecond=0)
         second_hour = (now_dt + timedelta(hours=idx + 1))
         temp_at_time = _get_temperature_at_datetime(now_dt, new_hour, current_temp, trend)
@@ -63,7 +53,19 @@ def get_next_start(prices: list, demand_hours: list, non_hours: list, current_te
             new_hour.hour in non_hours or second_hour.hour in non_hours
         )
         )
+    return data
 
+
+def get_next_start(prices: list, demand_hours: list, non_hours: list, current_temp: float, temp_trend: float,
+                   latest_boost: datetime = None) -> tuple[datetime,float|None]:
+    water_limit = 40
+    now_dt = datetime.now()
+    trend = -0.5 if -0.5 < temp_trend < 0.1 else temp_trend
+    if latest_boost is not None:
+        if now_dt - latest_boost < timedelta(hours=1):
+            return datetime.max, TARGET_TEMP
+
+    data = _add_data_list(now_dt, prices, current_temp, trend, water_limit, demand_hours, non_hours)
     selected: PriceData = None
 
     for d in data:
@@ -72,9 +74,6 @@ def get_next_start(prices: list, demand_hours: list, non_hours: list, current_te
             break
 
     if selected is None:
-       # for d in data:
-            #if d.is_cold:
-                #_LOGGER.debug(d)
         return datetime.max, None
 
     # cheaper in the vicinity?
