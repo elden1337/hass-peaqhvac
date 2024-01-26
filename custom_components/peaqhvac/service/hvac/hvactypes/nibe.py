@@ -36,8 +36,8 @@ class Nibe(IHvac):
             SensorType.CompressorFrequency: f"sensor.{self.hub.options.systemid}_current_compressor_frequency",
             #SensorType.DMCompressorStart: f"sensor.nibe_{self.hub.options.systemid}_47206",
             SensorType.FanSpeed: f"sensor.{self.hub.options.systemid}_current_fan_mode",
-            SensorType.HotWaterBoost: f"select.{self.hub.options.systemid}_temporary_lux",
-            SensorType.VentilationBoost: f"select.{self.hub.options.systemid}_increased_ventilation",
+            SensorType.HotWaterBoost: f"switch.{self.hub.options.systemid}_temporary_lux",
+            SensorType.VentilationBoost: f"switch.{self.hub.options.systemid}_increased_ventilation",
         }
         return (
             types[sensor]
@@ -116,12 +116,7 @@ class Nibe(IHvac):
             return value_lookup.get(ret, HvacMode.Unknown)
         return HvacMode.Unknown
 
-    def _transform_servicecall_value(self, value: any, operation: HvacOperations) -> any:
-        match operation:
-            case HvacOperations.Offset:
-                return value
-            case HvacOperations.VentBoost | HvacOperations.WaterBoost:
-                return "on" if value == 1 else "off"
+
 
     async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):
         match operation:
@@ -131,11 +126,26 @@ class Nibe(IHvac):
                 return set_val
         raise ValueError(f"Operation {operation} not supported")
 
+    def _service_domain_per_operation(self, operation: HvacOperations) -> str:
+        match operation:
+            case HvacOperations.Offset:
+                return "input_number"
+            case HvacOperations.VentBoost | HvacOperations.WaterBoost:
+                return "switch"
+        raise ValueError(f"Operation {operation} not supported")
+
+    def _transform_servicecall_value(self, value: any, operation: HvacOperations) -> any:
+        match operation:
+            case HvacOperations.Offset:
+                return value
+            case HvacOperations.VentBoost | HvacOperations.WaterBoost:
+                return "turn_on" if value == 1 else "turn_off"
+
     def _set_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
-        call_operation = "select_option" #todo: make dynamic
-        service_domain = "select" #todo: make dynamic
+        call_operation = self._transform_servicecall_value(_value, operation)
+        service_domain = self._service_domain_per_operation(operation)
         params = {
-                "option": self._transform_servicecall_value(_value, operation),
+                #"option": self._transform_servicecall_value(_value, operation),
                 "entity_id": self._servicecall_types()[operation]
             }
 
