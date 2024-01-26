@@ -57,9 +57,9 @@ def _add_data_list(now_dt: datetime, prices:list, current_temp: float, trend: fl
 
 
 def get_next_start(prices: list, demand_hours: list, non_hours: list, current_temp: float, temp_trend: float,
-                   latest_boost: datetime = None) -> tuple[datetime,float|None]:
+                   latest_boost: datetime = None, mock_dt: datetime = datetime.now()) -> tuple[datetime,float|None]:
     water_limit = 40
-    now_dt = datetime.now()
+    now_dt = mock_dt
     trend = -0.5 if -0.5 < temp_trend < 0.1 else temp_trend
     if latest_boost is not None:
         if now_dt - latest_boost < timedelta(hours=1):
@@ -72,12 +72,15 @@ def get_next_start(prices: list, demand_hours: list, non_hours: list, current_te
         if d.is_cold and (d.price_spread < 1 or d.is_demand) and not d.is_non:
             selected = d
             break
-
     if selected is None:
         return datetime.max, None
 
     # cheaper in the vicinity?
-    filtered = [d for d in data if max(d.time, selected.time) - min(d.time, selected.time) <= timedelta(hours=2)]
+    filtered = []
+    if selected.is_demand:
+        filtered = [d for d in data if d.time-selected.time <= timedelta(hours=-2)]
+    else:
+        filtered = [d for d in data if max(d.time, selected.time) - min(d.time, selected.time) <= timedelta(hours=2)]
 
     for fdemand in [d for d in filtered if d.is_demand and not d.is_non]:
         if fdemand.is_cold and fdemand.price_spread < selected.price_spread:
@@ -88,7 +91,6 @@ def get_next_start(prices: list, demand_hours: list, non_hours: list, current_te
         if not d.is_non and d.price_spread < selected.price_spread and not selected.is_demand:
             selected = d
             break
-
     return selected.time, TARGET_TEMP
 
 
