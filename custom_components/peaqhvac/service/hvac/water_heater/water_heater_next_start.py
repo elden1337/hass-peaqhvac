@@ -29,15 +29,39 @@ class PriceData:
     is_cold: bool
     is_demand: bool
     is_non: bool
+    target_temp: int
+
 
 TARGET_TEMP = 47
+MAX_TARGET_TEMP = 53
+
+def _calculate_target_temp_for_hour(temp_at_time: float, is_demand: bool, price: float, price_spread:float, min_price:float) -> int:
+    target = TARGET_TEMP if price > min_price else MAX_TARGET_TEMP
+    #diff_to_target = int(target - temp_at_time)
+    #print(f"diff to target {diff_to_target}, temp at time {temp_at_time}, target {target}")
+    if int(target - temp_at_time) <= 0:
+        return target
+
+    add_temp = 0
+    if price_spread < 0.5:
+        add_temp = 20
+    elif price_spread < 0.8:
+        add_temp = 15
+    elif price_spread < 1:
+        add_temp = 10
+
+    if is_demand:
+        add_temp += 10
+
+    return min(int(temp_at_time+add_temp), target)
+
 
 def _get_temperature_at_datetime(now_dt, target_dt, current_temp, temp_trend) -> float:
     delay = (target_dt - now_dt).total_seconds() / 3600
-    return round(current_temp + (delay * temp_trend), 1)
+    return max(10,round(current_temp + (delay * temp_trend), 1))
 
 
-def _add_data_list(now_dt: datetime, prices:list, current_temp: float, trend: float, water_limit: float, demand_hours:list, non_hours: list) -> list:
+def _add_data_list(now_dt: datetime, prices:list, current_temp: float, trend: float, water_limit: float, demand_hours:list, non_hours: list, min_price: float) -> list:
     data = []
     for idx, p in enumerate(prices[now_dt.hour:]):
         new_hour = (now_dt + timedelta(hours=idx)).replace(minute=50, second=0, microsecond=0)
@@ -45,31 +69,36 @@ def _add_data_list(now_dt: datetime, prices:list, current_temp: float, trend: fl
         temp_at_time = _get_temperature_at_datetime(now_dt, new_hour, current_temp, trend)
         data.append(PriceData(
             p,
-            round(p / mean(prices), 2),
+            round(p / mean(prices[idx:]), 2),
             new_hour,
             temp_at_time,
-            temp_at_time <= water_limit,
-            new_hour.hour in demand_hours or second_hour.hour in demand_hours,
-            new_hour.hour in non_hours or second_hour.hour in non_hours
+            temp_at_time <= (water_limit if not second_hour.hour in demand_hours else water_limit +2),
+            second_hour.hour in demand_hours,
+            new_hour.hour in non_hours or second_hour.hour in non_hours,
+            _calculate_target_temp_for_hour(temp_at_time, second_hour.hour in demand_hours, p, round(p / mean(prices[idx:]), 2), min_price)
         )
         )
     return data
 
 
-def get_next_start(prices: list, demand_hours: list, non_hours: list, current_temp: float, temp_trend: float,
+def get_next_start(prices: list, demand_hours: list, non_hours: list, current_temp: float, temp_trend: float, min_price: float = 0,
                    latest_boost: datetime = None, mock_dt: datetime = datetime.now()) -> tuple[datetime,float|None]:
     water_limit = 40
+    low_water_limit = 15
     now_dt = mock_dt
     trend = -0.5 if -0.5 < temp_trend < 0.1 else temp_trend
     if latest_boost is not None:
         if now_dt - latest_boost < timedelta(hours=1):
-            return datetime.max, TARGET_TEMP
-
-    data = _add_data_list(now_dt, prices, current_temp, trend, water_limit, demand_hours, non_hours)
+            now_dt = now_dt+timedelta(hours=1)
+    data = _add_data_list(now_dt, prices, current_temp, trend, water_limit, demand_hours, non_hours, min_price)
     selected: PriceData = None
 
     for d in data:
-        if d.is_cold and (d.price_spread < 1 or d.is_demand) and not d.is_non:
+        if all([
+            d.is_cold,
+            (d.price_spread < 1 or (d.is_demand or d.water_temp < low_water_limit)),
+            not d.is_non
+            ]):
             selected = d
             break
     if selected is None:
@@ -78,20 +107,20 @@ def get_next_start(prices: list, demand_hours: list, non_hours: list, current_te
     # cheaper in the vicinity?
     filtered = []
     if selected.is_demand:
-        filtered = [d for d in data if d.time-selected.time <= timedelta(hours=-2)]
+        filtered = [d for d in data if d.time-selected.time <= timedelta(hours=-2) and d.time >= now_dt]
     else:
-        filtered = [d for d in data if max(d.time, selected.time) - min(d.time, selected.time) <= timedelta(hours=2)]
+        filtered = [d for d in data if max(d.time, selected.time) - min(d.time, selected.time) <= timedelta(hours=2) and d.time >= now_dt]
 
     for fdemand in [d for d in filtered if d.is_demand and not d.is_non]:
         if fdemand.is_cold and fdemand.price_spread < selected.price_spread:
             selected = fdemand
-            return selected.time, TARGET_TEMP
+            return selected.time, selected.target_temp
 
     for d in sorted(filtered, key=lambda x: (not x.is_demand, x.price_spread)):
-        if not d.is_non and d.price_spread < selected.price_spread and not selected.is_demand:
+        if not d.is_non and d.price_spread < selected.price_spread and not selected.is_demand and not selected.water_temp < low_water_limit:
             selected = d
             break
-    return selected.time, TARGET_TEMP
+    return selected.time, selected.target_temp
 
 
 #--------------------------------
