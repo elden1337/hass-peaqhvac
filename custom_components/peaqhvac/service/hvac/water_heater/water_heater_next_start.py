@@ -67,12 +67,14 @@ def _add_data_list(now_dt: datetime, prices:list, current_temp: float, trend: fl
         new_hour = (now_dt + timedelta(hours=idx)).replace(minute=50, second=0, microsecond=0)
         second_hour = (now_dt + timedelta(hours=idx + 1))
         temp_at_time = _get_temperature_at_datetime(now_dt, new_hour, current_temp, trend)
+        if new_hour < reset_hour(now_dt):
+            continue
         data.append(PriceData(
             p,
             round(p / mean(prices[idx:]), 2),
             new_hour,
             temp_at_time,
-            temp_at_time <= (water_limit if not second_hour.hour in demand_hours else water_limit +2),
+            temp_at_time <= (water_limit+5 if new_hour.hour < min_price and second_hour.hour < min_price else water_limit+2 if second_hour.hour in demand_hours else water_limit),
             second_hour.hour in demand_hours,
             new_hour.hour in non_hours or second_hour.hour in non_hours,
             _calculate_target_temp_for_hour(temp_at_time, second_hour.hour in demand_hours, p, round(p / mean(prices[idx:]), 2), min_price)
@@ -80,36 +82,37 @@ def _add_data_list(now_dt: datetime, prices:list, current_temp: float, trend: fl
         )
     return data
 
+def reset_hour(dt) -> datetime:
+    return dt.replace(minute=0,second=0,microsecond=0)
 
 def get_next_start(prices: list, demand_hours: list, non_hours: list, current_temp: float, temp_trend: float, min_price: float = 0,
-                   latest_boost: datetime = None, mock_dt: datetime = datetime.now()) -> tuple[datetime,float|None]:
+                   latest_boost: datetime = None, dt: datetime = datetime.now()) -> tuple[datetime,float|None]:
     water_limit = 40
-    low_water_limit = 15
-    now_dt = mock_dt
+    low_water_limit = 35
     trend = -0.5 if -0.5 < temp_trend < 0.1 else temp_trend
     if latest_boost is not None:
-        if now_dt - latest_boost < timedelta(hours=1):
-            now_dt = now_dt+timedelta(hours=1)
-    data = _add_data_list(now_dt, prices, current_temp, trend, water_limit, demand_hours, non_hours, min_price)
+        if dt - latest_boost < timedelta(hours=1):
+            dt = dt+timedelta(hours=1)
+    data = _add_data_list(dt, prices, current_temp, trend, water_limit, demand_hours, non_hours, min_price)
     selected: PriceData = None
 
     for d in data:
         if all([
             d.is_cold,
-            (d.price_spread < 1 or (d.is_demand or d.water_temp < low_water_limit)),
-            not d.is_non
+            (d.price_spread < 1 or d.price < min_price or (d.is_demand or d.water_temp < low_water_limit)),
+            not d.is_non, 
+            d.time >= reset_hour(dt)
             ]):
             selected = d
             break
     if selected is None:
         return datetime.max, None
-
     # cheaper in the vicinity?
     filtered = []
     if selected.is_demand:
-        filtered = [d for d in data if d.time-selected.time <= timedelta(hours=-2) and d.time >= now_dt]
+        filtered = [d for d in data if d.time-selected.time <= timedelta(hours=-2) and d.time >= reset_hour(dt)]
     else:
-        filtered = [d for d in data if max(d.time, selected.time) - min(d.time, selected.time) <= timedelta(hours=2) and d.time >= now_dt]
+        filtered = [d for d in data if max(d.time, selected.time) - min(d.time, selected.time) <= timedelta(hours=2) and d.time >= reset_hour(dt)]
 
     for fdemand in [d for d in filtered if d.is_demand and not d.is_non]:
         if fdemand.is_cold and fdemand.price_spread < selected.price_spread:
