@@ -13,8 +13,8 @@ from custom_components.peaqhvac.service.hvac.const import DEFAULT_WATER_BOOST
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from peaqevcore.common.wait_timer import WaitTimer
 from custom_components.peaqhvac.service.hvac.water_heater.const import *
-from custom_components.peaqhvac.service.hvac.water_heater.water_heater_next_start import NextWaterBoost, get_demand, \
-    DEMAND_MINUTES, get_next_start
+from custom_components.peaqhvac.service.hvac.water_heater.water_heater_next_start import NextWaterBoost, \
+    NextStartPostModel
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import \
     HvacPresets
@@ -41,12 +41,7 @@ class WaterHeater(IHeater):
             max_age=900, max_samples=5, precision=2, ignore=0, outlier=20
         )
         self.model = WaterBoosterModel(self._hub.state_machine)
-        self.booster = NextWaterBoost(
-            min_price = self._hub.sensors.peaqev_facade.min_price,
-            non_hours = self._hub.options.heating_options.non_hours_water_boost,
-            demand_hours = self._hub.options.heating_options.demand_hours_water_boost
-        )
-
+        self.next = NextWaterBoost()
         self._hub.observer.add(ObserverTypes.OffsetsChanged, self._update_operation)
         self._hub.observer.add("water boost done", self.async_reset_water_boost)
         async_track_time_interval(
@@ -120,8 +115,9 @@ class WaterHeater(IHeater):
         self._demand = self._get_demand()
 
     def _get_demand(self):
-        ret = get_demand(self.current_temperature)
-        return ret
+        #ret = get_demand(self.current_temperature)
+        #return ret
+        return Demand.NoDemand
 
     @property
     def water_heating(self) -> bool:
@@ -143,23 +139,25 @@ class WaterHeater(IHeater):
             self.model.next_water_heater_start = datetime.max
             return None
 
-        ret, target_temp = get_next_start(
-            prices=self._hub.spotprice.model.prices+self._hub.spotprice.model.prices_tomorrow,
-            non_hours=self._hub.options.heating_options.non_hours_water_boost,
-            demand_hours=self._hub.options.heating_options.demand_hours_water_boost,
-            current_temp=self.current_temperature,
-            dt=datetime.now(),
-            temp_trend=self.temp_trend.gradient_raw,
-            latest_boost=datetime.fromtimestamp(self.model.latest_boost_call),
-            min_price=self._hub.sensors.peaqev_facade.min_price)
+        model =NextStartPostModel(
+        prices = self._hub.spotprice.model.prices + self._hub.spotprice.model.prices_tomorrow,
+        non_hours = self._hub.options.heating_options.non_hours_water_boost,
+        demand_hours = self._hub.options.heating_options.demand_hours_water_boost,
+        current_temp = self.current_temperature,
+        dt = datetime.now(),
+        temp_trend = self.temp_trend.gradient_raw,
+        latest_boost = datetime.fromtimestamp(self.model.latest_boost_call),
+        min_price = self._hub.sensors.peaqev_facade.min_price
+        )
+        ret = self.next.get_next_start(model)
 
-        ret = min(ret, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=48))
-        _LOGGER.debug(f"Next water heater start is {ret} with target temp {target_temp}")
-        if ret < datetime.now() +timedelta(days=-100):
-            ret = datetime.max
-            target_temp = None
-        self.model.next_water_heater_start = ret
-        return target_temp
+        ret.next_start = min(ret.next_start, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=48))
+        _LOGGER.debug(f"Next water heater start is {ret.next_start} with target temp {ret.target_temp}")
+        if ret.next_start < datetime.now() +timedelta(days=-100):
+            ret.next_start = datetime.max
+            ret.target_temp = None
+        self.model.next_water_heater_start = ret.next_start
+        return ret.target_temp
 
     async def async_reset_water_boost(self):
         self.model.water_boost.value = False
