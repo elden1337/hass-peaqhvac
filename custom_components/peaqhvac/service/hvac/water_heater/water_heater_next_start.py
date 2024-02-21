@@ -1,10 +1,6 @@
 from datetime import datetime, timedelta
 import logging
 
-#from custom_components.peaqhvac.service.hvac.water_heater.models.group import Group
-#from custom_components.peaqhvac.service.hvac.water_heater.models.next_water_boost_model import NextWaterBoostModel, DEMAND_MINUTES, get_demand
-#from custom_components.peaqhvac.service.models.enums.group_type import GroupType
-#from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
 
@@ -40,7 +36,7 @@ class NextStartPostModel:
     current_temp: float
     temp_trend: float
     min_price: float = 0
-    HvacPreset: HvacPresets = HvacPresets.Normal
+    hvac_preset: HvacPresets = HvacPresets.Normal
     latest_boost: datetime|None = None
     dt: datetime = datetime.now()
 
@@ -65,7 +61,7 @@ class NextWaterBoost:
 
     #def get_next_start(self, prices: list, demand_hours: list, non_hours: list, current_temp: float, temp_trend: float, min_price: float = 0, latest_boost: datetime = None, dt: datetime = datetime.now()) -> NextStartExportModel:
     def get_next_start(self, model: NextStartPostModel) -> NextStartExportModel:
-        self.water_limit = 30 if model.HvacPreset == HvacPresets.Away else 40
+        self.water_limit = 30 if model.hvac_preset == HvacPresets.Away else 40
         self.low_water_limit = self.water_limit - 10
         self.dt = model.dt
         self.min_price = model.min_price

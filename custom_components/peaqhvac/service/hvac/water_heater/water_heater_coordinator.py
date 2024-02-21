@@ -147,7 +147,8 @@ class WaterHeater(IHeater):
         dt = datetime.now(),
         temp_trend = self.temp_trend.gradient_raw,
         latest_boost = datetime.fromtimestamp(self.model.latest_boost_call),
-        min_price = self._hub.sensors.peaqev_facade.min_price
+        min_price = self._hub.sensors.peaqev_facade.min_price,
+        hvac_preset = self._hub.sensors.set_temp_indoors.preset,
         )
         ret = self.next.get_next_start(model)
 
