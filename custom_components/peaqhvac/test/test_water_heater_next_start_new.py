@@ -10,6 +10,8 @@ P240131 = [0.34,0.34,0.34,0.34,0.35,0.35,0.44,0.87,0.9,0.53,0.37,0.35,0.34,0.33,
 P240201 = [0.05,0.05,0.04,0.04,0.05,0.05,0.08,0.12,0.13,0.14,0.13,0.12,0.13,0.12,0.13,0.15,0.25,0.57,0.65,0.28,0.31,0.3,0.25,0.18]
 P240202 = [0.19,0.21,0.21,0.23,0.24,0.26,0.37,0.9,0.93,0.9,0.88,0.69,0.43,0.41,0.4,0.4,0.38,0.37,0.34,0.28,0.24,0.18,0.09,0.08]
 P240203 = [0.06,0.06,0.05,0.05,0.05,0.05,0.07,0.08,0.08,0.11,0.11,0.08,0.08,0.08,0.08,0.09,0.13,0.22,0.22,0.13,0.08,0.1,0.08,0.08]
+P240314 = [0.45,0.37,0.34,0.26,0.28,0.36,0.45,0.5,0.5,0.5,0.5,0.51,0.5,0.48,0.46,0.43,0.39,0.37,0.4,0.35,0.28,0.13,0.08,0.08]
+P240315 = [0.08,0.08,0.08,0.08,0.08,0.27,0.46,0.57,0.63,0.67,0.71,0.63,0.62,0.61,0.69,0.78,0.8,0.86,0.87,0.81,0.76,0.69,0.64,0.61]
 
 def test1():
     tt = NextWaterBoost()
@@ -100,36 +102,19 @@ def test6():
     ret = tt.get_next_start(model)
     assert ret.next_start == datetime(2024,2,3,2,50,0)
     assert ret.target_temp == 47
-#
-#
-# def test_calculate_target_temp_for_hour1():
-#     # Test when price > min_price
-#     assert _calculate_target_temp_for_hour(45, False, 10, 0.6, 5) == TARGET_TEMP
-#
-# def test_calculate_target_temp_for_hour2():
-#     # Test when price <= min_price
-#     assert _calculate_target_temp_for_hour(45, False, 5, 0.6, 10) == MAX_TARGET_TEMP
-#
-# def test_calculate_target_temp_for_hour3():
-#     # Test when target <= temp_at_time
-#     assert _calculate_target_temp_for_hour(55, False, 10, 0.6, 5) == TARGET_TEMP
-#
-# def test_calculate_target_temp_for_hour4():
-#     # Test when price_spread < 0.5
-#     assert _calculate_target_temp_for_hour(30, False, 10, 0.4, 5) == TARGET_TEMP
-#
-# def test_calculate_target_temp_for_hour5():
-#     # Test when 0.5 <= price_spread < 0.8
-#     assert _calculate_target_temp_for_hour(30, False, 10, 0.6, 5) == 45
-#
-# def test_calculate_target_temp_for_hour6():
-#     # Test when 0.8 <= price_spread < 1
-#     assert _calculate_target_temp_for_hour(30, False, 10, 0.9, 5) == 40
-#
-# def test_calculate_target_temp_for_hour7():
-#     # Test when price_spread >= 1
-#     assert _calculate_target_temp_for_hour(30, False, 10, 1.1, 5) == 30
-#
-# def test_calculate_target_temp_for_hour8():
-#     # Test when is_demand is True
-#     assert _calculate_target_temp_for_hour(30, True, 10, 0.6, 5) == TARGET_TEMP
+
+def test_below_min_hours_should_heat_more():
+    tt = NextWaterBoost()
+    model = NextStartPostModel(
+        prices=P240314 + P240315,
+        demand_hours=[],
+        non_hours=[],
+        current_temp=48.5,
+        temp_trend=0,
+        min_price=0.1,
+        latest_boost=datetime(2024,3,13, 23,50),
+        dt=datetime(2024,3,14,20,9,1)
+    )
+    ret = tt.get_next_start(model)
+    assert ret.next_start == datetime(2024,3,15,3,50,0)
+    assert ret.target_temp == 53

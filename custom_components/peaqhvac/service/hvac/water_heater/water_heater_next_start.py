@@ -59,7 +59,7 @@ class NextWaterBoost:
         self.min_price: float = 0
         self.dt: datetime = datetime.now()
 
-    #def get_next_start(self, prices: list, demand_hours: list, non_hours: list, current_temp: float, temp_trend: float, min_price: float = 0, latest_boost: datetime = None, dt: datetime = datetime.now()) -> NextStartExportModel:
+
     def get_next_start(self, model: NextStartPostModel) -> NextStartExportModel:
         self.water_limit = 30 if model.hvac_preset == HvacPresets.Away else 40
         self.low_water_limit = self.water_limit - 10
@@ -99,24 +99,35 @@ class NextWaterBoost:
 
     def _add_data_list(self, model: NextStartPostModel) -> list:
         data = []
-        for idx, p in enumerate(model.prices[self.dt.hour:]):
-            new_hour = (self.dt + timedelta(hours=idx)).replace(minute=50, second=0, microsecond=0)
-            second_hour = (self.dt + timedelta(hours=idx + 1))
+        for idx, p in enumerate(model.prices[self.dt.hour:], start=self.dt.hour):
+            new_hour = (self.dt + timedelta(hours=idx - self.dt.hour)).replace(minute=50, second=0, microsecond=0)
+            second_hour = (self.dt + timedelta(hours=idx - self.dt.hour + 1))
             temp_at_time = self._get_temperature_at_datetime(self.dt, new_hour, model.current_temp, model.temp_trend)
             if new_hour < self.reset_hour(self.dt):
                 continue
             data.append(PriceData(
                 p,
-                round(p / mean(model.prices[idx:]), 2),
+                round(p / mean(model.prices[idx - self.dt.hour:]), 2),
                 new_hour,
                 temp_at_time,
-                temp_at_time <= (self.water_limit+5 if new_hour.hour < model.min_price and second_hour.hour < self.min_price else self.water_limit+2 if second_hour.hour in model.demand_hours else self.water_limit),
+                self._calculate_is_cold(temp_at_time, second_hour, model, p,
+                                        model.prices[idx + 1] if idx + 1 < len(model.prices) else 9999),
                 second_hour.hour in model.demand_hours,
                 new_hour.hour in model.non_hours or second_hour.hour in model.non_hours,
-                self._calculate_target_temp_for_hour(temp_at_time, second_hour.hour in model.demand_hours, p, round(p / mean(model.prices[idx:]), 2), model.min_price)
-            )
-            )
+                self._calculate_target_temp_for_hour(temp_at_time, second_hour.hour in model.demand_hours, p,
+                                                     round(p / mean(model.prices[idx - self.dt.hour:]), 2),
+                                                     model.min_price)
+            ))
         return data
+
+    def _calculate_is_cold(self, temp_at_time: float, second_hour: datetime, model: NextStartPostModel, p: float, p2: float) -> bool:
+        calculated_water_limit = self.water_limit
+        if p < model.min_price and p2 < self.min_price:
+            return temp_at_time <= calculated_water_limit+5
+        if second_hour.hour in model.demand_hours:
+            return temp_at_time <= calculated_water_limit+2
+        return temp_at_time <= calculated_water_limit
+
 
     def reset_hour(self, dt) -> datetime:
         return dt.replace(minute=0,second=0,microsecond=0)
