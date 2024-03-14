@@ -152,7 +152,7 @@ class WaterHeater(IHeater):
         )
         ret = self.next.get_next_start(model)
 
-        ret.next_start = min(ret.next_start, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=48))
+        #ret.next_start = min(ret.next_start, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=48))
         if ret.next_start < datetime.now() +timedelta(days=-100):
             ret.next_start = datetime.max
             ret.target_temp = None

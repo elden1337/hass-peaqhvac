@@ -63,6 +63,7 @@ class NextWaterBoost:
     def get_next_start(self, model: NextStartPostModel) -> NextStartExportModel:
         self.water_limit = 30 if model.hvac_preset == HvacPresets.Away else 40
         self.low_water_limit = self.water_limit - 10
+        
         self.dt = model.dt
         self.min_price = model.min_price
 
@@ -73,6 +74,7 @@ class NextWaterBoost:
         filtered = self.get_filtered(data, selected)
         selected = self.get_final_selected(filtered, selected)
         return NextStartExportModel(selected.time, selected.target_temp)
+   
     def _calculate_target_temp_for_hour(self, temp_at_time: float, is_demand: bool, price: float, price_spread:float, min_price:float) -> int:
         target = TARGET_TEMP if price > min_price else MAX_TARGET_TEMP
         if int(target - temp_at_time) <= 0:
@@ -145,6 +147,7 @@ class NextWaterBoost:
             filtered = [d for d in data if d.time-selected.time <= timedelta(hours=-2) and d.time >= self.reset_hour(self.dt)]
         else:
             filtered = [d for d in data if max(d.time, selected.time) - min(d.time, selected.time) <= timedelta(hours=2) and d.time >= self.reset_hour(self.dt)]
+            #_LOGGER.debug(filtered)
         return filtered
 
     def get_final_selected(self, filtered: list, selected: PriceData) -> PriceData:
