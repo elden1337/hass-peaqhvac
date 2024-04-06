@@ -144,7 +144,7 @@ class NextWaterBoost:
         for d in data:
             if all([
                 d.is_cold,
-                (d.price_spread < 1 or d.price < self.min_price or (d.is_demand or d.water_temp < self.low_water_limit)),
+                (d.price_spread < 1 or d.price < self.min_price or (d.is_demand or d.water_temp < d.target_temp)),
                 not d.is_non,
                 d.time >= self.reset_hour(self.dt)
                 ]):
