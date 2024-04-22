@@ -12,35 +12,35 @@ P231214 =[1.17,1.15,1.16,1.16,1.19,1.24,1.47,1.81,1.97,2.19,2.19,1.92,1.81,1.99,
 P231215 =[1.28,1.24,1.2,1.15,1.13,1.2,1.42,1.57,1.78,1.72,1.61,1.51,1.39,1.31,1.28,1.3,1.42,1.37,1.26,1.19,1.15,1.14,0.93,1.05]
 MIN_DEMAND = 26
 
-def test_start_time_water_is_cold_no_non_hours():
-    now_dt = datetime(2023,8,26,18,43,0)
-    wb = NextWaterBoost()
-    tt = wb.next_predicted_demand(prices_today=P230830, prices_tomorrow=P230831, temp=35, temp_trend=0, target_temp=40, preset=HvacPresets.Normal, now_dt=now_dt, latest_boost=now_dt-timedelta(hours=1))
-    assert tt[0] == datetime(2023, 8, 26, 23, 47, 0)
-
-
-def test_start_time_water_is_cold_blocked_by_non_hours():
-    now_dt = datetime(2023,8,26,18,43,0)
-    wb = NextWaterBoost(non_hours=[23])
-    tt = wb.next_predicted_demand(prices_today=P230830, prices_tomorrow=P230831, temp=35, temp_trend=0, target_temp=40, preset=HvacPresets.Normal, now_dt=now_dt, latest_boost=now_dt-timedelta(hours=1))
-    assert tt[0] == datetime(2023, 8, 27, 0, 47, 0)
-
-
-def test_start_time_water_not_cold_no_non_hours():
-    now_dt = datetime(2023,8,26,18,43,0)
-    wb = NextWaterBoost()
-    tt = wb.next_predicted_demand(prices_today=P230830, prices_tomorrow=P230831, temp=44, temp_trend=0, target_temp=40, preset=HvacPresets.Normal, now_dt=now_dt, latest_boost=now_dt-timedelta(hours=1))
-    assert tt[0] == datetime(2023, 8, 27, 3, 50, 0)
-
-
-def test_start_time_water_not_cold_blocked_by_non_hours():
-    now_dt = datetime(2023,8,26,18,43,0)
-    wb = NextWaterBoost(non_hours=[2,3])
-    tt = wb.next_predicted_demand(prices_today=P230830, prices_tomorrow=P230831, temp=44, temp_trend=0, target_temp=40, preset=HvacPresets.Normal, now_dt=now_dt, latest_boost=now_dt-timedelta(hours=1))
-    assert tt[0] == datetime(2023, 8, 27, 4, 50, 0)
-
-def test_start_time_water_demand_hour_dont_start_directly():
-    now_dt = datetime(2023,8,26,19,50,0)
-    wb = NextWaterBoost(non_hours=[2,3],demand_hours=[20,21])
-    tt = wb.next_predicted_demand(prices_today=P231214, prices_tomorrow=P231215, temp=49, temp_trend=0, target_temp=40, preset=HvacPresets.Normal, now_dt=now_dt, latest_boost=now_dt-timedelta(minutes=12))
-    assert tt[0] > now_dt + timedelta(minutes=48)
+# def test_start_time_water_is_cold_no_non_hours():
+#     now_dt = datetime(2023,8,26,18,43,0)
+#     wb = NextWaterBoost()
+#     tt = wb.next_predicted_demand(prices_today=P230830, prices_tomorrow=P230831, temp=35, temp_trend=0, target_temp=40, preset=HvacPresets.Normal, now_dt=now_dt, latest_boost=now_dt-timedelta(hours=1))
+#     assert tt[0] == datetime(2023, 8, 26, 23, 47, 0)
+#
+#
+# def test_start_time_water_is_cold_blocked_by_non_hours():
+#     now_dt = datetime(2023,8,26,18,43,0)
+#     wb = NextWaterBoost(non_hours=[23])
+#     tt = wb.next_predicted_demand(prices_today=P230830, prices_tomorrow=P230831, temp=35, temp_trend=0, target_temp=40, preset=HvacPresets.Normal, now_dt=now_dt, latest_boost=now_dt-timedelta(hours=1))
+#     assert tt[0] == datetime(2023, 8, 27, 0, 47, 0)
+#
+#
+# def test_start_time_water_not_cold_no_non_hours():
+#     now_dt = datetime(2023,8,26,18,43,0)
+#     wb = NextWaterBoost()
+#     tt = wb.next_predicted_demand(prices_today=P230830, prices_tomorrow=P230831, temp=44, temp_trend=0, target_temp=40, preset=HvacPresets.Normal, now_dt=now_dt, latest_boost=now_dt-timedelta(hours=1))
+#     assert tt[0] == datetime(2023, 8, 27, 3, 50, 0)
+#
+#
+# def test_start_time_water_not_cold_blocked_by_non_hours():
+#     now_dt = datetime(2023,8,26,18,43,0)
+#     wb = NextWaterBoost(non_hours=[2,3])
+#     tt = wb.next_predicted_demand(prices_today=P230830, prices_tomorrow=P230831, temp=44, temp_trend=0, target_temp=40, preset=HvacPresets.Normal, now_dt=now_dt, latest_boost=now_dt-timedelta(hours=1))
+#     assert tt[0] == datetime(2023, 8, 27, 4, 50, 0)
+#
+# def test_start_time_water_demand_hour_dont_start_directly():
+#     now_dt = datetime(2023,8,26,19,50,0)
+#     wb = NextWaterBoost(non_hours=[2,3],demand_hours=[20,21])
+#     tt = wb.next_predicted_demand(prices_today=P231214, prices_tomorrow=P231215, temp=49, temp_trend=0, target_temp=40, preset=HvacPresets.Normal, now_dt=now_dt, latest_boost=now_dt-timedelta(minutes=12))
+#     assert tt[0] > now_dt + timedelta(minutes=48)

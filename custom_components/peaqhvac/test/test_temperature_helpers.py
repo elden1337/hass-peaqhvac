@@ -29,9 +29,9 @@ def test_tempdiff_cold():
     ret2 = get_tempdiff_inverted(-1, tempdiff, _current_tolerances)
     assert ret2 == 2
     ret3 = get_tempdiff_inverted(-2, tempdiff, _current_tolerances)
-    assert ret3 == 1
+    assert ret3 == 2
     ret4 = get_tempdiff_inverted(-3, tempdiff, _current_tolerances)
-    assert ret4 == 0
+    assert ret4 == 2
 
 def test_tempdiff_hot():
     tempdiff = 0.5

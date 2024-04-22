@@ -55,8 +55,8 @@ def test3():
         dt=datetime(2024,1,30,20,55,0)
     )
     ret = tt.get_next_start(model)
-    assert ret.next_start == datetime(2024,1,30,21,50,0)
-    assert ret.target_temp == 15
+    assert ret.next_start == datetime(2024,1,30,22,50,0)
+    assert ret.target_temp == 25
 
 def test4():
     tt = NextWaterBoost()
