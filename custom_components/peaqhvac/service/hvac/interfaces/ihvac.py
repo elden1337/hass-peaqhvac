@@ -75,8 +75,7 @@ class IHvac(UpdateSystem):
 
     @property
     def hvac_offset(self) -> int:
-        return 0  #todo: myuplink fix
-        #return self.get_value(SensorType.Offset, int)
+        return self.get_value(SensorType.Offset, int)
 
     @property
     def hvac_dm(self) -> int:

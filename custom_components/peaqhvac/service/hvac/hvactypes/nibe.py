@@ -18,16 +18,15 @@ class Nibe(IHvac):
 
     def _servicecall_types(self):
         return {
-            HvacOperations.Offset: 47011,
+            HvacOperations.Offset: self.get_sensor(SensorType.Offset),
             HvacOperations.VentBoost: self.get_sensor(SensorType.VentilationBoost),
             HvacOperations.WaterBoost: self.get_sensor(SensorType.HotWaterBoost),
         }
 
-#f730_cu_3x400v_magnus_nibef_f730_cu_3x400v
     def get_sensor(self, sensor: SensorType = None):
         types = {
             SensorType.HvacMode: f"sensor.{self.hub.options.systemid}_priority",
-            #SensorType.Offset: f"climate.nibe_{self.hub.options.systemid}_s1_supply|offset_heat", #only exists with spa active (ie not usable)
+            SensorType.Offset: f"number.{self.hub.options.systemid}_heating_offset_climate_system_1",
             SensorType.DegreeMinutes: f"sensor.{self.hub.options.systemid}_degree_minutes",
             SensorType.WaterTemp: f"sensor.{self.hub.options.systemid}_hot_water_charging_bt6",
             SensorType.HvacTemp: f"sensor.{self.hub.options.systemid}_supply_line_bt2",
@@ -137,15 +136,21 @@ class Nibe(IHvac):
     def _transform_servicecall_value(self, value: any, operation: HvacOperations) -> any:
         match operation:
             case HvacOperations.Offset:
-                return value
+                return "set_value"
             case HvacOperations.VentBoost | HvacOperations.WaterBoost:
                 return "turn_on" if value == 1 else "turn_off"
 
     def _set_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
         call_operation = self._transform_servicecall_value(_value, operation)
         service_domain = self._service_domain_per_operation(operation)
-        params = {
-                #"option": self._transform_servicecall_value(_value, operation),
+
+        if operation is HvacOperations.Offset: #todo: put this elsewhere.
+            params = {
+                    "value": _value,
+                    "entity_id": self._servicecall_types()[operation]
+                }
+        else:
+            params = {
                 "entity_id": self._servicecall_types()[operation]
             }
 

@@ -86,6 +86,13 @@ class UpdateSystem:
                     domain,
                 ) = self._set_operation_call_parameters(operation, _value)
 
+                """
+                PREFLIGHT CHECK: Requesting to update hvac-Offset with value -2. Actual value: {'entity_id': 'number.f730_cu_3x400v_magnus_nibef_f730_cu_3x400v_heating_offset_climate_system_1'} for set_value
+                """
+
+                _LOGGER.debug(
+                    f"PREFLIGHT CHECK: Requesting to update hvac-{operation.name} with value {set_val}. Actual value: {params} for {call_operation}"
+                )
                 await self._hass.services.async_call(domain, call_operation, params)
                 _LOGGER.debug(
                     f"Requested to update hvac-{operation.name} with value {set_val}. Actual value: {params} for {call_operation}"
