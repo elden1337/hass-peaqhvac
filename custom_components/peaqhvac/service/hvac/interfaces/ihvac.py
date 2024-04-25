@@ -183,6 +183,8 @@ class IHvac(UpdateSystem):
             self.model.current_offset_dict = {k: v for k, v in ret.calculated_offsets.items() if k.date() == datetime.now().date()}
             self.model.current_offset_dict_tomorrow = {k: v for k, v in ret.calculated_offsets.items() if k.date() == datetime.now().date()+timedelta(days=1)}
             self.model.current_offset_dict_combined = ret.calculated_offsets
+        else:
+            _LOGGER.debug("get_offsets returned None where it should not")
 
     @staticmethod
     def _get_sensors_for_callback(types: dict) -> list:

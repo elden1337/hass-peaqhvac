@@ -108,7 +108,7 @@ class OffsetCoordinator:
 
             all_values = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price,{})
             offsets_per_day = self._calculate_offset_per_day(all_values, weather_adjusted_today)
-
+            _LOGGER.debug("offsets_per_day", offsets_per_day)
             tolerance = self.model.tolerance if self.model.tolerance is not None else 3
             for k, v in offsets_per_day.items():
                 if v > tolerance:

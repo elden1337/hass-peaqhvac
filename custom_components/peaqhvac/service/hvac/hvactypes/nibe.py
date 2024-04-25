@@ -140,20 +140,20 @@ class Nibe(IHvac):
             case HvacOperations.VentBoost | HvacOperations.WaterBoost:
                 return "turn_on" if value == 1 else "turn_off"
 
+    def _set_servicecall_params(self, operation, _value):
+        if operation is HvacOperations.Offset: #todo: put this elsewhere.
+            return {
+                    "value": _value,
+                    "entity_id": self._servicecall_types()[operation]
+                    }
+        return {
+                "entity_id": self._servicecall_types()[operation]
+                }
+
     def _set_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
         call_operation = self._transform_servicecall_value(_value, operation)
         service_domain = self._service_domain_per_operation(operation)
-
-        if operation is HvacOperations.Offset: #todo: put this elsewhere.
-            params = {
-                    "value": _value,
-                    "entity_id": self._servicecall_types()[operation]
-                }
-        else:
-            params = {
-                "entity_id": self._servicecall_types()[operation]
-            }
-
+        params = self._set_servicecall_params(operation, _value)
         return call_operation, params, service_domain
 
     @staticmethod
