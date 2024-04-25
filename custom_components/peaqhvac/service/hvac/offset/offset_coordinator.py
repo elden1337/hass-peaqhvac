@@ -153,8 +153,8 @@ class OffsetCoordinator:
                     _LOGGER.warning(
                         f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
                     )
-            else:
-                _LOGGER.debug("No prognosis available, using normal calculation")
+            #else:
+               # _LOGGER.debug("No prognosis available, using normal calculation")
             self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
         else:
             if self._hub.is_initialized:

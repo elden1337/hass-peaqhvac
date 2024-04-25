@@ -45,6 +45,8 @@ class PeaqevFacade(PeaqevFacadeBase):
         data = self._peaqevhub.hours.offsets
         if data is not None:
             return data
+        else:
+            _LOGGER.debug(f"peaqev offsets was None. {self._peaqevhub.hours} ")
         return {}
 
     @property

@@ -128,7 +128,7 @@ class Nibe(IHvac):
     def _service_domain_per_operation(self, operation: HvacOperations) -> str:
         match operation:
             case HvacOperations.Offset:
-                return "input_number"
+                return "number"
             case HvacOperations.VentBoost | HvacOperations.WaterBoost:
                 return "switch"
         raise ValueError(f"Operation {operation} not supported")
