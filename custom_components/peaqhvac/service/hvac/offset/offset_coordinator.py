@@ -27,9 +27,6 @@ class OffsetCoordinator:
         self.model = OffsetModel(hub)
         self.hours = hours_type
         self.latest_raw_offset_update_hour: int = -1
-
-        self._hub.observer.add(ObserverTypes.PricesChanged, self.async_update_prices)
-        self._hub.observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)
         self._hub.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
         self._hub.observer.add(ObserverTypes.HvacPresetChanged, self._set_offset)
         self._hub.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
@@ -107,8 +104,8 @@ class OffsetCoordinator:
             #     cache.update_cache((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow, tomorrow_values)
 
             all_values = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price,{})
+            _LOGGER.debug("all_values", all_values, self.prices, self.prices_tomorrow, self.min_price)
             offsets_per_day = self._calculate_offset_per_day(all_values, weather_adjusted_today)
-            _LOGGER.debug("offsets_per_day", offsets_per_day)
             tolerance = self.model.tolerance if self.model.tolerance is not None else 3
             for k, v in offsets_per_day.items():
                 if v > tolerance:

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+
+from peaqevcore.common.models.observer_types import ObserverTypes
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
 
 from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import OffsetCoordinator
@@ -12,6 +14,8 @@ class OffsetCoordinatorStandAlone(OffsetCoordinator):
 
     def __init__(self, hub, hours_type: Hoursselection = None):  # type: ignore
         _LOGGER.debug("initializing an hourselection-instance")
+        hub.observer.add(ObserverTypes.PricesChanged, self.async_update_prices)
+        hub.observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)
         super().__init__(hub, hours_type)
 
     @property
