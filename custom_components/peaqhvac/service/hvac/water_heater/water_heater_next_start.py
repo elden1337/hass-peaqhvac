@@ -153,18 +153,13 @@ class NextWaterBoost:
         return selected
 
     def get_filtered(self, data: list, selected: PriceData) -> list:
-        filtered = []
-        if selected.is_demand:
-            filtered = [d for d in data if d.time-selected.time <= timedelta(hours=-2) and d.time >= self.reset_hour(self.dt)]
-        else:
-            filtered = [d for d in data if max(d.time, selected.time) - min(d.time, selected.time) <= timedelta(hours=2) and d.time >= self.reset_hour(self.dt)]
-            #_LOGGER.debug(filtered)
-        return filtered
+        return [d for d in data if max(d.time, selected.time) - min(d.time, selected.time) <= timedelta(hours=2) and d.time >= self.reset_hour(self.dt)]
 
     def get_final_selected(self, filtered: list, selected: PriceData) -> PriceData:
         for fdemand in [d for d in filtered if d.is_demand and not d.is_non]:
             if fdemand.is_cold and fdemand.price_spread < selected.price_spread:
                 selected = fdemand
+                _LOGGER.debug("final selected chose a demandhour", selected)
                 return selected
 
         for d in sorted(filtered, key=lambda x: (not x.is_demand, x.price_spread)):
