@@ -57,45 +57,6 @@ def set_offset_dict(prices: list[float], dt: datetime, min_price: float, existin
     dt_date = dt.date()
     all_offsets = _deviation_from_mean(prices, min_price, dt)
     return all_offsets
-    # if all([
-    #     len(existing.get(dt_date, {})),
-    #     not len([k.hour for k,v in all_offsets.items() if k.date() ==dt_date + timedelta(days=1)])
-    #     ]):
-    #     #_LOGGER.debug(f"Today: {datetime.now().date()}. Using existing offset for {dt_date}. Existing: {existing[dt_date]}")
-    #     ret[dt_date] = existing[dt_date]
-    # elif len(existing.get(dt_date, {})):
-    #     #_LOGGER.debug(f"Today: {datetime.now().date()}. Using existing offset for {dt_date} up until hour {dt.hour}")
-    #     today_dict = {}
-    #     today_dict.update({k: v for k, v in existing[dt_date].items() if k <= dt.hour})
-    #     today_dict.update({k.hour: v for k, v in all_offsets.items() if k.date() == dt_date and k.hour > dt.hour})
-    #     ret[dt_date] = today_dict
-    # else:
-    #     ret[dt_date] = {k.hour: v for k, v in all_offsets.items() if k.date() == dt_date}
-    # ret[dt_date + timedelta(days=1)] = {k.hour: v for k, v in all_offsets.items() if k.date() == dt_date + timedelta(days=1)}
-    # return ret
-
-
-# def set_offset_dict2(prices: list[float], dt: datetime, min_price: float, existing: dict) -> dict:
-#     ret = {}
-#     dt = dt.replace(minute=0, second=0, microsecond=0)
-#     dt_date = dt.date()
-#     all_offsets = _deviation_from_mean(prices, min_price, dt)
-#     if all([
-#         len(existing.get(dt_date, {})),
-#         not len([k.hour for k,v in all_offsets.items() if k.date() ==dt_date + timedelta(days=1)])
-#         ]):
-#         #_LOGGER.debug(f"Today: {datetime.now().date()}. Using existing offset for {dt_date}. Existing: {existing[dt_date]}")
-#         ret[dt_date] = existing[dt_date]
-#     elif len(existing.get(dt_date, {})):
-#         #_LOGGER.debug(f"Today: {datetime.now().date()}. Using existing offset for {dt_date} up until hour {dt.hour}")
-#         today_dict = {}
-#         today_dict.update({k: v for k, v in existing[dt_date].items() if k <= dt.hour})
-#         today_dict.update({k.hour: v for k, v in all_offsets.items() if k.date() == dt_date and k.hour > dt.hour})
-#         ret[dt_date] = today_dict
-#     else:
-#         ret[dt_date] = {k.hour: v for k, v in all_offsets.items() if k.date() == dt_date}
-#     ret[dt_date + timedelta(days=1)] = {k.hour: v for k, v in all_offsets.items() if k.date() == dt_date + timedelta(days=1)}
-#     return ret
 
 
 def _get_timedelta(prices: list[float]) -> int:
