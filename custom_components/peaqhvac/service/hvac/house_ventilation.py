@@ -57,12 +57,15 @@ class HouseVentilation:
         if self._hvac.hub.sensors.temp_trend_indoors.samples > 0 and time.time() - self._wait_timer_boost.value > WAITTIMER_VENT:
             if self._vent_boost_warmth():
                 self._vent_boost_start("Vent boosting because of warmth.")
+                return
             elif self._vent_boost_night_cooling():
                 self._vent_boost_start("Vent boost night cooling")
+                return
             elif self._vent_boost_low_dm():
                 self._vent_boost_start("Vent boosting because of low degree minutes.")
+                return
         if any([
-            self._hvac.hvac_dm > self._hvac.hub.options.heating_options.low_degree_minutes + 100,
+            (self._hvac.hvac_dm > self._hvac.hub.options.heating_options.low_degree_minutes + 100 and self._hvac.hub.sensors.average_temp_outdoors.value < self._hvac.hub.options.heating_options.outdoor_temp_stop_heating),
             self._hvac.hub.sensors.average_temp_outdoors.value < self._hvac.hub.options.heating_options.very_cold_temp
             ]) and self.vent_boost:
             _LOGGER.debug(f"recovered dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} > {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
