@@ -12,9 +12,10 @@ TODAY = "today"
 TOMORROW = "tomorrow"
 
 def flat_day_lower_tolerance(prices):
+    if not len(prices):
+        return 0
     try:
         deviator = (max(prices) - min(prices))/mean(prices)
-        print(deviator)
         if deviator > 0.95:
             return 0
         if deviator > 0.8:
