@@ -106,6 +106,8 @@ class UpdateSystem:
                     ]
                 )
             case HvacOperations.Offset:
+                if not self.hub.hvac.house_heater.control_module:
+                    return False
                 if self._force_update:
                     self._force_update = False
                     return True
