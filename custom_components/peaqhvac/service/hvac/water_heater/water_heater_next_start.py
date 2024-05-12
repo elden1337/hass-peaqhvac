@@ -62,7 +62,7 @@ class NextWaterBoost:
 
     def get_next_start(self, model: NextStartPostModel) -> NextStartExportModel:
         self.water_limit = 30 if model.hvac_preset == HvacPresets.Away else 40
-        self.low_water_limit = self.water_limit - 10
+        self.low_water_limit = self.water_limit - 20
         
         self.dt = model.dt
         self.min_price = model.min_price
