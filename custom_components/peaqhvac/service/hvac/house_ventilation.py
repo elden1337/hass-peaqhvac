@@ -72,7 +72,7 @@ class HouseVentilation:
             self.vent_boost = False
             self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
 
-       def _vent_boost_warmth(self) -> bool:
+    def _vent_boost_warmth(self) -> bool:
         return all(
                     [
                         self._hvac.hub.sensors.get_tempdiff() > 3,
