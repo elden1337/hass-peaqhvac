@@ -55,14 +55,14 @@ MAX_TARGET_TEMP = 53
 class NextWaterBoost:
     def __init__(self):
         self.water_limit: float = 40
-        self.low_water_limit: float = 30
+        self.low_water_limit: float = 20
         self.min_price: float = 0
         self.dt: datetime = datetime.now()
 
 
     def get_next_start(self, model: NextStartPostModel) -> NextStartExportModel:
         self.water_limit = 30 if model.hvac_preset == HvacPresets.Away else 40
-        self.low_water_limit = self.water_limit - 10
+        self.low_water_limit = self.water_limit - 20
         
         self.dt = model.dt
         self.min_price = model.min_price
