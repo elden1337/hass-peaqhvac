@@ -2,3 +2,5 @@ peaqevcore~=19.0.0
 black
 isort
 autoflake
+pytest
+pytest-asyncio
