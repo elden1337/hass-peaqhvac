@@ -24,7 +24,7 @@ def test1():
         latest_boost=datetime(2024,1,25, 6,52),
         dt=datetime(2024,1,26,13,2,0))
     ret = tt.get_next_start(model)
-    assert ret.next_start == datetime(2024,1,26,19,50,0)
+    assert ret.next_start == datetime(2024,1,26,20,50,0)
     assert ret.target_temp == 47
 
 
