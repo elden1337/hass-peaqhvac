@@ -27,7 +27,7 @@ class Nibe(IHvac):
         types = {
             SensorType.HvacMode: f"sensor.{self.hub.options.systemid}_priority",
             SensorType.Offset: f"number.{self.hub.options.systemid}_heating_offset_climate_system_1",
-            SensorType.DegreeMinutes: f"sensor.{self.hub.options.systemid}_degree_minutes",
+            SensorType.DegreeMinutes: f"sensor.{self.hub.options.systemid}_degree_minutes_40941",
             SensorType.WaterTemp: f"sensor.{self.hub.options.systemid}_hot_water_charging_bt6",
             SensorType.HvacTemp: f"sensor.{self.hub.options.systemid}_supply_line_bt2",
             SensorType.HotWaterReturn: f"sensor.{self.hub.options.systemid}_return_line_bt3",
