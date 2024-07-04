@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.event import async_track_state_change
+from homeassistant.helpers.event import async_track_state_change_event
 from functools import partial
 from typing import Callable
 
@@ -55,7 +55,7 @@ class Hub:
         self.trackerentities.extend(self.options.indoor_tempsensors)
         self.trackerentities.extend(self.options.outdoor_tempsensors)
         await self.states.async_initialize_values()
-        async_track_state_change(
+        async_track_state_change_event(
             self.state_machine, self.trackerentities, self.async_state_changed
         )
 
