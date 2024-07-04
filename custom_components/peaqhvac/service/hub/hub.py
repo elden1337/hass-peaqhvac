@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant, callback, Event, EventStateChangedData
 from homeassistant.helpers.event import async_track_state_change_event
 from functools import partial
 from typing import Callable
@@ -56,7 +56,7 @@ class Hub:
         self.trackerentities.extend(self.options.outdoor_tempsensors)
         await self.states.async_initialize_values()
         async_track_state_change_event(
-            self.state_machine, self.trackerentities, self.async_state_changed
+            self.state_machine, self.trackerentities, self._async_on_change
         )
 
     def price_below_min(self, hour:datetime) -> bool:
@@ -80,15 +80,27 @@ class Hub:
         return False
 
     @callback
-    async def async_state_changed(self, entity_id, old_state, new_state):
+    async def _async_on_change(self, event: Event[EventStateChangedData]) -> None:
+        entity_id = event.data["entity_id"]
+        old_state = event.data["old_state"]
+        new_state = event.data["new_state"]
         if entity_id is not None:
             try:
                 if old_state is None or old_state != new_state:
                     await self.states.async_update_sensor(entity_id, new_state.state)
             except Exception as e:
-                _LOGGER.exception(
-                    f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}"
-                )
+                _LOGGER.exception(f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}")
+
+    # @callback
+    # async def async_state_changed(self, entity_id, old_state, new_state):
+    #     if entity_id is not None:
+    #         try:
+    #             if old_state is None or old_state != new_state:
+    #                 await self.states.async_update_sensor(entity_id, new_state.state)
+    #         except Exception as e:
+    #             _LOGGER.exception(
+    #                 f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}"
+    #             )
 
     def get_peaqev(self):
         try:
