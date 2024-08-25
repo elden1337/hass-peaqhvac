@@ -138,7 +138,6 @@ class OffsetCoordinator:
         if self.prices is not None:
             self.model.raw_offsets = self._update_offset()
             self.model.calculated_offsets = self.model.raw_offsets
-            #if self.model.prognosis is not None:
             if len(self._hub.prognosis.prognosis) > 0:
                 try:
                     _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
@@ -150,8 +149,6 @@ class OffsetCoordinator:
                     _LOGGER.warning(
                         f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
                     )
-            #else:
-               # _LOGGER.debug("No prognosis available, using normal calculation")
             self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
         else:
             if self._hub.is_initialized:
