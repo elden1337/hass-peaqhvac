@@ -30,9 +30,8 @@ make the signaling less complicated, just calculate the need and check whether h
 """
 
 class WaterHeater(IHeater):
-    def __init__(self, hvac, hub):
-        self._hub: Hub = hub
-        super().__init__(hvac=hvac)
+    def __init__(self, hub):
+        super().__init__(hub=hub)
         self._current_temp = None
         self._is_initialized: bool = False
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
@@ -40,12 +39,12 @@ class WaterHeater(IHeater):
         self.temp_trend = Gradient(
             max_age=900, max_samples=5, precision=2, ignore=0, outlier=20
         )
-        self.model = WaterBoosterModel(self._hub.state_machine)
+        self.model = WaterBoosterModel(self.hub.state_machine)
         self.next = NextWaterBoost()
-        self._hub.observer.add(ObserverTypes.OffsetsChanged, self._update_operation)
-        self._hub.observer.add("water boost done", self.async_reset_water_boost)
+        self.hub.observer.add(ObserverTypes.OffsetsChanged, self._update_operation)
+        self.hub.observer.add("water boost done", self.async_reset_water_boost)
         async_track_time_interval(
-            self._hub.state_machine, self.async_update_operation, timedelta(seconds=30)
+            self.hub.state_machine, self.async_update_operation, timedelta(seconds=30)
         )
 
     @property
@@ -90,7 +89,7 @@ class WaterHeater(IHeater):
                 self.demand = self._current_temp
                 if self.demand.value != old_demand:
                     _LOGGER.debug(f"Water temp changed to {val} which caused demand to change from {old_demand} to {self.demand.value}")
-                self._hub.observer.broadcast(ObserverTypes.WatertempChange)
+                self.hub.observer.broadcast(ObserverTypes.WatertempChange)
                 self._update_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
@@ -140,15 +139,15 @@ class WaterHeater(IHeater):
             return None
 
         model =NextStartPostModel(
-        prices = self._hub.spotprice.model.prices + self._hub.spotprice.model.prices_tomorrow,
-        non_hours = self._hub.options.heating_options.non_hours_water_boost,
-        demand_hours = self._hub.options.heating_options.demand_hours_water_boost,
+        prices = self.hub.spotprice.model.prices + self.hub.spotprice.model.prices_tomorrow,
+        non_hours = self.hub.options.heating_options.non_hours_water_boost,
+        demand_hours = self.hub.options.heating_options.demand_hours_water_boost,
         current_temp = self.current_temperature,
         dt = datetime.now(),
         temp_trend = self.temp_trend.gradient_raw,
         latest_boost = datetime.fromtimestamp(self.model.latest_boost_call),
-        min_price = self._hub.sensors.peaqev_facade.min_price,
-        hvac_preset = self._hub.sensors.set_temp_indoors.preset,
+        min_price = self.hub.sensors.peaqev_facade.min_price,
+        hvac_preset = self.hub.sensors.set_temp_indoors.preset,
         )
         ret = self.next.get_next_start(model)
 
@@ -174,9 +173,9 @@ class WaterHeater(IHeater):
     def _update_operation(self) -> None:
         self._check_and_reset_boost()
         if self.is_initialized:
-            if self._hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
+            if self.hub.sensors.set_temp_indoors.preset != HvacPresets.Away:
                 self._set_water_heater_operation(HIGHTEMP_THRESHOLD)
-            elif self._hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
+            elif self.hub.sensors.set_temp_indoors.preset == HvacPresets.Away:
                 self._set_water_heater_operation(LOWTEMP_THRESHOLD)
 
     def _set_water_heater_operation(self, target_temp: int) -> None:
@@ -196,17 +195,17 @@ class WaterHeater(IHeater):
                     _LOGGER.debug(f"Water boost is needed. Target temp is {target} and current temp is {self.current_temperature}. Next start is {next_start}")
                     self.model.water_boost.value = True
                     self.model.latest_boost_call = time.time()
-                    self._hub.observer.broadcast("water boost start", target)
+                    self.hub.observer.broadcast("water boost start", target)
         except Exception as e:
             _LOGGER.warning(f"Could not set water boost: {e}")
 
     def __is_below_start_threshold(self) -> bool:
         return all([
             datetime.now().minute >= 30,
-            self._hub.sensors.peaqev_facade.below_start_threshold])
+            self.hub.sensors.peaqev_facade.below_start_threshold])
 
     def __is_price_below_min_price(self) -> bool:
-        return float(self._hub.spotprice.state) <= float(self._hub.sensors.peaqev_facade.min_price)
+        return float(self.hub.spotprice.state) <= float(self.hub.sensors.peaqev_facade.min_price)
 
 
 

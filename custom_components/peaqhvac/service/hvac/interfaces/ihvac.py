@@ -33,8 +33,8 @@ class IHvac(UpdateSystem):
         self.hub = hub
         self._hass = hass
         self._hvac_dm:int = None
-        self.house_heater = HouseHeaterCoordinator(hvac=self)
-        self.water_heater = WaterHeater(hvac=self, hub=hub)
+        self.house_heater = HouseHeaterCoordinator(hvac=self, hub=hub)
+        self.water_heater = WaterHeater(hub=hub)
         self.house_ventilation = HouseVentilation(hvac=self)
 
         self.model = IHvacModel()

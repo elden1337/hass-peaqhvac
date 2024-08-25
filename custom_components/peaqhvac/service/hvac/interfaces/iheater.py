@@ -4,9 +4,6 @@ from typing import TYPE_CHECKING
 
 from peaqevcore.common.wait_timer import WaitTimer
 
-if TYPE_CHECKING:
-    from custom_components.peaqhvac.service.hvac.interfaces.ihvac import IHvac
-
 import logging
 from abc import ABC, abstractmethod
 from peaqevcore.models.hub.hubmember import HubMember
@@ -17,9 +14,9 @@ _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = 60
 class IHeater(ABC):
 
-    def __init__(self, hvac: IHvac):
+    def __init__(self, hub):
         self._demand: Demand = Demand.NoDemand
-        self._hvac: IHvac = hvac
+        self.hub = hub
         self._control_module: HubMember = HubMember(data_type=bool, initval=False)
         self._latest_update = WaitTimer(timeout=UPDATE_INTERVAL)
 
