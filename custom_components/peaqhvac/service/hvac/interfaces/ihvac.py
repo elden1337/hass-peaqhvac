@@ -32,7 +32,7 @@ class IHvac(UpdateSystem):
     def __init__(self, hass: HomeAssistant, hub: Hub):
         self.hub = hub
         self._hass = hass
-        self._hvac_dm:int = None
+        self._hvac_dm: int = None
         self.house_heater = HouseHeaterCoordinator(hvac=self, hub=hub)
         self.water_heater = WaterHeater(hub=hub)
         self.house_ventilation = HouseVentilation(hvac=self)
@@ -63,13 +63,13 @@ class IHvac(UpdateSystem):
 
     @abstractmethod
     def _set_operation_call_parameters(
-        self, operation: HvacOperations, _value: any
+            self, operation: HvacOperations, _value: any
     ) -> Tuple[str, dict, str]:
         pass
 
     @abstractmethod
     async def _get_operation_value(
-        self, operation: HvacOperations, set_val: any = None
+            self, operation: HvacOperations, set_val: any = None
     ):
         pass
 
@@ -93,58 +93,18 @@ class IHvac(UpdateSystem):
 
     @property
     def hvac_electrical_addon(self) -> bool:
-        """
-            'enumValues': [
-          {
-            'value': '0',
-            'text': 'Alarm',
-            'icon': ''
-          },
-          {
-            'value': '1',
-            'text': 'Alarm',
-            'icon': ''
-          },
-          {
-            'value': '2',
-            'text': 'Active',
-            'icon': ''
-          },
-          {
-            'value': '3',
-            'text': 'Off',
-            'icon': ''
-          },
-          {
-            'value': '4',
-            'text': 'Blocked',
-            'icon': ''
-          },
-          {
-            'value': '5',
-            'text': 'Off',
-            'icon': ''
-          },
-          {
-            'value': '6',
-            'text': 'Active',
-            'icon': ''
-          }
-        ],
-        """
         value_conversion = {
-            "Alarm": False,
+            "Alarm":   False,
             "Blocked": False,
-            "Off": False,
-            "Active": True,
+            "Off":     False,
+            "Active":  True,
         }
-        ret= self.get_value(SensorType.ElectricalAddition, str)
+        ret = self.get_value(SensorType.ElectricalAddition, str)
         return value_conversion.get(ret, False)
 
     @property
     def hvac_compressor_start(self) -> int:
-        return -250 #todo: myuplink fix
-        #return self.get_value(SensorType.DMCompressorStart, int)
+        return self.get_value(SensorType.DMCompressorStart, int)
 
     @property
     def hvac_watertemp(self) -> float:
@@ -180,8 +140,10 @@ class IHvac(UpdateSystem):
     def get_offsets(self) -> None:  # todo: make async
         ret = self.hub.offset.get_offset()
         if ret is not None:
-            self.model.current_offset_dict = {k: v for k, v in ret.calculated_offsets.items() if k.date() == datetime.now().date()}
-            self.model.current_offset_dict_tomorrow = {k: v for k, v in ret.calculated_offsets.items() if k.date() == datetime.now().date()+timedelta(days=1)}
+            self.model.current_offset_dict = {k: v for k, v in ret.calculated_offsets.items() if
+                                              k.date() == datetime.now().date()}
+            self.model.current_offset_dict_tomorrow = {k: v for k, v in ret.calculated_offsets.items() if
+                                                       k.date() == datetime.now().date() + timedelta(days=1)}
             self.model.current_offset_dict_combined = ret.calculated_offsets
         else:
             _LOGGER.debug("get_offsets returned None where it should not")
@@ -204,7 +166,6 @@ class IHvac(UpdateSystem):
                 _LOGGER.debug(f"Could not parse {sensor.name} from hvac. {e}")
         return 0
 
-
     def _handle_sensor(self, sensor: str):
         sensor_obj = sensor.split("|")
         if not 0 < len(sensor_obj) <= 2:
@@ -221,4 +182,3 @@ class IHvac(UpdateSystem):
                 _LOGGER.exception(e)
                 return None
         return state.state
-

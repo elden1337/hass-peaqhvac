@@ -33,7 +33,7 @@ class Nibe(IHvac):
             SensorType.HotWaterReturn: f"sensor.{self.hub.options.systemid}_return_line_bt3",
             SensorType.ElectricalAddition: f"sensor.{self.hub.options.systemid}_int_elec_add_heat",
             SensorType.CompressorFrequency: f"sensor.{self.hub.options.systemid}_current_compressor_frequency",
-            #SensorType.DMCompressorStart: f"sensor.nibe_{self.hub.options.systemid}_47206",
+            SensorType.DMCompressorStart: f"number.{self.hub.options.systemid}_start_compressor",
             SensorType.FanSpeed: f"sensor.{self.hub.options.systemid}_current_fan_mode",
             SensorType.HotWaterBoost: f"switch.{self.hub.options.systemid}_temporary_lux",
             SensorType.VentilationBoost: f"switch.{self.hub.options.systemid}_increased_ventilation",
