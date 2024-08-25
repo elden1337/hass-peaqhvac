@@ -114,7 +114,7 @@ class OffsetCoordinator:
                     offsets_per_day[k] = -tolerance
 
             return smooth_transitions(
-                vals = offsets_per_day,
+                vals=offsets_per_day,
                 tolerance=self.model.tolerance,
             )
 
