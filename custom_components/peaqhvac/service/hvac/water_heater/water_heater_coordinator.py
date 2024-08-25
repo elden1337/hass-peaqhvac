@@ -63,7 +63,7 @@ class WaterHeater(IHeater):
     @property
     def latest_boost_call(self) -> str:
         """For Lovelace-purposes. Converts and returns epoch-timer to readable datetime-string"""
-        if self.model.latest_boost_call > 0:
+        if self.model.latest_boost_call > 0 and self.control_module:
             return time.strftime("%Y-%m-%d %H:%M", time.localtime(self.model.latest_boost_call))
         return "-"
 
@@ -131,7 +131,7 @@ class WaterHeater(IHeater):
         return next_start
 
     def _get_next_start(self) -> int|None:
-        if not self.is_initialized:
+        if not self.is_initialized or not self.control_module:
             return None
         if self.water_heating:
             """no need to calculate if we are already heating or trying to heat"""
