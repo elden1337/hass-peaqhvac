@@ -27,9 +27,9 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class IHvac(UpdateSystem):
-    current_offset: int = 0  # todo: remove either from here or from house_heater
 
     def __init__(self, hass: HomeAssistant, hub: Hub):
+        self.model = IHvacModel()
         self.hub = hub
         self._hass = hass
         self._hvac_dm: int = None
@@ -37,7 +37,6 @@ class IHvac(UpdateSystem):
         self.water_heater = WaterHeater(hub=hub)
         self.house_ventilation = HouseVentilation(hvac=self)
 
-        self.model = IHvacModel()
         self.hub.observer.add(ObserverTypes.OffsetRecalculation, self.update_offset)
         self.hub.observer.add(ObserverTypes.UpdateOperation, self.request_periodic_updates)
         self.hub.observer.add("water boost start", self.async_boost_water)
@@ -120,10 +119,10 @@ class IHvac(UpdateSystem):
             self.get_offsets()
             _hvac_offset = self.hvac_offset
             new_offset, force_update = self.house_heater.get_current_offset()
-            if new_offset != self.current_offset:
-                self.current_offset = new_offset
+            if new_offset != self.model.current_offset:
+                self.model.current_offset = new_offset
                 self._force_update = force_update
-            if self.current_offset != _hvac_offset:
+            if self.model.current_offset != _hvac_offset:
                 self.hub.observer.broadcast(ObserverTypes.OffsetsChanged)
                 return True
             return False

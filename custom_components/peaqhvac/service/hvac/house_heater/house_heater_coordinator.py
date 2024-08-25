@@ -24,7 +24,6 @@ class HouseHeaterCoordinator(IHeater):
     def __init__(self, hvac, hub):
         self.hvac_model = hvac.model
         self._degree_minutes = 0
-        self._current_offset: int = 0
         self._offsets: dict = {}
         self._current_adjusted_offset: int = 0
         self._helpers = HouseHeaterHelpers(hvac=hvac)
@@ -53,12 +52,12 @@ class HouseHeaterCoordinator(IHeater):
 
     @property
     def current_offset(self) -> int:
-        return self._current_offset
+        return self.hvac_model.current_offset
 
     @current_offset.setter
     def current_offset(self, val) -> None:
         if isinstance(val, (float, int)):
-            self._current_offset = val
+            self.hvac_model.current_offset = val
 
     @property
     def current_tempdiff(self):
