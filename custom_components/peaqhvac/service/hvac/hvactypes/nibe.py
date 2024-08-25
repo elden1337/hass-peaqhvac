@@ -50,7 +50,6 @@ class Nibe(IHvac):
             speed = self.get_sensor(SensorType.FanSpeed)
             return float(self._handle_sensor(speed))
         except Exception as e:
-            #_LOGGER.debug(f"Unable to get fan speed: {e}")
             return 0
 
     @property
@@ -115,16 +114,6 @@ class Nibe(IHvac):
             return value_lookup.get(ret, HvacMode.Unknown)
         return HvacMode.Unknown
 
-
-
-    async def _get_operation_value(self, operation: HvacOperations, set_val: any = None):
-        match operation:
-            case HvacOperations.Offset:
-                return self._cap_nibe_offset_value(set_val)
-            case HvacOperations.VentBoost | HvacOperations.WaterBoost:
-                return set_val
-        raise ValueError(f"Operation {operation} not supported")
-
     def _service_domain_per_operation(self, operation: HvacOperations) -> str:
         match operation:
             case HvacOperations.Offset:
@@ -141,14 +130,10 @@ class Nibe(IHvac):
                 return "turn_on" if value == 1 else "turn_off"
 
     def _set_servicecall_params(self, operation, _value):
-        if operation is HvacOperations.Offset: #todo: put this elsewhere.
-            return {
-                    "value": _value,
-                    "entity_id": self._servicecall_types()[operation]
-                    }
-        return {
-                "entity_id": self._servicecall_types()[operation]
-                }
+        ret = {"entity_id": self._servicecall_types()[operation]}
+        if operation is HvacOperations.Offset:
+            ret["value"] = self._cap_nibe_offset_value(_value)
+        return ret
 
     def _set_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
         call_operation = self._transform_servicecall_value(_value, operation)
@@ -157,7 +142,7 @@ class Nibe(IHvac):
         return call_operation, params, service_domain
 
     @staticmethod
-    def _cap_nibe_offset_value(val: int):
+    def _cap_nibe_offset_value(val: int) -> int:
         """Nibe only supports offsets between -10 and 10"""
         if abs(val) <= NIBE_MAX_THRESHOLD:
             return val

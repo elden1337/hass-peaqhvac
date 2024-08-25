@@ -67,12 +67,6 @@ class IHvac(UpdateSystem):
     ) -> Tuple[str, dict, str]:
         pass
 
-    @abstractmethod
-    async def _get_operation_value(
-            self, operation: HvacOperations, set_val: any = None
-    ):
-        pass
-
     @property
     def hvac_offset(self) -> int:
         return self.get_value(SensorType.Offset, int)
