@@ -41,6 +41,7 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
         self._target_temperature_low = None
         self._hvac_mode = self._get_hvac_mode()
         self._preset_mode = PRESET_NONE
+        self._enable_turn_on_off_backwards_compatibility = False
 
     @property
     def supported_features(self):
@@ -113,6 +114,12 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
                 return HVACAction.IDLE
             case _:
                 return HVACAction.OFF
+
+    async def async_turn_off(self) -> None:
+        await self.async_set_hvac_mode(HVACMode.OFF)
+
+    async def async_turn_on(self) -> None:
+        await self.async_set_hvac_mode(HVACMode.AUTO)
 
     async def async_will_remove_from_hass(self):
         pass
