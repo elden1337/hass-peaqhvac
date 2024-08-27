@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from custom_components.peaqhvac.service.hub import Hub
 import logging
@@ -28,6 +29,7 @@ _LOGGER = logging.getLogger(__name__)
 we shouldnt need two booleans to tell if we are heating or trying to heat.
 make the signaling less complicated, just calculate the need and check whether heating is already happening.
 """
+
 
 class WaterHeater(IHeater):
     def __init__(self, hub):
@@ -71,7 +73,7 @@ class WaterHeater(IHeater):
         struct_time = time.strptime(strtime, "%Y-%m-%d %H:%M")
         new = time.mktime(struct_time)
         current = self.model.latest_boost_call
-        self.model.latest_boost_call = max(new,current)
+        self.model.latest_boost_call = max(new, current)
 
     @property
     def current_temperature(self) -> float:
@@ -88,7 +90,8 @@ class WaterHeater(IHeater):
                 old_demand = self.demand.value
                 self.demand = self._current_temp
                 if self.demand.value != old_demand:
-                    _LOGGER.debug(f"Water temp changed to {val} which caused demand to change from {old_demand} to {self.demand.value}")
+                    _LOGGER.debug(
+                        f"Water temp changed to {val} which caused demand to change from {old_demand} to {self.demand.value}")
                 self.hub.observer.broadcast(ObserverTypes.WatertempChange)
                 self._update_operation()
         except ValueError as E:
@@ -126,11 +129,11 @@ class WaterHeater(IHeater):
     @property
     def next_water_heater_start(self) -> datetime:
         next_start = self.model.next_water_heater_start
-        if next_start < datetime.now()+timedelta(minutes=10):
+        if next_start < datetime.now() + timedelta(minutes=10):
             self.model.bus_fire_once("peaqhvac.water_heater_warning", {"new": True}, next_start)
         return next_start
 
-    def _get_next_start(self) -> int|None:
+    def _get_next_start(self) -> int | None:
         if not self.is_initialized or not self.control_module:
             return None
         if self.water_heating:
@@ -138,21 +141,20 @@ class WaterHeater(IHeater):
             self.model.next_water_heater_start = datetime.max
             return None
 
-        model =NextStartPostModel(
-        prices = self.hub.spotprice.model.prices + self.hub.spotprice.model.prices_tomorrow,
-        non_hours = self.hub.options.heating_options.non_hours_water_boost,
-        demand_hours = self.hub.options.heating_options.demand_hours_water_boost,
-        current_temp = self.current_temperature,
-        dt = datetime.now(),
-        temp_trend = self.temp_trend.gradient_raw,
-        latest_boost = datetime.fromtimestamp(self.model.latest_boost_call),
-        min_price = self.hub.sensors.peaqev_facade.min_price,
-        hvac_preset = self.hub.sensors.set_temp_indoors.preset,
+        model = NextStartPostModel(
+            prices=self.hub.spotprice.model.prices + self.hub.spotprice.model.prices_tomorrow,
+            non_hours=self.hub.options.heating_options.non_hours_water_boost,
+            demand_hours=self.hub.options.heating_options.demand_hours_water_boost,
+            current_temp=self.current_temperature,
+            dt=datetime.now(),
+            temp_trend=self.temp_trend.gradient_raw,
+            latest_boost=datetime.fromtimestamp(self.model.latest_boost_call),
+            min_price=self.hub.sensors.peaqev_facade.min_price,
+            hvac_preset=self.hub.sensors.set_temp_indoors.preset,
         )
         ret = self.next.get_next_start(model)
 
-        #ret.next_start = min(ret.next_start, datetime.fromtimestamp(self.model.latest_boost_call) + timedelta(hours=48))
-        if ret.next_start < datetime.now() +timedelta(days=-100):
+        if ret.next_start < datetime.now() + timedelta(days=-100):
             ret.next_start = datetime.max
             ret.target_temp = None
         self.model.next_water_heater_start = ret.next_start
@@ -169,7 +171,7 @@ class WaterHeater(IHeater):
         if self.model.water_boost.value and self.model.latest_boost_call - time.time() > 3600:
             _LOGGER.debug("Water boost has been on for more than an hour. Turning off.")
             self.model.water_boost.value = False
-            
+
     def _update_operation(self) -> None:
         self._check_and_reset_boost()
         if self.is_initialized:
@@ -192,7 +194,8 @@ class WaterHeater(IHeater):
         try:
             if next_start <= datetime.now() and not self.model.water_boost.value:
                 if target is not None and target > self.current_temperature:
-                    _LOGGER.debug(f"Water boost is needed. Target temp is {target} and current temp is {self.current_temperature}. Next start is {next_start}")
+                    _LOGGER.debug(
+                        f"Water boost is needed. Target temp is {target} and current temp is {self.current_temperature}. Next start is {next_start}")
                     self.model.water_boost.value = True
                     self.model.latest_boost_call = time.time()
                     self.hub.observer.broadcast("water boost start", target)
@@ -206,7 +209,3 @@ class WaterHeater(IHeater):
 
     def __is_price_below_min_price(self) -> bool:
         return float(self.hub.spotprice.state) <= float(self.hub.sensors.peaqev_facade.min_price)
-
-
-
-
