@@ -5,7 +5,7 @@ from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (PRESET_AWAY, PRESET_ECO,
                                                     PRESET_NONE,
                                                     HVACAction, HVACMode, ClimateEntityFeature)
-from homeassistant.const import ATTR_TEMPERATURE, TEMP_CELSIUS
+from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.restore_state import RestoreEntity
 
@@ -60,7 +60,7 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
 
     @property
     def temperature_unit(self):
-        return TEMP_CELSIUS
+        return UnitOfTemperature.CELSIUS
 
     @property
     def current_temperature(self):
