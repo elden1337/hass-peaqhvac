@@ -38,9 +38,11 @@ def offset_per_day(
         tolerance -= flat_day_lower_tolerance(all_prices)
         print(f"Flat day lower tolerance: {flat_day_lower_tolerance(all_prices)}")
         for k, v in day_values.items():
-            ret[k] = int(round((day_values[k] *tolerance) * -1, 0))
+            ret[k] = int(round((day_values[k] * tolerance) * -1, 0))
             if indoors_preset is HvacPresets.Away:
                 ret[k] -= 1
+            if abs(ret[k]) > tolerance:
+                ret[k] = tolerance if ret[k] > 0 else tolerance * -1
     return ret
 
 
