@@ -12,8 +12,6 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class StateChanges:
-
-
     def __init__(self, hub, hass):
         self._hub: Hub = hub
         self._hass = hass

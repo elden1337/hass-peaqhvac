@@ -137,11 +137,12 @@ class IHvac:
                 self.model.current_offset = new_offset
                 self._force_update = force_update
             if self.model.current_offset != _hvac_offset:
+                _LOGGER.debug(f"Offset changed from {_hvac_offset} to {self.model.current_offset}")
                 self.hub.observer.broadcast(ObserverTypes.OffsetsChanged)
                 return True
             return False
         except Exception as e:
-            _LOGGER.exception(f"Error on updating offsets: {e}")
+            _LOGGER.exception(f"Error in updating offsets: {e}")
             return False
 
     def get_offsets(self) -> None:  # todo: make async

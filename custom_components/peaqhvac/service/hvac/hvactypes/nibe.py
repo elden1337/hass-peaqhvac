@@ -144,6 +144,7 @@ class Nibe(IHvac):
     @staticmethod
     def _cap_nibe_offset_value(val: int) -> int:
         """Nibe only supports offsets between -10 and 10"""
+        _LOGGER.debug("Capping nibe offset value", val)
         if abs(val) <= NIBE_MAX_THRESHOLD:
             return val
         return NIBE_MAX_THRESHOLD if val > NIBE_MAX_THRESHOLD else NIBE_MIN_THRESHOLD

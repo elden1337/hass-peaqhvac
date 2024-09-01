@@ -1,6 +1,9 @@
 import statistics
 from datetime import timedelta
 from typing import Tuple
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def identify_peaks(prices: list) -> list[int]:
@@ -13,10 +16,10 @@ def identify_peaks(prices: list) -> list[int]:
                 ret.append(idx)
         else:
             if all(
-                [
-                    _check_deviation_peaks(p, prices[idx - 1]),
-                    _check_deviation_peaks(p, prices[idx + 1]),
-                ]
+                    [
+                        _check_deviation_peaks(p, prices[idx - 1]),
+                        _check_deviation_peaks(p, prices[idx + 1]),
+                    ]
             ):
                 ret.append(idx)
     return ret
@@ -32,10 +35,10 @@ def identify_valleys(prices: list) -> list[int]:
                 ret.append(idx)
         else:
             if all(
-                [
-                    _check_deviation_valleys(p, prices[idx - 1]),
-                    _check_deviation_valleys(p, prices[idx + 1]),
-                ]
+                    [
+                        _check_deviation_valleys(p, prices[idx - 1]),
+                        _check_deviation_valleys(p, prices[idx + 1]),
+                    ]
             ):
                 ret.append(idx)
     return ret
@@ -66,13 +69,13 @@ def find_single_valleys(prices: list) -> list[int]:
             pass
         else:
             if all(
-                [
-                    prices[idx] < prices[idx - 1],
-                    prices[idx] < prices[idx + 1],
-                    min(prices[idx - 1], prices[idx + 1])
-                    / max(prices[idx - 1], prices[idx + 1])
-                    > 0.8,
-                ]
+                    [
+                        prices[idx] < prices[idx - 1],
+                        prices[idx] < prices[idx + 1],
+                        min(prices[idx - 1], prices[idx + 1])
+                        / max(prices[idx - 1], prices[idx + 1])
+                        > 0.8,
+                    ]
             ):
                 ret.append(idx)
     return ret
@@ -99,47 +102,15 @@ def _find_single_anomalies(adj: dict) -> dict:
     # for k, v in adj.items():
     #     if all([k+timedelta(hours=-1) in adj.items, k+timedelta(hours=+1) in adj.items]):
 
+
 def _smooth_upwards_transitions(start_list: dict, tolerance):
     for k, v in start_list.items():
-        if k+timedelta(hours=+1) in start_list.items():
+        if k + timedelta(hours=+1) in start_list.items():
             if start_list[k + timedelta(hours=1)] >= start_list[k] + tolerance:
                 start_list[k] += 1
     return start_list
 
-# def _smooth_upwards_transitions(start_list, tolerance):
-#     for idx, v in enumerate(start_list):
-#         if idx < len(start_list) - 1:
-#             if start_list[idx + 1] >= start_list[idx] + tolerance:
-#                 start_list[idx] += 1
-#     return start_list
 
-#
-# def smooth_transitions(
-#     today: list, tomorrow: list, tolerance: int
-# ) -> Tuple[dict, dict]:
-#     if tolerance is not None:
-#         tolerance = min(tolerance, 3)
-#     else:
-#         tolerance = 3
-#
-#     start_list: list = []
-#     ret: Tuple[dict, dict] = {}, {}
-#
-#     start_list.extend(today)
-#     if 23 <= len(tomorrow) <= 25:
-#         start_list.extend(tomorrow)
-#     if len(start_list) < 24:
-#         return ret
-#
-#     start_list = _find_single_anomalies(start_list)
-#     start_list = _smooth_upwards_transitions(start_list, tolerance)
-#
-#     for hour in range(0, 24):
-#         ret[0][hour] = start_list[hour]
-#     if 23 <= len(tomorrow) <= 25:
-#         for hour in range(24, min(len(tomorrow) + 24, 48)):
-#             ret[1][hour - 24] = start_list[hour]
-#     return ret
 def smooth_transitions(vals: dict, tolerance: int) -> dict:
     if tolerance is not None:
         tolerance = min(tolerance, 3)
@@ -149,4 +120,6 @@ def smooth_transitions(vals: dict, tolerance: int) -> dict:
     ret = _find_single_anomalies(vals)
     ret = _smooth_upwards_transitions(ret, tolerance)
 
+    if any([h for h in ret.values() if abs(h) > 10]):
+        _LOGGER.warning("Offset values are out of range", ret, vals)
     return ret
