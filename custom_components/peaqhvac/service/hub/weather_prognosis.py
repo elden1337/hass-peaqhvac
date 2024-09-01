@@ -48,7 +48,17 @@ class WeatherPrognosis:
 
     def update_weather_prognosis(self):
         if self.is_initialized:
-            ret = self._hass.states.get(self.entity)
+        #     action: weather.get_forecasts
+        #     target:
+        #     entity_id: weather.hake
+        # data:
+        # type: hourly
+            try:
+                ret = self._hass.services.call("weather", "get_forecasts", {"type": "hourly"})
+            except Exception as e:
+                _LOGGER.error(f"Could not get weather-prognosis: {e}")
+                return
+        #ret = self._hass.states.get(self.entity)
             if ret is not None:
                 try:
                     ret_attr = list(ret.attributes.get("forecast"))
@@ -172,22 +182,24 @@ class WeatherPrognosis:
                 return p
         return None
 
-    def _setup_weather_prognosis(self):
-        try:
-            entities = template.integration_entities(self._hass, "met")
-            if len(entities) < 1:
-                _LOGGER.warning("no entities found for weather. Cannot use weather prognosis")
-            _ent = [e for e in entities if e.endswith("_hourly")]
-            if len(_ent) >= 1:
-                self.entity = _ent[0]
-                self._is_initialized = True
-                self.update_weather_prognosis()
-                if len(_ent) > 1:
-                    _LOGGER.warning(
-                        f"Peaqev found more than one weather-entity. Using the first one: {self.entity}"
-                    )
-            else:
-                pass
-        except Exception as e:
-            msg = f"Peaqev was unable to get a single weather-entity. Disabling Weather-prognosis: {e}"
-            _LOGGER.error(msg)
+    def _setup_weather_prognosis(self): #todo: this must be handled with weeather servicecall.
+        pass
+        # try:
+        #     entities = template.integration_entities(self._hass, "met")
+        #     if len(entities) < 1:
+        #         _LOGGER.warning("no entities found for weather. Cannot use weather prognosis")
+        #     _ent = [e for e in entities]
+        #     if len(_ent) >= 1:
+        #         self.entity = _ent[0]
+        #         self._is_initialized = True
+        #         self.update_weather_prognosis()
+        #         _LOGGER.debug("Weather prognosis is initialized")
+        #         if len(_ent) > 1:
+        #             _LOGGER.warning(
+        #                 f"Peaqev found more than one weather-entity. Using the first one: {self.entity}"
+        #             )
+        #     else:
+        #         pass
+        # except Exception as e:
+        #     msg = f"Peaqev was unable to get a single weather-entity. Disabling Weather-prognosis: {e}"
+        #     _LOGGER.error(msg)
