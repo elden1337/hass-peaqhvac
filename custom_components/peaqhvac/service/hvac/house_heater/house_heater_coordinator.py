@@ -93,6 +93,8 @@ class HouseHeaterCoordinator(IHeater):
             self.current_adjusted_offset = round(ret,0)
             if force_update:
                 self.hub.observer.broadcast(ObserverTypes.UpdateOperation)
+        if abs(self.current_offset) > 10:
+            _LOGGER.debug(f"Current offset is {self.current_offset}. Adjusted offset is {self.current_adjusted_offset}")
         return self.current_adjusted_offset, force_update
 
     def _get_demand(self) -> Demand:

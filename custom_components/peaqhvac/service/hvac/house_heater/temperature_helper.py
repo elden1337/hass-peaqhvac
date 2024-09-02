@@ -6,12 +6,14 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def get_tempdiff_inverted(current_offset: int, temp_diff: float, determine_tolerance: callable) -> int:
-    diff = temp_diff+ 0.00001
+    diff = temp_diff + 0.00001
     if abs(diff) < 0.2:
         return 0
     """get the inverted tolerance in this case"""
-    _tolerance = determine_tolerance(diff *-1, current_offset)
+    _tolerance = determine_tolerance(diff * -1, current_offset)
     ret = floor(abs(diff) / _tolerance) * -1
+    if abs(diff) > 10: #debug bad offsets
+        _LOGGER.debug(f"Tempdiff is {diff}, tolerance is {_tolerance}, ret is {ret}. Current offset is {current_offset}")
     if diff > 0:
         return ret
     return ret * -1
@@ -28,8 +30,8 @@ def get_temp_extremas(current_offset: int, all_temps: list, determine_tolerance:
     tolerance = determine_tolerance(is_cold, current_offset, False)
     if is_cold:
         ret = _temp_extremas_return(cold_diffs, tolerance)
-        return ret / max(len(hot_diffs),1)
-    ret= _temp_extremas_return(hot_diffs, tolerance)
+        return ret / max(len(hot_diffs), 1)
+    ret = _temp_extremas_return(hot_diffs, tolerance)
     return ret / max(len(cold_diffs), 1)
 
 
@@ -52,5 +54,3 @@ def _temp_extremas_return(diffs, tolerance) -> float:
     ret = (abs(avg_diff) - tolerance) * dev
     ret = max(ret, 0) if dev == 1 else min(ret, 0)
     return round(ret, 2)
-
-

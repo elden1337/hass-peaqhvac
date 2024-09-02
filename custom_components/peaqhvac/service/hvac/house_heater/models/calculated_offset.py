@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class CalculatedOffsetModel:
@@ -9,7 +12,7 @@ class CalculatedOffsetModel:
 
     def sum_values(self, extra_current: int = None) -> float:
         current = extra_current if extra_current is not None else self.current_offset
-        return sum(
+        ret = sum(
             [
                 current,
                 self.current_tempdiff,
@@ -17,4 +20,7 @@ class CalculatedOffsetModel:
                 self.current_temp_trend_offset,
             ]
         )
+        # if abs(ret) > 10:
+        #     _LOGGER.debug(f"(sum_values) is {ret}. Current offset is {current}, tempdiff is {self.current_tempdiff}, tempextremas is {self.current_temp_extremas}, temptrend is {self.current_temp_trend_offset}")
+        return ret
     #return int(round(ret, 0))

@@ -51,7 +51,10 @@ class HubSensors:
     def get_tempdiff(self) -> float:
         _indoors = getattr(self.average_temp_indoors, "value", 0)
         _set_temp = getattr(self.set_temp_indoors, "adjusted_temp", 0)
-        #_LOGGER.debug(f"get_tempdiff: {_indoors} - {_set_temp}")
+        # if abs(_indoors - _set_temp) > 10:# debug bad offsets
+        #     _LOGGER.debug(f"get_tempdiff: current indoor temp: {_indoors} -  set_temp: {_set_temp}")
+        if _indoors == 0 and _set_temp != 0:
+            return 0
         return _indoors - _set_temp
 
     def get_tempdiff_in_out(self) -> float:
