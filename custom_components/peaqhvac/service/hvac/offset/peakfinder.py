@@ -1,6 +1,5 @@
 import statistics
 from datetime import timedelta
-from typing import Tuple
 import logging
 
 _LOGGER = logging.getLogger(__name__)
