@@ -76,7 +76,7 @@ class HouseVentilation:
     def _vent_boost_warmth(self) -> bool:
         return all(
                     [
-                        self._hvac.hub.sensors.get_tempdiff() > 3,
+                        self._hvac.hub.sensors.get_tempdiff() > 4,
                         self._hvac.hub.sensors.get_tempdiff_in_out() > 5,
                         self._hvac.hub.sensors.temp_trend_indoors.gradient >= 0,
                         self._hvac.hub.sensors.temp_trend_outdoors.gradient >= 0,
@@ -89,7 +89,7 @@ class HouseVentilation:
     def _vent_boost_night_cooling(self) -> bool:
         return all(
                     [
-                        self._hvac.hub.sensors.get_tempdiff() > 3,
+                        self._hvac.hub.sensors.get_tempdiff() > 4,
                         self._hvac.hub.sensors.get_tempdiff_in_out() > 5,
                         self._hvac.hub.sensors.average_temp_outdoors.value >= self._hvac.hub.options.heating_options.outdoor_temp_stop_heating,
                         datetime.now().hour in list(range(21, 24)) + list(range(0, 7)),
