@@ -105,7 +105,7 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
 
     @property
     def hvac_action(self):
-        if self._hub.sensors.peaq_enabled.value is False:
+        if self._hub.sensors.peaqhvac_enabled.value is False:
             return HVACAction.OFF
         match self._hub.hvac.hvac_mode:
             case HvacModeInternal.Heat:
@@ -132,15 +132,15 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
         self._target_temperature = temperature
 
     def _get_hvac_mode(self) -> HVACMode:
-        if self._hub.sensors.peaq_enabled.value:
+        if self._hub.sensors.peaqhvac_enabled.value:
             return HVACMode.AUTO
         return HVACMode.OFF
 
     def set_hvac_mode(self, hvac_mode):
         if hvac_mode == HVACMode.OFF:
-            self._hub.sensors.peaq_enabled.value = False
+            self._hub.sensors.peaqhvac_enabled.value = False
         else:
-            self._hub.sensors.peaq_enabled.value = True
+            self._hub.sensors.peaqhvac_enabled.value = True
 
     def set_preset_mode(self, preset_mode):
         self._hub.sensors.set_temp_indoors.preset = preset_mode

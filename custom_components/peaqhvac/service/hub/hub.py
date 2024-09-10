@@ -109,10 +109,10 @@ class Hub:
             return False
 
     async def call_enable_peaq(self):
-        self.sensors.peaq_enabled.value = True
+        self.sensors.peaqhvac_enabled.value = True
 
     async def call_disable_peaq(self):
-        self.sensors.peaq_enabled.value = False
+        self.sensors.peaqhvac_enabled.value = False
 
     async def call_set_mode(self, mode):
         # match towards enum. set hub to that state.

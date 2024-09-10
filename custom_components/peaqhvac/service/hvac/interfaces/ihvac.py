@@ -231,7 +231,7 @@ class IHvac:
             self.update_list.pop(r)
 
     async def async_update_system(self, operation: HvacOperations, set_val: any = None) -> bool:
-        if self.hub.sensors.peaq_enabled.value:
+        if self.hub.sensors.peaqhvac_enabled.value:
             _value = set_val
             if self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5:
                 (

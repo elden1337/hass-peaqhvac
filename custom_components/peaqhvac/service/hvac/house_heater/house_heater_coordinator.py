@@ -49,6 +49,10 @@ class HouseHeaterCoordinator(IHeater):
     def turn_off_all_heat(self) -> bool:
         return self.hub.sensors.average_temp_outdoors.value > self.hub.options.heating_options.outdoor_temp_stop_heating
 
+    def _update_aux_offset_adjustments(self, max_lower: bool) -> None:
+        self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = OFFSET_MIN_VALUE if max_lower else 0
+        self.current_adjusted_offset = OFFSET_MIN_VALUE
+
     def get_adjusted_offset(self, current_offset: int) -> Tuple[int, bool]:
         force_update: bool = False
 
@@ -57,8 +61,7 @@ class HouseHeaterCoordinator(IHeater):
 
         max_lower = self.hub.offset.max_price_lower(temp_diff)
         if (self.turn_off_all_heat or max_lower) and outdoor_temp >= 0:
-            self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = OFFSET_MIN_VALUE if max_lower else 0
-            self.current_adjusted_offset = OFFSET_MIN_VALUE
+            self._update_aux_offset_adjustments(max_lower)
             return OFFSET_MIN_VALUE, True
 
         self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = 0
@@ -80,14 +83,14 @@ class HouseHeaterCoordinator(IHeater):
         return self._helpers.helper_get_demand()
 
     def _current_tolerances(self, determinator: bool, current_offset: int, adjust_tolerances: bool = True) -> float:
+        _min, _max = self.hub.sensors.tolerances
         if adjust_tolerances:
             tolerances = adjusted_tolerances(
                 current_offset,
-                self.hub.sensors.set_temp_indoors.min_tolerance,
-                self.hub.sensors.set_temp_indoors.max_tolerance
+                _min, _max
             )
         else:
-            tolerances = self.hub.sensors.set_temp_indoors.min_tolerance, self.hub.sensors.set_temp_indoors.max_tolerance
+            tolerances = _min, _max
         return tolerances[0] if (determinator > 0 or determinator is True) else tolerances[1]
 
     def get_calculated_offsetdata(self, current_offset: int) -> CalculatedOffsetModel:

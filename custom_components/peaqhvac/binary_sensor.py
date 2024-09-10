@@ -36,4 +36,4 @@ class PeaqBinarySensorEnabled(BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        return self._hub.sensors.peaq_enabled.value
+        return self._hub.sensors.peaqhvac_enabled.value

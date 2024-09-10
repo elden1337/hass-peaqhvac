@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from peaqevcore.common.models.observer_types import ObserverTypes
 from peaqevcore.models.hub.hubmember import HubMember
 import logging
@@ -10,7 +12,7 @@ from custom_components.peaqhvac.service.peaqev_facade import PeaqevFacade, Peaqe
 _LOGGER = logging.getLogger(__name__)
 
 class HubSensors:
-    peaq_enabled: HubMember
+    peaqhvac_enabled: HubMember
     temp_trend_outdoors: Gradient
     temp_trend_indoors: Gradient
     dm_trend: Gradient
@@ -24,7 +26,7 @@ class HubSensors:
     def __init__(
         self, hub, options: ConfigModel, hass, peaqev_discovered: bool = False
     ):
-        self.peaq_enabled = HubMember(
+        self.peaqhvac_enabled = HubMember(
             initval=options.misc_options.enabled_on_boot, data_type=bool
         )
         self.hvac_tolerance = options.hvac_tolerance
@@ -54,6 +56,10 @@ class HubSensors:
                 self.average_temp_indoors.value
                 + self.temp_trend_indoors.trend
         )
+
+    @property
+    def tolerances(self) -> Tuple[float, float]:
+        return self.set_temp_indoors.min_tolerance, self.set_temp_indoors.max_tolerance
 
     def get_tempdiff(self) -> float:
         _indoors = getattr(self.average_temp_indoors, "value", 0)
