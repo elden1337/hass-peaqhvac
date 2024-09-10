@@ -135,8 +135,8 @@ class Hub:
         ret = OffsetsExportModel(
         (self.offset.model.peaks_today, self.offset.model.peaks_tomorrow))
         ret.raw_offsets = self.offset.model.raw_offsets
-        ret.current_offset = self.hvac.model.current_offset_dict
-        ret.current_offset_tomorrow = self.hvac.model.current_offset_dict_tomorrow
+        ret.current_offset = self.offset.model.current_offset_dict
+        ret.current_offset_tomorrow = self.offset.model.current_offset_dict_tomorrow
 
         return ret
 

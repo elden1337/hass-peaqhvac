@@ -56,8 +56,7 @@ class PeaqevFacade(PeaqevFacadeBase):
         data = self._peaqevhub.hours.offsets
         if data is not None:
             return data
-        else:
-            _LOGGER.debug(f"peaqev offsets was None. {self._peaqevhub.hours} ")
+        _LOGGER.debug(f"peaqev offsets was None. {self._peaqevhub.hours} ")
         return {}
 
     @property
@@ -80,7 +79,8 @@ class PeaqevFacade(PeaqevFacadeBase):
             stop = self._peaqevhub.threshold.stop
             current = self.exact_threshold
             return current > (stop + 5)
-        except:
+        except Exception as e:
+            _LOGGER.exception(f"Error on above_stop_threshold {e}")
             return False
 
     @property
@@ -89,12 +89,14 @@ class PeaqevFacade(PeaqevFacadeBase):
             start = self._peaqevhub.threshold.start
             current = self.exact_threshold
             return current < (start)
-        except:
+        except Exception as e:
+            _LOGGER.exception(f"Error on below_start_threshold {e}")
             return False
 
     @property
     def average_this_month(self) -> float:
         try:
             return self._peaqevhub.spotprice.average_month
-        except:
+        except Exception as e:
+            _LOGGER.exception(f"Error on average_this_month {e}")
             return 0

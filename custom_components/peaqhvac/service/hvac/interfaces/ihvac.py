@@ -53,7 +53,7 @@ class IHvac:
         self.water_heater = WaterHeater(hub=hub, observer=observer)
         self.house_ventilation = HouseVentilation(hvac=self, observer=observer)
 
-        self.observer.add(ObserverTypes.OffsetRecalculation, self.update_offset)
+        self.observer.add(ObserverTypes.OffsetRecalculation, self.async_update_offset)
         self.observer.add(ObserverTypes.UpdateOperation, self.request_periodic_updates)
         self.observer.add("water boost start", self.async_boost_water)
 
@@ -127,37 +127,38 @@ class IHvac:
         await self.house_ventilation.async_check_vent_boost()
         await self.request_periodic_updates()
 
-    def update_offset(self) -> bool:  # todo: make async
+    async def async_update_offset(self) -> bool:
+        ret = False
         if self.hub.sensors.peaqev_installed:
             if len(self.hub.sensors.peaqev_facade.offsets.get("today", {})) < 20:
-                return False
+                return ret
         try:
-            self.get_offsets()
+            #self.get_offsets()
             _hvac_offset = self.hvac_offset
             new_offset, force_update = self.house_heater.get_adjusted_offset(self.model.current_offset)
             if new_offset != self.model.current_offset:
                 self.model.current_offset = new_offset
                 self._force_update = force_update
             if self.model.current_offset != _hvac_offset:
-                self.observer.broadcast(ObserverTypes.OffsetsChanged)
+                await self.observer.async_broadcast(ObserverTypes.OffsetsChanged)
                 if self._force_update:
-                    self.observer.broadcast(ObserverTypes.UpdateOperation)
-                return True
-            return False
+                    await self.observer.async_broadcast(ObserverTypes.UpdateOperation)
+                ret = True
         except Exception as e:
             _LOGGER.exception(f"Error in updating offsets: {e}")
-            return False
+        finally:
+            return ret
 
-    def get_offsets(self) -> None:  # todo: make async
-        ret = self.hub.offset.get_offset()
-        if ret is not None:
-            self.model.current_offset_dict = {k: v for k, v in ret.calculated_offsets.items() if
-                                              k.date() == datetime.now().date()}
-            self.model.current_offset_dict_tomorrow = {k: v for k, v in ret.calculated_offsets.items() if
-                                                       k.date() == datetime.now().date() + timedelta(days=1)}
-            self.model.current_offset_dict_combined = ret.calculated_offsets
-        else:
-            _LOGGER.debug("get_offsets returned None where it should not")
+    # def get_offsets(self) -> None:  # todo: make async
+    #     ret = self.hub.offset.get_offset()
+    #     if ret is not None:
+    #         self.model.current_offset_dict = {k: v for k, v in ret.calculated_offsets.items() if
+    #                                           k.date() == datetime.now().date()}
+    #         self.model.current_offset_dict_tomorrow = {k: v for k, v in ret.calculated_offsets.items() if
+    #                                                    k.date() == datetime.now().date() + timedelta(days=1)}
+    #         self.model.current_offset_dict_combined = ret.calculated_offsets
+    #     else:
+    #         _LOGGER.debug("get_offsets returned None where it should not")
 
     @staticmethod
     def _get_sensors_for_callback(types: dict) -> list:
@@ -209,7 +210,7 @@ class IHvac:
                     self.update_list[HvacOperations.VentBoost] = _vent_state
 
     async def async_update_heat(self) -> None:
-        if await self._hass.async_add_executor_job(self.update_offset):
+        if await self.async_update_offset():
             if await self.async_ready_to_update(HvacOperations.Offset):
                 self.update_list[HvacOperations.Offset] = self.model.current_offset
 

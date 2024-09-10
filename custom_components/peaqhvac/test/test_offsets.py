@@ -1,6 +1,6 @@
-import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
 import random
+import pytest
 from ..service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
 from ..service.hvac.offset.offset_utils import (offset_per_day, set_offset_dict, adjust_to_threshold)
 from ..service.hvac.offset.peakfinder import smooth_transitions
@@ -15,6 +15,7 @@ P231216 = [0.69,0.62,0.56,0.45,0.38,0.32,0.31,0.31,0.31,0.3,0.3,0.27,0.26,0.25,0
 P231217 = [0.06,0.06,0.06,0.06,0.07,0.08,0.08,0.08,0.1,0.11,0.11,0.13,0.11,0.13,0.11,0.14,0.16,0.24,0.27,0.27,0.25,0.24,0.17,0.16]
 P231218 = [0.22, 0.2, 0.17, 0.15, 0.16, 0.22, 0.3, 0.38, 0.43, 0.4, 0.38, 0.36, 0.32, 0.32, 0.32, 0.33, 0.36, 0.4, 0.39, 0.35, 0.32, 0.29, 0.26, 0.22]
 P231219 = [0.19, 0.15, 0.11, 0.1, 0.14, 0.2, 0.28, 0.41, 0.51, 0.52, 0.54, 0.51, 0.45, 0.41, 0.41, 0.4, 0.37, 0.36, 0.37, 0.32, 0.3, 0.27, 0.25, 0.24]
+
 
 def test_offsets_cent_and_normal_match():
     prices = P231213 + P231214

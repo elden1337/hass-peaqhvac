@@ -5,7 +5,6 @@ from abc import abstractmethod
 from datetime import datetime, timedelta
 from peaqevcore.common.models.observer_types import ObserverTypes
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
-from custom_components.peaqhvac.service.hvac.offset.models.offsets_model import OffsetsModel
 import custom_components.peaqhvac.service.hvac.offset.offset_cache as cache
 from custom_components.peaqhvac.service.hvac.offset.offset_utils import (
     max_price_lower_internal, offset_per_day, set_offset_dict)
@@ -46,16 +45,10 @@ class OffsetCoordinator:
 
     @property
     def current_offset(self) -> int:
-        offsets = self.get_offset()
-        return offsets.raw_offsets[0].get(datetime.now().hour, 0)
-
-    def get_offset(self) -> OffsetsModel:
-        """External entrypoint to the class"""
         self._set_offset()
-        return OffsetsModel(
-            self.model.calculated_offsets,
-            self.model.raw_offsets
-        )
+        return self.model.raw_offsets[0].get(datetime.now().hour, 0)
+
+    #self.model.current_offset_dict_combined = ret.calculated_offsets
 
     def _update_prognosis(self) -> None:
         self.model.prognosis = self._hub.prognosis.prognosis

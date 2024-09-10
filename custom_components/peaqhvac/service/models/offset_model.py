@@ -1,6 +1,6 @@
 import logging
 from homeassistant.helpers.event import async_track_time_interval
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from peaqevcore.common.models.observer_types import ObserverTypes
 
@@ -49,6 +49,14 @@ class OffsetModel:
     def tolerance(self, val):
         self._tolerance = val
 
+    @property
+    def current_offset_dict(self) -> dict:
+        return {k: v for k, v in self.calculated_offsets.items() if k.date() == datetime.now().date()}
+
+    @property
+    def current_offset_dict_tomorrow(self) -> dict:
+        return {k: v for k, v in self.calculated_offsets.items() if
+                k.date() == datetime.now().date() + timedelta(days=1)}
 
     def recalculate_tolerance(self, *args):
         if self.hub.options.hvac_tolerance is not None:

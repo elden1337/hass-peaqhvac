@@ -53,11 +53,11 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
     def is_on(self) -> bool:
         if self._switch["name"] == ENABLED:
             return self._hub.sensors.peaqhvac_enabled.value
-        elif self._switch["name"] == CONTROL_WATER:
+        if self._switch["name"] == CONTROL_WATER:
             return self._hub.hvac.water_heater.control_module
-        elif self._switch["name"] == CONTROL_HEAT:
+        if self._switch["name"] == CONTROL_HEAT:
             return self._hub.hvac.house_heater.control_module
-        elif self._switch["name"] == CONTROL_VENTILATION:
+        if self._switch["name"] == CONTROL_VENTILATION:
             return self._hub.hvac.house_ventilation.control_module
 
     @property

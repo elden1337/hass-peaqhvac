@@ -27,33 +27,39 @@ def subtract(*args):
 
 
 def parse_to_type(value, _type):
-    if isinstance(value, _type):
-        return value
-    elif _type is float:
-        try:
-            return float(value)
-        except ValueError:
-            return 0
-    elif _type is int:
-        try:
-            return int(float(value))
-        except ValueError:
-            return 0
-    elif _type is bool:
-        try:
-            if value is None:
-                return False
-            elif value.lower() == "on":
-                return True
-            elif value.lower() == "off":
-                return False
-        except ValueError as e:
-            msg = f"Could not parse bool, setting to false to be sure {value}, {e}"
-            _LOGGER.error(msg)
-            return False
-    elif _type is str:
-        return str(value)
+    match _type:
+        case t if t is float:
+            try:
+                return float(value)
+            except ValueError:
+                return 0
+        case t if t is int:
+            try:
+                return int(float(value))
+            except ValueError:
+                return 0
+        case t if t is bool:
+            return _parse_to_type_bool(value)
+        case t if t is str:
+            return str(value)
+        case _:
+            if isinstance(value, _type):
+                return value
+            raise TypeError(f"Could not parse {value} to {_type}")
 
+
+def _parse_to_type_bool(value) -> bool:
+    try:
+        if value is None:
+            return False
+        if value.lower() == "on":
+            return True
+        if value.lower() == "off":
+            return False
+    except ValueError as e:
+        msg = f"Could not parse bool, setting to false to be sure {value}, {e}"
+        _LOGGER.error(msg)
+        return False
 
 def dt_from_epoch(epoch: int) -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(epoch))

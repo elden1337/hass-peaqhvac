@@ -26,11 +26,11 @@ async def async_setup_entry(
     """Add sensors for passed config_entry in HA."""
 
     hub = hass.data[DOMAIN]["hub"]
-    peaqsensors = await _gather_sensors(hub, config, hass)
+    peaqsensors = await _gather_sensors(hub, config)
     async_add_entities(peaqsensors, update_before_add=True)
 
 
-async def _gather_sensors(hub, config, hass) -> list:
+async def _gather_sensors(hub, config) -> list:
     TRENDSENSORS = [
         {
             "name":   TRENDSENSOR_INDOORS,
