@@ -42,12 +42,12 @@ class WaterHeater(IHeater):
         self.temp_trend = Gradient(
             max_age=900, max_samples=5, precision=2, ignore=0, outlier=20
         )
-        self.model = WaterBoosterModel(self.hub.state_machine)
+        self.model = WaterBoosterModel(self.hub.hass)
         self.next = NextWaterBoost()
         self.observer.add(ObserverTypes.OffsetsChanged, self._update_operation)
         self.observer.add("water boost done", self.async_reset_water_boost)
         async_track_time_interval(
-            self.hub.state_machine, self.async_update_operation, timedelta(seconds=30)
+            self.hub.hass, self.async_update_operation, timedelta(seconds=30)
         )
 
     @property

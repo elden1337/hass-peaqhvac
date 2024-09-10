@@ -31,16 +31,16 @@ class Hub:
 
     def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
         self._is_initialized = False
-        self.state_machine = hass
+        self.hass = hass
         self.observer = Observer(self) #todo: move to creation factory
         self.options = hub_options
         self.peaqev_discovered: bool = self.get_peaqev()
-        self.sensors = HubSensors(self, hub_options, self.state_machine, self.peaqev_discovered)
-        self.states = StateChanges(self, self.state_machine)
-        self.hvac = HvacFactory.create(self.state_machine, self.options, self, self.observer)
+        self.sensors = HubSensors(self, hub_options, self.hass, self.peaqev_discovered)
+        self.states = StateChanges(self, self.hass)
+        self.hvac = HvacFactory.create(self.hass, self.options, self, self.observer)
         self.spotprice = SpotPriceFactory.create(hub=self, observer=self.observer, system=PeaqSystem.PeaqHvac, test=False, is_active=True)
 
-        self.prognosis = WeatherPrognosis(self.state_machine, self.sensors.average_temp_outdoors, self.observer)
+        self.prognosis = WeatherPrognosis(self.hass, self.sensors.average_temp_outdoors, self.observer)
         self.offset = OffsetFactory.create(self)
         self.options.hub = self
 
@@ -54,7 +54,7 @@ class Hub:
         self.trackerentities.extend(self.options.outdoor_tempsensors)
         await self.states.async_initialize_values()
         async_track_state_change_event(
-            self.state_machine, self.trackerentities, self._async_on_change
+            self.hass, self.trackerentities, self._async_on_change
         )
 
     def price_below_min(self, hour:datetime) -> bool:
@@ -102,7 +102,7 @@ class Hub:
 
     def get_peaqev(self):
         try:
-            ret = self.state_machine.states.get("sensor.peaqev_threshold")
+            ret = self.hass.states.get("sensor.peaqev_threshold")
             if ret is not None:
                 if ret.state:
                     _LOGGER.debug(
