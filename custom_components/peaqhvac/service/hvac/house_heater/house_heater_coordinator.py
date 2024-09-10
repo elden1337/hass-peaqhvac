@@ -59,12 +59,13 @@ class HouseHeaterCoordinator(IHeater):
         outdoor_temp = self.hub.sensors.average_temp_outdoors.value
         temp_diff = self.hub.sensors.get_tempdiff()
 
-        if self.turn_off_all_heat or (self.hub.offset.max_price_lower(temp_diff)) and outdoor_temp >= 0:
-            self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = OFFSET_MIN_VALUE
+        max_lower = self.hub.offset.max_price_lower(temp_diff)
+        if (self.turn_off_all_heat or max_lower) and outdoor_temp >= 0:
+            self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = OFFSET_MIN_VALUE if max_lower else 0
             self.current_adjusted_offset = OFFSET_MIN_VALUE
             return OFFSET_MIN_VALUE, True
-        else:
-            self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = 0
+
+        self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = 0
 
         offsetdata = self.get_calculated_offsetdata(current_offset)
         force_update = self._helpers.temporarily_lower_offset(offsetdata, force_update)

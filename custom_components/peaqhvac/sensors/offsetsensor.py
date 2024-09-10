@@ -63,7 +63,7 @@ class OffsetSensor(SensorBase):
             "Temp trend offset":    self._temptrend_offset,
             "Today":                self._offsets,
             "Tomorrow":             self._offsets_tomorrow,
-            "RawToday":             self._raw_offsets,
+            "Raw":             self._raw_offsets,
             "PeaksToday":           self._peaks_today,
             "PeaksTomorrow":        self._peaks_tomorrow,
         }
