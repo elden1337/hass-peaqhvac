@@ -20,7 +20,4 @@ class CalculatedOffsetModel:
                 self.current_temp_trend_offset,
             ]
         )
-        # if abs(ret) > 10:
-        #     _LOGGER.debug(f"(sum_values) is {ret}. Current offset is {current}, tempdiff is {self.current_tempdiff}, tempextremas is {self.current_temp_extremas}, temptrend is {self.current_temp_trend_offset}")
         return ret
-    #return int(round(ret, 0))

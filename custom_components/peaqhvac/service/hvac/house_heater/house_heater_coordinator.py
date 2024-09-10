@@ -76,8 +76,6 @@ class HouseHeaterCoordinator(IHeater):
                 self.hub.offset.model.tolerance
             )
             self.current_adjusted_offset = round(ret, 0)
-            if force_update:
-                self.hub.observer.broadcast(ObserverTypes.UpdateOperation)
 
         return self.current_adjusted_offset, force_update
 

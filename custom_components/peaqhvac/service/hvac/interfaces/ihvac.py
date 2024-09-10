@@ -137,8 +137,9 @@ class IHvac:
                 self.model.current_offset = new_offset
                 self._force_update = force_update
             if self.model.current_offset != _hvac_offset:
-                _LOGGER.debug(f"Offset changed from {_hvac_offset} to {self.model.current_offset}")
                 self.hub.observer.broadcast(ObserverTypes.OffsetsChanged)
+                if self._force_update:
+                    self.hub.observer.broadcast(ObserverTypes.UpdateOperation)
                 return True
             return False
         except Exception as e:
