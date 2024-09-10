@@ -11,6 +11,8 @@ from custom_components.peaqhvac.service.hvac.offset.offset_utils import (
 from custom_components.peaqhvac.service.hvac.offset.peakfinder import (
     identify_peaks, smooth_transitions)
 from custom_components.peaqhvac.service.models.offset_model import OffsetModel
+from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
+
 
 _LOGGER = logging.getLogger(__name__)
 

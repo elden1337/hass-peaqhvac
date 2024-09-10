@@ -5,6 +5,7 @@ import logging
 from peaqevcore.common.models.observer_types import ObserverTypes
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
 from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import OffsetCoordinator
+from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
 
 _LOGGER = logging.getLogger(__name__)
 
