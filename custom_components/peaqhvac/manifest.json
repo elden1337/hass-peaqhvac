@@ -4,6 +4,7 @@
     "after_dependencies": [
       "myuplink",
       "nordpool",
+      "energidataservice",
       "peaqev",
       "met"
     ],
