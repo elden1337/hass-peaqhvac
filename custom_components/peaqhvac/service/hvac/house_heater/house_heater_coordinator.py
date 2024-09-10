@@ -10,7 +10,8 @@ from custom_components.peaqhvac.service.hub.target_temp import adjusted_toleranc
 from custom_components.peaqhvac.service.hvac.house_heater.house_heater_helpers import HouseHeaterHelpers
 from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
 from custom_components.peaqhvac.service.hvac.house_heater.models.offset_adjustments import OffsetAdjustments
-from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper import get_tempdiff_inverted, get_temp_extremas, get_temp_trend_offset
+from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper import get_tempdiff_inverted, \
+    get_temp_extremas, get_temp_trend_offset
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.hvac.offset.offset_utils import adjust_to_threshold
 from custom_components.peaqhvac.service.models.enums.demand import Demand
@@ -22,9 +23,7 @@ OFFSET_MIN_VALUE = -10
 
 class HouseHeaterCoordinator(IHeater):
     def __init__(self, hvac, hub):
-        self.hvac_model = hvac.model
         self._degree_minutes = 0
-        self._offsets: dict = {}
         self._current_adjusted_offset: int = 0
         self._helpers = HouseHeaterHelpers(hvac=hvac)
         super().__init__(hub=hub)
@@ -51,29 +50,15 @@ class HouseHeaterCoordinator(IHeater):
         self._demand = val
 
     @property
-    def current_offset(self) -> int:
-        return self.hvac_model.current_offset
-
-    @current_offset.setter
-    def current_offset(self, val) -> None:
-        if isinstance(val, (float, int)):
-            self.hvac_model.current_offset = val
-
-    @property
-    def current_tempdiff(self):
-        return get_tempdiff_inverted(self.current_offset, self.hub.sensors.get_tempdiff(), self._current_tolerances)
-
-    @property
     def turn_off_all_heat(self) -> bool:
         return self.hub.sensors.average_temp_outdoors.value > self.hub.options.heating_options.outdoor_temp_stop_heating
 
-    def get_current_offset(self) -> Tuple[int, bool]:
-        self._offsets = self.hvac_model.current_offset_dict_combined
+    def get_adjusted_offset(self, current_offset: int) -> Tuple[int, bool]:
         force_update: bool = False
 
         outdoor_temp = self.hub.sensors.average_temp_outdoors.value
         temp_diff = self.hub.sensors.get_tempdiff()
-        
+
         if self.turn_off_all_heat or (self.hub.offset.max_price_lower(temp_diff)) and outdoor_temp >= 0:
             self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = OFFSET_MIN_VALUE
             self.current_adjusted_offset = OFFSET_MIN_VALUE
@@ -81,20 +66,19 @@ class HouseHeaterCoordinator(IHeater):
         else:
             self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = 0
 
-        offsetdata = self.get_calculated_offsetdata()
+        offsetdata = self.get_calculated_offsetdata(current_offset)
         force_update = self._helpers.temporarily_lower_offset(offsetdata, force_update)
 
-        if self.current_adjusted_offset != round(offsetdata.sum_values(),0):
+        if self.current_adjusted_offset != round(offsetdata.sum_values(), 0):
             ret = adjust_to_threshold(
                 offsetdata,
                 self.hub.sensors.average_temp_outdoors.value,
                 self.hub.offset.model.tolerance
             )
-            self.current_adjusted_offset = round(ret,0)
+            self.current_adjusted_offset = round(ret, 0)
             if force_update:
                 self.hub.observer.broadcast(ObserverTypes.UpdateOperation)
-        if abs(self.current_offset) > 10:
-            _LOGGER.debug(f"Current offset is {self.current_offset}. Adjusted offset is {self.current_adjusted_offset}")
+
         return self.current_adjusted_offset, force_update
 
     def _get_demand(self) -> Demand:
@@ -111,52 +95,28 @@ class HouseHeaterCoordinator(IHeater):
             tolerances = self.hub.sensors.set_temp_indoors.min_tolerance, self.hub.sensors.set_temp_indoors.max_tolerance
         return tolerances[0] if (determinator > 0 or determinator is True) else tolerances[1]
 
-    def get_calculated_offsetdata(self) -> CalculatedOffsetModel:
+    def get_calculated_offsetdata(self, current_offset: int) -> CalculatedOffsetModel:
         tempdiff = get_tempdiff_inverted(
-                                         self.current_offset,
-                                         self.hub.sensors.get_tempdiff(),
-                                         self._current_tolerances
-                                     )
+            current_offset,
+            self.hub.sensors.get_tempdiff(),
+            self._current_tolerances
+        )
         tempextremas = get_temp_extremas(
-                                        self.current_offset,
-                                        [self.hub.sensors.set_temp_indoors.adjusted_temp - t for t in self.hub.sensors.average_temp_indoors.all_values],
-                                        self._current_tolerances
-                                     )
+            current_offset,
+            [self.hub.sensors.set_temp_indoors.adjusted_temp - t for t in
+             self.hub.sensors.average_temp_indoors.all_values],
+            self._current_tolerances
+        )
         temptrend = get_temp_trend_offset(
-                                         self.hub.sensors.temp_trend_indoors.is_clean,
-                                         self.hub.predicted_temp,
-                                         self.hub.sensors.set_temp_indoors.adjusted_temp
-                                     )
+            self.hub.sensors.temp_trend_indoors.is_clean,
+            self.hub.predicted_temp,
+            self.hub.sensors.set_temp_indoors.adjusted_temp
+        )
 
-        return CalculatedOffsetModel(current_offset=self.current_offset,
+        return CalculatedOffsetModel(current_offset=current_offset,
                                      current_tempdiff=tempdiff,
                                      current_temp_extremas=tempextremas,
                                      current_temp_trend_offset=temptrend)
 
     async def async_update_operation(self):
         pass
-
-    # def _check_next_hour_offset(self, force_update: bool) -> bool:
-    #     if not len(self._offsets):
-    #        return force_update
-    #     hour = datetime.now().replace(minute=0, second=0, microsecond=0)
-    #     if datetime.now().minute >= 55:
-    #         hour += timedelta(hours=1)
-    #     try:
-    #         if self.hub.price_below_min(hour):
-    #             _offset = max(self._offsets[hour],0)
-    #         else:
-    #             _offset = self._offsets[hour]
-    #     except:
-    #         _LOGGER.warning(
-    #             "No Price-offsets have been calculated. Setting base-offset to 0."
-    #         )
-    #         _offset = 0
-    #     if self.current_offset != _offset:
-    #         force_update = True
-    #         self.current_offset = _offset
-    #     return force_update
-
-
-
-

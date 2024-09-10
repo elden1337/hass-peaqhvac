@@ -15,7 +15,7 @@ def flat_day_lower_tolerance(prices):
     if not len(prices):
         return 0
     try:
-        deviator = (max(prices) - min(prices))/mean(prices)
+        deviator = (max(prices) - min(prices)) / mean(prices)
         if deviator > 0.95:
             return 0
         if deviator > 0.8:
@@ -28,10 +28,10 @@ def flat_day_lower_tolerance(prices):
 
 
 def offset_per_day(
-    day_values: dict,
-    all_prices: list[float],
-    tolerance: int | None,
-    indoors_preset: HvacPresets = HvacPresets.Normal,
+        day_values: dict,
+        all_prices: list[float],
+        tolerance: int | None,
+        indoors_preset: HvacPresets = HvacPresets.Normal,
 ) -> dict:
     ret = {}
     if tolerance is not None:
@@ -111,18 +111,16 @@ def max_price_lower_internal(tempdiff: float, peaks_today: list) -> bool:
     if tempdiff >= 0.5:
         if datetime.now().hour in peaks_today:
             return True
-        elif datetime.now().hour < 23 and datetime.now().minute > 40:
+        elif datetime.now().hour < 23 and datetime.now().minute > 50:
             if datetime.now().hour + 1 in peaks_today:
                 return True
     return False
 
 
-def adjust_to_threshold(offsetdata: CalculatedOffsetModel, outdoors_value:int, tolerance:int) -> int:
+def adjust_to_threshold(offsetdata: CalculatedOffsetModel, outdoors_value: int, tolerance: int) -> int:
     adjustment = offsetdata.sum_values()
-    if adjustment is None or outdoors_value > 13:
-        if abs(adjustment) > 10:
-            _LOGGER.debug(f"(adjust_to_threshold) Adjustment is {adjustment} and outdoors value is {outdoors_value}. Should not be more than 10")
-        return min(0,adjustment)
+    if adjustment is None or outdoors_value > 17:
+        return min(0, adjustment)
     _tolerance = 3 if tolerance is None else tolerance
     ret = (
         min(adjustment, _tolerance)
