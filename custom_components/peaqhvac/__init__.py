@@ -30,7 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
         await async_get_existing_param(config, "outdoor_tempsensors", "")
     )
     huboptions.heating_options.outdoor_temp_stop_heating = await async_get_existing_param(config, "outdoor_temp_stop_heating", 15)
-    huboptions.heating_options.non_hours_water_boost = await async_get_existing_param(config, "non_hours_water_boost",[7, 11, 12, 15, 16, 17,23])
+    huboptions.heating_options.non_hours_water_boost = await async_get_existing_param(config, "non_hours_water_boost",[])
     huboptions.heating_options.demand_hours_water_boost = await async_get_existing_param(config, "demand_hours_water_boost",[])
 
     huboptions.heating_options.low_degree_minutes = int((await async_get_existing_param(config, "low_degree_minutes","-600")).replace(" ", ""))
