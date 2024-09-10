@@ -16,13 +16,13 @@ class Observer(IObserver):
         super().__init__()
         self.hub = hub
         async_track_time_interval(
-            self.hub.hass, self.async_dispatch, timedelta(seconds=1)
+            self.hub.state_machine, self.async_dispatch, timedelta(seconds=1)
         )
 
     async def async_broadcast_separator(self, func, command: Command):
         if await async_iscoroutine(func):
             await self.async_call_func(func=func, command=command),
         else:
-            await self.hub.hass.async_add_executor_job(
+            await self.hub.state_machine.async_add_executor_job(
                 self._call_func, func, command
             )

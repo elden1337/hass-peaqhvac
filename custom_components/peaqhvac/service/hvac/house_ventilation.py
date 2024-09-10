@@ -21,7 +21,7 @@ class HouseVentilation:
         self._current_vent_state: bool = False
         self._latest_seen_fan_speed: float = 0
         self._control_module: HubMember = HubMember(data_type=bool, initval=False)
-        async_track_time_interval(self._hvac.hub.hass, self.async_check_vent_boost, timedelta(seconds=30))
+        async_track_time_interval(self._hvac.hub.state_machine, self.async_check_vent_boost, timedelta(seconds=30))
 
     @property
     def control_module(self) -> bool:

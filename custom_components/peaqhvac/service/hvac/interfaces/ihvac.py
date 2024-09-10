@@ -216,7 +216,7 @@ class IHvac:
     async def async_boost_water(self, target_temp: float) -> None:
         if self.hub.hvac.water_heater.control_module:
             _LOGGER.debug(f"init water boost process")
-            self.hub.hass.async_create_task(
+            self.hub.state_machine.async_create_task(
                 async_cycle_waterboost(target_temp, self.async_update_system, self.hub))
             _LOGGER.debug(f"return from water boost process")
 
