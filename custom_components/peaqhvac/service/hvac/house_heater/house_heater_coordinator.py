@@ -104,7 +104,7 @@ class HouseHeaterCoordinator(IHeater):
         )
         temptrend = get_temp_trend_offset(
             self.hub.sensors.temp_trend_indoors.is_clean,
-            self.hub.predicted_temp,
+            self.hub.sensors.predicted_temp,
             self.hub.sensors.set_temp_indoors.adjusted_temp
         )
 

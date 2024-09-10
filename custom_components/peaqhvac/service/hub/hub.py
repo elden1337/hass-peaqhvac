@@ -35,13 +35,13 @@ class Hub:
         self.observer = Observer(self) #todo: move to creation factory
         self.options = hub_options
         self.peaqev_discovered: bool = self.get_peaqev()
-        self.sensors = HubSensors(self, hub_options, self.state_machine, self.peaqev_discovered)
-        self.states = StateChanges(self, self.state_machine)
-        self.hvac = HvacFactory.create(self.state_machine, self.options, self, self.observer)
+        self.sensors = HubSensors(self, hub_options, hass, self.peaqev_discovered)
+        self.states = StateChanges(self, hass)
+        self.hvac = HvacFactory.create(hass, self.options, self, self.observer)
         self.spotprice = SpotPriceFactory.create(hub=self, observer=self.observer, system=PeaqSystem.PeaqHvac, test=False, is_active=True)
 
-        self.prognosis = WeatherPrognosis(self.state_machine, self.sensors.average_temp_outdoors, self.observer)
-        self.offset = OffsetFactory.create(self)
+        self.prognosis = WeatherPrognosis(hass, self.sensors.average_temp_outdoors, self.observer)
+        self.offset = OffsetFactory.create(self, observer=self.observer)
         self.options.hub = self
 
     async def async_setup(self) -> None:
@@ -89,17 +89,6 @@ class Hub:
             except Exception as e:
                 _LOGGER.exception(f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}")
 
-    # @callback
-    # async def async_state_changed(self, entity_id, old_state, new_state):
-    #     if entity_id is not None:
-    #         try:
-    #             if old_state is None or old_state != new_state:
-    #                 await self.states.async_update_sensor(entity_id, new_state.state)
-    #         except Exception as e:
-    #             _LOGGER.exception(
-    #                 f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}"
-    #             )
-
     def get_peaqev(self):
         try:
             ret = self.state_machine.states.get("sensor.peaqev_threshold")
@@ -129,13 +118,6 @@ class Hub:
         # match towards enum. set hub to that state.
         pass
 
-    @property
-    def predicted_temp(self) -> float:
-        return (
-            self.sensors.average_temp_indoors.value
-            + self.sensors.temp_trend_indoors.trend
-        )
-
 
     async def async_get_internal_sensor(self, entity):
         lookup = {
@@ -155,6 +137,6 @@ class Hub:
         ret.raw_offsets = self.offset.model.raw_offsets
         ret.current_offset = self.hvac.model.current_offset_dict
         ret.current_offset_tomorrow = self.hvac.model.current_offset_dict_tomorrow
-        #_LOGGER.debug(f"offset_export_model: {ret}")
+
         return ret
 

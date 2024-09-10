@@ -48,11 +48,16 @@ class HubSensors:
             self.peaqev_facade = PeaqevFacadeBase()
             self.peaqev_installed = False
 
+    @property
+    def predicted_temp(self) -> float:
+        return (
+                self.average_temp_indoors.value
+                + self.temp_trend_indoors.trend
+        )
+
     def get_tempdiff(self) -> float:
         _indoors = getattr(self.average_temp_indoors, "value", 0)
         _set_temp = getattr(self.set_temp_indoors, "adjusted_temp", 0)
-        # if abs(_indoors - _set_temp) > 10:# debug bad offsets
-        #     _LOGGER.debug(f"get_tempdiff: current indoor temp: {_indoors} -  set_temp: {_set_temp}")
         if _indoors == 0 and _set_temp != 0:
             return 0
         return _indoors - _set_temp
