@@ -3,12 +3,8 @@ from __future__ import annotations
 import logging
 from abc import abstractmethod
 from datetime import datetime, timedelta
-from typing import Tuple
-
 from peaqevcore.common.models.observer_types import ObserverTypes
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
-
-from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
 from custom_components.peaqhvac.service.hvac.offset.models.offsets_model import OffsetsModel
 import custom_components.peaqhvac.service.hvac.offset.offset_cache as cache
 from custom_components.peaqhvac.service.hvac.offset.offset_utils import (
@@ -22,15 +18,16 @@ _LOGGER = logging.getLogger(__name__)
 
 class OffsetCoordinator:
     """The class that provides the offsets for the hvac"""
-    def __init__(self, hub, hours_type: Hoursselection = None): #type: ignore
+    def __init__(self, hub, observer: IObserver, hours_type: Hoursselection = None): #type: ignore
         self._hub = hub
+        self.observer = observer
         self.model = OffsetModel(hub)
         self.hours = hours_type
         self.latest_raw_offset_update_hour: int = -1
-        self._hub.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
-        self._hub.observer.add(ObserverTypes.HvacPresetChanged, self._set_offset)
-        self._hub.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
-        self._hub.observer.add(ObserverTypes.HvacToleranceChanged, self._set_offset)
+        self.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
+        self.observer.add(ObserverTypes.HvacPresetChanged, self._set_offset)
+        self.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
+        self.observer.add(ObserverTypes.HvacToleranceChanged, self._set_offset)
 
     @property
     @abstractmethod
@@ -151,7 +148,7 @@ class OffsetCoordinator:
                     )
             else:
                 _LOGGER.debug("No prognosis available", self._hub.prognosis.prognosis)
-            self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
+            self.observer.broadcast(ObserverTypes.OffsetRecalculation)
         else:
             if self._hub.is_initialized:
                 _LOGGER.warning(f"Hub is ready but I'm unable to set offset. Prices num:{len(self.prices) if self.prices else 0}")

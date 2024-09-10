@@ -12,11 +12,11 @@ _LOGGER = logging.getLogger(__name__)
 class OffsetCoordinatorStandAlone(OffsetCoordinator):
     """The class that provides the offsets for the hvac with peaqev installed"""
 
-    def __init__(self, hub, hours_type: Hoursselection = None):  # type: ignore
+    def __init__(self, hub, observer: IObserver, hours_type: Hoursselection = None):  # type: ignore
         _LOGGER.debug("initializing an hourselection-instance")
-        hub.observer.add(ObserverTypes.PricesChanged, self.async_update_prices)
-        hub.observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)
-        super().__init__(hub, hours_type)
+        observer.add(ObserverTypes.PricesChanged, self.async_update_prices)
+        observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices)
+        super().__init__(hub, observer, hours_type)
 
     @property
     def prices(self) -> list:

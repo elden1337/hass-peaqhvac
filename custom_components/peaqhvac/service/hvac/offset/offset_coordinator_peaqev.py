@@ -11,9 +11,9 @@ _LOGGER = logging.getLogger(__name__)
 class OffsetCoordinatorPeaqEv(OffsetCoordinator):
     """The class that provides the offsets for the hvac with peaqev installed"""
 
-    def __init__(self, hub, hours_type: Hoursselection = None): #type: ignore
+    def __init__(self, hub, observer: IObserver, hours_type: Hoursselection = None): #type: ignore
         _LOGGER.debug("found peaqev and will not init hourselection")
-        super().__init__(hub, hours_type)
+        super().__init__(hub, observer, hours_type)
         self._prices = None
         self._prices_tomorrow = None
         self._update_prices([hub.sensors.peaqev_facade.hours.prices, hub.sensors.peaqev_facade.hours.prices_tomorrow])

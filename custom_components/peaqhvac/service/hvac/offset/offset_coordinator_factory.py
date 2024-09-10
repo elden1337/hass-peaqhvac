@@ -6,6 +6,7 @@ from peaqevcore.services.hourselection.hoursselection import Hoursselection
 
 from custom_components.peaqhvac.service.hvac.offset.offset_coordinator_peaqev import OffsetCoordinatorPeaqEv
 from custom_components.peaqhvac.service.hvac.offset.offset_coordinator_standalone import OffsetCoordinatorStandAlone
+from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
 
 if TYPE_CHECKING:
     from custom_components.peaqhvac.service.hub.hub import Hub
@@ -15,8 +16,8 @@ from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import Of
 class OffsetFactory:
 
     @staticmethod
-    def create(hub: Hub) -> OffsetCoordinator:
+    def create(hub: Hub, observer: IObserver) -> OffsetCoordinator:
         if hub.peaqev_discovered:
-            return OffsetCoordinatorPeaqEv(hub, None)
-        return OffsetCoordinatorStandAlone(hub, Hoursselection())
+            return OffsetCoordinatorPeaqEv(hub, observer, None)
+        return OffsetCoordinatorStandAlone(hub, observer, Hoursselection())
 
