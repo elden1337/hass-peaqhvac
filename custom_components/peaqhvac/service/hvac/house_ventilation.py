@@ -14,7 +14,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class HouseVentilation:
-    def __init__(self, hvac):
+    def __init__(self, hvac, observer):
+        self.observer = observer
         self._hvac = hvac
         self._wait_timer_boost = WaitTimer(timeout=WAITTIMER_VENT, init_now=False)
         self._current_vent_state: bool = False
@@ -50,7 +51,7 @@ class HouseVentilation:
             if self._latest_seen_fan_speed > self._hvac.fan_speed:
                 """Decreased"""
                 self._current_vent_state = False
-                self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
+                self.observer.broadcast(ObserverTypes.UpdateOperation)
             self._latest_seen_fan_speed = self._hvac.fan_speed
 
     async def async_check_vent_boost(self, caller=None) -> None:
@@ -70,7 +71,7 @@ class HouseVentilation:
             ]) and self.vent_boost:
             _LOGGER.debug(f"recovered dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} > {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
             self.vent_boost = False
-            self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
+            self.observer.broadcast(ObserverTypes.UpdateOperation)
 
     def _vent_boost_warmth(self) -> bool:
         return all(
@@ -111,4 +112,4 @@ class HouseVentilation:
             _LOGGER.debug(msg)
             self._wait_timer_boost.update()
             self.vent_boost = True
-            self._hvac.hub.observer.broadcast(ObserverTypes.UpdateOperation)
+            self.observer.broadcast(ObserverTypes.UpdateOperation)

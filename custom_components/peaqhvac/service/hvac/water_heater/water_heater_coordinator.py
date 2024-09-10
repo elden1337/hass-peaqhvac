@@ -32,8 +32,9 @@ make the signaling less complicated, just calculate the need and check whether h
 
 
 class WaterHeater(IHeater):
-    def __init__(self, hub):
+    def __init__(self, hub, observer):
         super().__init__(hub=hub)
+        self.observer = observer
         self._current_temp = None
         self._is_initialized: bool = False
         self._wait_timer = WaitTimer(timeout=WAITTIMER_TIMEOUT, init_now=False)
@@ -43,8 +44,8 @@ class WaterHeater(IHeater):
         )
         self.model = WaterBoosterModel(self.hub.state_machine)
         self.next = NextWaterBoost()
-        self.hub.observer.add(ObserverTypes.OffsetsChanged, self._update_operation)
-        self.hub.observer.add("water boost done", self.async_reset_water_boost)
+        self.observer.add(ObserverTypes.OffsetsChanged, self._update_operation)
+        self.observer.add("water boost done", self.async_reset_water_boost)
         async_track_time_interval(
             self.hub.state_machine, self.async_update_operation, timedelta(seconds=30)
         )
@@ -95,7 +96,7 @@ class WaterHeater(IHeater):
                 if self.demand.value != old_demand:
                     _LOGGER.debug(
                         f"Water temp changed to {val} which caused demand to change from {old_demand} to {self.demand.value}")
-                self.hub.observer.broadcast(ObserverTypes.WatertempChange)
+                self.observer.broadcast(ObserverTypes.WatertempChange)
                 self._update_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
@@ -201,7 +202,7 @@ class WaterHeater(IHeater):
                         f"Water boost is needed. Target temp is {target} and current temp is {self.current_temperature}. Next start is {next_start}")
                     self.model.water_boost.value = True
                     self.model.latest_boost_call = time.time()
-                    self.hub.observer.broadcast("water boost start", target)
+                    self.observer.broadcast("water boost start", target)
         except Exception as e:
             _LOGGER.warning(f"Could not set water boost: {e}")
 

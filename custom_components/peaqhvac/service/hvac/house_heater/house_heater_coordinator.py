@@ -1,11 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
 from typing import Tuple
-
-from peaqevcore.common.models.observer_types import ObserverTypes
-
 from custom_components.peaqhvac.service.hub.target_temp import adjusted_tolerances
 from custom_components.peaqhvac.service.hvac.house_heater.house_heater_helpers import HouseHeaterHelpers
 from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel

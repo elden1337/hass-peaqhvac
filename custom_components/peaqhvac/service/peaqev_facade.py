@@ -43,9 +43,6 @@ class PeaqevFacade(PeaqevFacadeBase):
         if peaqev_discovered:
             self._peaqevhub = hass.data[PEAQEVDOMAIN]["hub"]
 
-    # def add_callback(self, message, function):
-    #     self._peaqevhub.observer.add(message, function)
-
     @property
     def peaqev_observer(self):
         return self._peaqevhub.observer
@@ -101,7 +98,3 @@ class PeaqevFacade(PeaqevFacadeBase):
             return self._peaqevhub.spotprice.average_month
         except:
             return 0
-
-
-    # def publish_observer_message(self, message: str, *args):
-    #     self._peaqevhub.observer.broadcast(message, *args)

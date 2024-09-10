@@ -50,8 +50,8 @@ class IHvac:
         self._hass = hass
         self._hvac_dm: int = None
         self.house_heater = HouseHeaterCoordinator(hvac=self, hub=hub)
-        self.water_heater = WaterHeater(hub=hub)
-        self.house_ventilation = HouseVentilation(hvac=self)
+        self.water_heater = WaterHeater(hub=hub, observer=observer)
+        self.house_ventilation = HouseVentilation(hvac=self, observer=observer)
 
         self.observer.add(ObserverTypes.OffsetRecalculation, self.update_offset)
         self.observer.add(ObserverTypes.UpdateOperation, self.request_periodic_updates)
