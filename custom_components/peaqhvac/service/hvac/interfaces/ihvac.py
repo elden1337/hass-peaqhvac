@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Tuple
 from peaqevcore.common.models.observer_types import ObserverTypes
 
 from custom_components.peaqhvac.service.hvac.water_heater.cycle_waterboost import async_cycle_waterboost
+from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
 
 if TYPE_CHECKING:
     from custom_components.peaqhvac.service.hub.hub import Hub
@@ -42,18 +43,19 @@ class IHvac:
         HvacOperations.VentBoost: 0,
     }
 
-    def __init__(self, hass: HomeAssistant, hub: Hub):
+    def __init__(self, hass: HomeAssistant, hub: Hub, observer: IObserver):
         self.model = IHvacModel()
         self.hub = hub
+        self.observer = observer
         self._hass = hass
         self._hvac_dm: int = None
         self.house_heater = HouseHeaterCoordinator(hvac=self, hub=hub)
         self.water_heater = WaterHeater(hub=hub)
         self.house_ventilation = HouseVentilation(hvac=self)
 
-        self.hub.observer.add(ObserverTypes.OffsetRecalculation, self.update_offset)
-        self.hub.observer.add(ObserverTypes.UpdateOperation, self.request_periodic_updates)
-        self.hub.observer.add("water boost start", self.async_boost_water)
+        self.observer.add(ObserverTypes.OffsetRecalculation, self.update_offset)
+        self.observer.add(ObserverTypes.UpdateOperation, self.request_periodic_updates)
+        self.observer.add("water boost start", self.async_boost_water)
 
     @property
     @abstractmethod
@@ -137,9 +139,9 @@ class IHvac:
                 self.model.current_offset = new_offset
                 self._force_update = force_update
             if self.model.current_offset != _hvac_offset:
-                self.hub.observer.broadcast(ObserverTypes.OffsetsChanged)
+                self.observer.broadcast(ObserverTypes.OffsetsChanged)
                 if self._force_update:
-                    self.hub.observer.broadcast(ObserverTypes.UpdateOperation)
+                    self.observer.broadcast(ObserverTypes.UpdateOperation)
                 return True
             return False
         except Exception as e:

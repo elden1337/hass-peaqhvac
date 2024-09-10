@@ -13,5 +13,5 @@ class HvacFactory:
     HVACTYPES = {HvacBrand.Nibe: Nibe, HvacBrand.IVT: IVT, HvacBrand.Thermia: Thermia}
 
     @staticmethod
-    def create(hass: HomeAssistant, options: ConfigModel, hub) -> IHvac:
-        return HvacFactory.HVACTYPES[options.hvacbrand](hass=hass, hub=hub)
+    def create(hass: HomeAssistant, options: ConfigModel, hub, observer) -> IHvac:
+        return HvacFactory.HVACTYPES[options.hvacbrand](hass=hass, hub=hub, observer=observer)
