@@ -57,13 +57,13 @@ class HouseVentilation:
     async def async_check_vent_boost(self, caller=None) -> None:
         if self._hvac.hub.sensors.temp_trend_indoors.samples > 0 and time.time() - self._wait_timer_boost.value > WAITTIMER_VENT:
             if self._vent_boost_warmth():
-                self._vent_boost_start("Vent boosting because of warmth.")
+                await self.async_vent_boost_start("Vent boosting because of warmth.")
                 return
-            elif self._vent_boost_night_cooling():
-                self._vent_boost_start("Vent boost night cooling")
+            if self._vent_boost_night_cooling():
+                await self.async_vent_boost_start("Vent boost night cooling")
                 return
-            elif self._vent_boost_low_dm():
-                self._vent_boost_start("Vent boosting because of low degree minutes.")
+            if self._vent_boost_low_dm():
+                await self.async_vent_boost_start("Vent boosting because of low degree minutes.")
                 return
         if any([
             (self._hvac.hvac_dm > self._hvac.hub.options.heating_options.low_degree_minutes + 100 and self._hvac.hub.sensors.average_temp_outdoors.value < self._hvac.hub.options.heating_options.outdoor_temp_stop_heating),
@@ -71,7 +71,7 @@ class HouseVentilation:
             ]) and self.vent_boost:
             _LOGGER.debug(f"recovered dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} > {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
             self.vent_boost = False
-            self.observer.broadcast(ObserverTypes.UpdateOperation)
+            await self.observer.async_broadcast(ObserverTypes.UpdateOperation)
 
     def _vent_boost_warmth(self) -> bool:
         return all(
@@ -107,9 +107,9 @@ class HouseVentilation:
                     ]
                 )
 
-    def _vent_boost_start(self, msg) -> None:
+    async def async_vent_boost_start(self, msg) -> None:
         if not self.vent_boost and self.control_module:
             _LOGGER.debug(msg)
             self._wait_timer_boost.update()
             self.vent_boost = True
-            self.observer.broadcast(ObserverTypes.UpdateOperation)
+            await self.observer.async_broadcast(ObserverTypes.UpdateOperation)

@@ -133,9 +133,8 @@ class IHvac:
             if len(self.hub.sensors.peaqev_facade.offsets.get("today", {})) < 20:
                 return ret
         try:
-            #self.get_offsets()
             _hvac_offset = self.hvac_offset
-            new_offset, force_update = self.house_heater.get_adjusted_offset(self.model.current_offset)
+            new_offset, force_update = await self.house_heater.async_adjusted_offset(self.model.current_offset)
             if new_offset != self.model.current_offset:
                 self.model.current_offset = new_offset
                 self._force_update = force_update
@@ -148,17 +147,6 @@ class IHvac:
             _LOGGER.exception(f"Error in updating offsets: {e}")
         finally:
             return ret
-
-    # def get_offsets(self) -> None:  # todo: make async
-    #     ret = self.hub.offset.get_offset()
-    #     if ret is not None:
-    #         self.model.current_offset_dict = {k: v for k, v in ret.calculated_offsets.items() if
-    #                                           k.date() == datetime.now().date()}
-    #         self.model.current_offset_dict_tomorrow = {k: v for k, v in ret.calculated_offsets.items() if
-    #                                                    k.date() == datetime.now().date() + timedelta(days=1)}
-    #         self.model.current_offset_dict_combined = ret.calculated_offsets
-    #     else:
-    #         _LOGGER.debug("get_offsets returned None where it should not")
 
     @staticmethod
     def _get_sensors_for_callback(types: dict) -> list:

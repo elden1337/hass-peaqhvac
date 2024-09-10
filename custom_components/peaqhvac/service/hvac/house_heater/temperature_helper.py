@@ -12,8 +12,6 @@ def get_tempdiff_inverted(current_offset: int, temp_diff: float, determine_toler
     """get the inverted tolerance in this case"""
     _tolerance = determine_tolerance(diff * -1, current_offset)
     ret = floor(abs(diff) / _tolerance) * -1
-    if abs(diff) > 10: #debug bad offsets
-        _LOGGER.debug(f"Tempdiff is {diff}, tolerance is {_tolerance}, ret is {ret}. Current offset is {current_offset}")
     if diff > 0:
         return ret
     return ret * -1

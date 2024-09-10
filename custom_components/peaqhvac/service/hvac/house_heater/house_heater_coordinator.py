@@ -53,7 +53,7 @@ class HouseHeaterCoordinator(IHeater):
         self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = OFFSET_MIN_VALUE if max_lower else 0
         self.current_adjusted_offset = OFFSET_MIN_VALUE
 
-    def get_adjusted_offset(self, current_offset: int) -> Tuple[int, bool]:
+    async def async_adjusted_offset(self, current_offset: int) -> Tuple[int, bool]:
         force_update: bool = False
 
         outdoor_temp = self.hub.sensors.average_temp_outdoors.value
@@ -66,7 +66,7 @@ class HouseHeaterCoordinator(IHeater):
 
         self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = 0
 
-        offsetdata = self.get_calculated_offsetdata(current_offset)
+        offsetdata = await self.async_calculated_offsetdata(current_offset)
         force_update = self._helpers.temporarily_lower_offset(offsetdata, force_update)
 
         if self.current_adjusted_offset != round(offsetdata.sum_values(), 0):
@@ -93,7 +93,7 @@ class HouseHeaterCoordinator(IHeater):
             tolerances = _min, _max
         return tolerances[0] if (determinator > 0 or determinator is True) else tolerances[1]
 
-    def get_calculated_offsetdata(self, current_offset: int) -> CalculatedOffsetModel:
+    async def async_calculated_offsetdata(self, current_offset: int) -> CalculatedOffsetModel:
         tempdiff = get_tempdiff_inverted(
             current_offset,
             self.hub.sensors.get_tempdiff(),

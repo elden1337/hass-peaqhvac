@@ -23,6 +23,6 @@ async def async_cycle_waterboost(target_temp: float, async_update_system: callab
     await async_update_system(operation=HvacOperations.WaterBoost, set_val=0)
     await asyncio.sleep(180)
     await async_update_system(operation=HvacOperations.WaterBoost, set_val=0)
-    hub.observer.broadcast("water boost done")
+    await hub.observer.async_broadcast("water boost done")
     hub.state_machine.bus.fire("peaqhvac.water_heater_warning", {"new": False})
     return True
