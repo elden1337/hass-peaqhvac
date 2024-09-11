@@ -9,7 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Average(ObserverBroadcaster):
-    def __init__(self, entities: list[str], observer_message: ObserverTypes = None, hub=None):
+    def __init__(self, entities: list[str], observer, observer_message: ObserverTypes = None):
         self.listenerentities = entities
         self._value: float = 0.0
         self._median: float = 0.0
@@ -20,8 +20,7 @@ class Average(ObserverBroadcaster):
         self._initialized_values = 0
         self._total_sensors = len(self.listenerentities)
         self._initialized_sensors = {}
-        self.hub = hub
-        super().__init__(observer_message, hub)
+        super().__init__(observer_message, observer)
 
         for i in self.listenerentities:
             self._values[i] = 999.0

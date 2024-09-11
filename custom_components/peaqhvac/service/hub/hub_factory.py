@@ -15,6 +15,7 @@ import sys
 if 'pytest' not in sys.modules:
     from peaqevcore.common.spotprice.spotprice_factory import SpotPriceFactory
     from peaqevcore.common.models.peaq_system import PeaqSystem
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -36,7 +37,11 @@ class HubFactory:
             test=False,
             is_active=True
         )
-        sensors = HubSensors(hub, options, self.hass)
+        sensors = HubSensors(
+            observer=observer,
+            options=options,
+            hass=self.hass
+                             )
         states = StateChanges(hub, self.hass)
         self.hub = hub
         await self.async_setup(spotprice, sensors, states)
@@ -50,7 +55,7 @@ class HubFactory:
         self.hub.hvac = HvacFactory.create(self.hass, self.hub.options, self.hub, self.hub.observer)
 
         self.hub.prognosis = WeatherPrognosis(self.hass, sensors.average_temp_outdoors, self.hub.observer)
-        self.hub.offset = OffsetFactory.create(self.hub, observer=self.hub.observer)
+        self.hub.offset = OffsetFactory.create(self.hub, self.hub.observer)
 
         await self.async_setup_trackers()
 

@@ -26,15 +26,15 @@ def adjusted_tolerances(offset: int, min_tolerance, max_tolerance) -> Tuple[floa
     return max(_min_tolerance, 0.1), max(_max_tolerance, 0.1)
 
 class TargetTemp(ObserverBroadcaster):
-    def __init__(self, initval=19, observer_message: str = None, hub=None):
-        self.hub = hub
+    def __init__(self, average_temp_outdoors, observer, initval=19, observer_message: str = None):
+        self._average_temp_outdoors_sensor = average_temp_outdoors
         self._value = initval
         self._min_tolerance = None
         self._max_tolerance = None
         self._adjusted_value = 0
         self._preset = HvacPresets.Normal
         self._internal_set_temp = initval
-        super().__init__(observer_message, hub)
+        super().__init__(observer_message, observer)
         self._set_temperature_and_tolerances()
 
     @property
@@ -72,7 +72,7 @@ class TargetTemp(ObserverBroadcaster):
         old_preset = self._preset
         self._preset = HvacPresets.get_type(val)
         if old_preset != self._preset:
-            self.hub.observer.broadcast(ObserverTypes.HvacPresetChanged)
+            self.observer.broadcast(ObserverTypes.HvacPresetChanged)
         self._set_temperature_and_tolerances()
 
     @property
@@ -80,7 +80,7 @@ class TargetTemp(ObserverBroadcaster):
         """adjust the set temp slightly if below -5C outside"""
         _frost_temp = -3 if self.preset is not HvacPresets.Normal else -5
         ret = self.value
-        _outdoors = self.hub.sensors.average_temp_outdoors.value
+        _outdoors = self._average_temp_outdoors_sensor.value
         if _outdoors < _frost_temp:
             ret += round(((int(_outdoors - _frost_temp) / 1.5) * 0.1), 1)
             if ret != self._adjusted_value:
