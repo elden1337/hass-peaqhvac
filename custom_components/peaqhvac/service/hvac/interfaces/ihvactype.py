@@ -185,7 +185,7 @@ class IHvacType:
 
     async def request_periodic_updates(self) -> None:
         await self.async_update_ventilation()
-        if self.hub.hvac.house_heater.control_module:
+        if self.hub.hvac_service.house_heater.control_module:
             await self.async_update_heat()
         await self.async_perform_periodic_updates()
 
@@ -203,7 +203,7 @@ class IHvacType:
                 self.update_list[HvacOperations.Offset] = self.model.current_offset
 
     async def async_boost_water(self, target_temp: float) -> None:
-        if self.hub.hvac.water_heater.control_module:
+        if self.hub.hvac_service.water_heater.control_module:
             _LOGGER.debug(f"init water boost process")
             self.hub.state_machine.async_create_task(
                 async_cycle_waterboost(target_temp, self.async_update_system, self.hub))
@@ -249,7 +249,7 @@ class IHvacType:
                     ]
                 )
             case HvacOperations.Offset:
-                if not self.hub.hvac.house_heater.control_module:
+                if not self.hub.hvac_service.house_heater.control_module:
                     return False
                 if self._force_update:
                     self._force_update = False

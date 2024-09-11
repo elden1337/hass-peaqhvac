@@ -47,4 +47,4 @@ class StateChanges:
             await self._hass.async_add_executor_job(self._hub.prognosis.update_weather_prognosis)
             self.latest_nordpool_update.update()
 
-        await self._hub.hvac.async_update_hvac()
+        await self._hub.hvac_service.async_update_hvac()
