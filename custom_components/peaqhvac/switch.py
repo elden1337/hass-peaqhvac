@@ -54,11 +54,11 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
         if self._switch["name"] == ENABLED:
             return self._hub.sensors.peaqhvac_enabled.value
         if self._switch["name"] == CONTROL_WATER:
-            return self._hub.hvac.water_heater.control_module
+            return self._hub.hvac_service.water_heater.control_module
         if self._switch["name"] == CONTROL_HEAT:
-            return self._hub.hvac.house_heater.control_module
+            return self._hub.hvac_service.house_heater.control_module
         if self._switch["name"] == CONTROL_VENTILATION:
-            return self._hub.hvac.house_ventilation.control_module
+            return self._hub.hvac_service.house_ventilation.control_module
 
     @property
     def state(self) -> str:
@@ -72,32 +72,32 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
         if self._switch["name"] == ENABLED:
             self._hub.sensors.peaqhvac_enabled.value = True
         elif self._switch["name"] == CONTROL_WATER:
-            self._hub.hvac.water_heater.control_module = True
+            self._hub.hvac_service.water_heater.control_module = True
         elif self._switch["name"] == CONTROL_HEAT:
-            self._hub.hvac.house_heater.control_module = True
+            self._hub.hvac_service.house_heater.control_module = True
         elif self._switch["name"] == CONTROL_VENTILATION:
-            self._hub.hvac.house_ventilation.control_module = True
+            self._hub.hvac_service.house_ventilation.control_module = True
 
     def turn_off(self):
         if self._switch["name"] == ENABLED:
             self._hub.sensors.peaqhvac_enabled.value = False
         elif self._switch["name"] == CONTROL_WATER:
-            self._hub.hvac.water_heater.control_module = False
+            self._hub.hvac_service.water_heater.control_module = False
         elif self._switch["name"] == CONTROL_HEAT:
-            self._hub.hvac.house_heater.control_module = False
+            self._hub.hvac_service.house_heater.control_module = False
         elif self._switch["name"] == CONTROL_VENTILATION:
-            self._hub.hvac.house_ventilation.control_module = False
+            self._hub.hvac_service.house_ventilation.control_module = False
 
     def update(self):
         new_state = None
         if self._switch["name"] == ENABLED:
             new_state = self._hub.sensors.peaqhvac_enabled.value
         elif self._switch["name"] == CONTROL_WATER:
-            new_state = self._hub.hvac.water_heater.control_module
+            new_state = self._hub.hvac_service.water_heater.control_module
         elif self._switch["name"] == CONTROL_HEAT:
-            new_state = self._hub.hvac.house_heater.control_module
+            new_state = self._hub.hvac_service.house_heater.control_module
         elif self._switch["name"] == CONTROL_VENTILATION:
-            new_state = self._hub.hvac.house_ventilation.control_module
+            new_state = self._hub.hvac_service.house_ventilation.control_module
         self.state = "on" if new_state is True else "off"
 
     async def async_added_to_hass(self):
@@ -107,10 +107,10 @@ class PeaqSwitch(SwitchEntity, RestoreEntity):
             if self._switch["name"] == ENABLED:
                 self._hub.sensors.peaqhvac_enabled.value = state.state
             elif self._switch["name"] == CONTROL_WATER:
-                self._hub.hvac.water_heater.control_module = state.state
+                self._hub.hvac_service.water_heater.control_module = state.state
             elif self._switch["name"] == CONTROL_HEAT:
-                self._hub.hvac.house_heater.control_module = state.state
+                self._hub.hvac_service.house_heater.control_module = state.state
             elif self._switch["name"] == CONTROL_VENTILATION:
-                self._hub.hvac.house_ventilation.control_module = state.state
+                self._hub.hvac_service.house_ventilation.control_module = state.state
         else:
             self.update()

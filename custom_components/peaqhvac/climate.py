@@ -107,7 +107,7 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
     def hvac_action(self):
         if self._hub.sensors.peaqhvac_enabled.value is False:
             return HVACAction.OFF
-        match self._hub.hvac.hvac_mode:
+        match self._hub.hvac_service.hvac_mode:
             case HvacModeInternal.Heat:
                 return HVACAction.HEATING
             case HvacModeInternal.Idle | HvacModeInternal.Water:

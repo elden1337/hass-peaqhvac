@@ -1,7 +1,7 @@
 import logging
 from typing import Tuple
 
-from custom_components.peaqhvac.service.hvac.interfaces.ihvac import IHvac
+from custom_components.peaqhvac.service.hvac.interfaces.ihvactype import IHvacType
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 from custom_components.peaqhvac.service.models.enums.hvacoperations import \
     HvacOperations
@@ -12,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 NIBE_MAX_THRESHOLD = 10
 NIBE_MIN_THRESHOLD = -10
-class Nibe(IHvac):
+class Nibe(IHvacType):
     domain = "Nibe"
     water_heater_entity = None
 

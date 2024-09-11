@@ -13,7 +13,7 @@ async def async_cycle_waterboost(target_temp: float, async_update_system: callab
     await async_update_system(operation=HvacOperations.WaterBoost, set_val=1)
     while all([
         time.time() < end_time,
-        hub.hvac.water_heater.current_temperature < target_temp
+        hub.hvac_service.water_heater.current_temperature < target_temp
     ]):
         if hub.sensors.peaqev_installed:
             if all([hub.sensors.peaqev_facade.above_stop_threshold, 20 <= datetime.now().minute < 55]):

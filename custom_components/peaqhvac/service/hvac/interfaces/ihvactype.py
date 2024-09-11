@@ -35,7 +35,7 @@ UPDATE_INTERVALS = {
 }
 
 
-class IHvac:
+class IHvacType:
     _force_update: bool = False
     update_list: dict[HvacOperations, any] = {}
     periodic_update_timers: dict = {

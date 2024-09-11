@@ -52,7 +52,7 @@ class HubFactory:
         self.hub.states = states
         self.hub.spotprice = spotprice
 
-        self.hub.hvac = HvacFactory.create(self.hass, self.hub.options, self.hub, self.hub.observer)
+        self.hub.hvac_service = HvacFactory.create(self.hass, self.hub.options, self.hub, self.hub.observer)
 
         self.hub.prognosis = WeatherPrognosis(self.hass, sensors.average_temp_outdoors, self.hub.observer)
         self.hub.offset = OffsetFactory.create(self.hub, self.hub.observer)

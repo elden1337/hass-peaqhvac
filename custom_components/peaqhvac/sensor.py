@@ -55,11 +55,11 @@ async def _gather_sensors(hub, config) -> list:
         },
         {
             "name":                 TRENDSENSOR_WATERTEMP,
-            "sensor":           hub.hvac.water_heater.temp_trend,
+            "sensor":           hub.hvac_service.water_heater.temp_trend,
             "icon":             "mdi:thermometer-water",
             "unit":             "°C/h",
             "extra_attributes": {
-                "time_at_40": (hub.hvac.water_heater.temp_trend.predicted_time_at_value, 40)
+                "time_at_40": (hub.hvac_service.water_heater.temp_trend.predicted_time_at_value, 40)
             }
         }
     ]
