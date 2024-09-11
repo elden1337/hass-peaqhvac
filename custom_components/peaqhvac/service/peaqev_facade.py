@@ -1,12 +1,13 @@
 import logging
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant  # pylint: disable=E0401
 from peaqevcore.common.spotprice.spotpricebase import SpotPriceBase
 from peaqevcore.services.hourselection.initializers.hoursbase import Hours
 
 _LOGGER = logging.getLogger(__name__)
 
 PEAQEVDOMAIN = "peaqev"
+
 
 class PeaqevFacadeBase:
     @property
@@ -34,8 +35,9 @@ class PeaqevFacadeBase:
         return 0
 
     @property
-    def spotprice(self) -> SpotPriceBase |None:
+    def spotprice(self) -> SpotPriceBase | None:
         return None
+
 
 class PeaqevFacade(PeaqevFacadeBase):
     def __init__(self, hass: HomeAssistant, peaqev_discovered: bool):
@@ -48,7 +50,7 @@ class PeaqevFacade(PeaqevFacadeBase):
         return self._peaqevhub.observer
 
     @property
-    def hours(self) -> Hours |None:
+    def hours(self) -> Hours | None:
         return self._peaqevhub.hours
 
     @property
@@ -88,7 +90,7 @@ class PeaqevFacade(PeaqevFacadeBase):
         try:
             start = self._peaqevhub.threshold.start
             current = self.exact_threshold
-            return current < (start)
+            return current < start
         except Exception as e:
             _LOGGER.exception(f"Error on below_start_threshold {e}")
             return False

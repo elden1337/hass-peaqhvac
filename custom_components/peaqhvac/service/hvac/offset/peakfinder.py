@@ -69,8 +69,8 @@ def find_single_valleys(prices: list) -> list[int]:
         else:
             if all(
                     [
-                        prices[idx] < prices[idx - 1],
-                        prices[idx] < prices[idx + 1],
+                        p < prices[idx - 1],
+                        p < prices[idx + 1],
                         min(prices[idx - 1], prices[idx + 1])
                         / max(prices[idx - 1], prices[idx + 1])
                         > 0.8,
@@ -80,22 +80,6 @@ def find_single_valleys(prices: list) -> list[int]:
     return ret
 
 
-# def _find_single_anomalies(adj: list) -> list[int]:
-#     for idx, p in enumerate(adj):
-#         if idx <= 1 or idx >= len(adj) - 1:
-#             pass
-#         else:
-#             if all([adj[idx - 1] == adj[idx + 1], adj[idx - 1] != adj[idx]]):
-#                 _prev = adj[idx - 1]
-#                 _curr = adj[idx]
-#                 diff = max(_prev, _curr) - min(_prev, _curr)
-#                 if int(diff / 2) > 0:
-#                     if _prev > _curr:
-#                         adj[idx] += int(diff / 2)
-#                     else:
-#                         adj[idx] -= int(diff / 2)
-#     return adj
-
 def _find_single_anomalies(adj: dict) -> dict:
     return adj
     # for k, v in adj.items():
@@ -103,7 +87,7 @@ def _find_single_anomalies(adj: dict) -> dict:
 
 
 def _smooth_upwards_transitions(start_list: dict, tolerance):
-    for k, v in start_list.items():
+    for k in start_list.keys():
         if k + timedelta(hours=+1) in start_list.items():
             if start_list[k + timedelta(hours=1)] >= start_list[k] + tolerance:
                 start_list[k] += 1
@@ -119,6 +103,6 @@ def smooth_transitions(vals: dict, tolerance: int) -> dict:
     ret = _find_single_anomalies(vals)
     ret = _smooth_upwards_transitions(ret, tolerance)
 
-    if any([h for h in ret.values() if abs(h) > 10]):
+    if any(h for h in ret.values() if abs(h) > 10):
         _LOGGER.warning("Offset values are out of range", ret, vals)
     return ret
