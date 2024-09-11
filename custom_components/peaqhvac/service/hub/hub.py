@@ -87,7 +87,6 @@ class Hub:
         self.sensors.peaqhvac_enabled.value = False
 
     async def call_set_mode(self, mode):
-        # match towards enum. set hub to that state.
         pass
 
     async def async_get_internal_sensor(self, entity):

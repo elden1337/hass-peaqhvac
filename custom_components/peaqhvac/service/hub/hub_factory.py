@@ -3,6 +3,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_track_state_change_event
 
 from custom_components.peaqhvac import Hub
+from custom_components.peaqhvac.service.hvac.hvacfactory import HvacFactory
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.observer.observer_coordinator import Observer
 from custom_components.peaqhvac.service.hub.hubsensors import HubSensors
