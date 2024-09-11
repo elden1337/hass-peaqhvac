@@ -43,13 +43,11 @@ def get_cache_for_today(dt: date, prices: list) -> CacheDict:
 def update_cache(list_dt: date, prices: List[float], offsets: dict[int, float], now_dt: datetime = datetime.now()):
     global _offsetCache
     if len(prices) < 1 or len(offsets) < 1:
-        """Don't update cache if no data is available"""
         return
 
     data = [h.dt for h in _offsetCache]
 
     if now_dt.date() == list_dt:
-        """This item is regarding today"""
         if list_dt in data:
             for h in _offsetCache:
                 if h.dt == list_dt and not h.today:
@@ -58,20 +56,10 @@ def update_cache(list_dt: date, prices: List[float], offsets: dict[int, float], 
         elif now_dt.date() not in data:
             _offsetCache.append(CacheDict(True, prices, offsets, now_dt.date()))
     else:
-        """This item is regarding tomorrow"""
         if list_dt not in data:
             _offsetCache.append(CacheDict(False, prices, offsets, list_dt))
         else:
             for h in _offsetCache:
                 if h.dt != now_dt:
                     h.today = False
-    """Remove old items"""
     _offsetCache = [h for h in _offsetCache if h.dt >= now_dt.date() - timedelta(days=2)]
-
-# Usage
-# update_cache(now_dt=datetime(2023, 1, 1, 0, 0, 3), list_dt=date(2023, 1, 1), prices=[1], offsets=[1, 2, 3])
-# update_cache(now_dt=datetime(2023, 1, 1, 13, 0, 3), list_dt=date(2023, 1, 2), prices=[2], offsets=[1, 2, 3])
-# update_cache(now_dt=datetime(2023, 1, 2, 0, 0, 3), list_dt=date(2023, 1, 2), prices=[3], offsets=[1, 2, 3])
-#
-# for i in _offsetCache:
-#     print(i)

@@ -48,11 +48,11 @@ class WeatherPrognosis:
 
     def update_weather_prognosis(self):
         if self.is_initialized:
-        #     action: weather.get_forecasts
-        #     target:
-        #     entity_id: weather.hake
-        # data:
-        # type: hourly
+            #     action: weather.get_forecasts
+            #     target:
+            #     entity_id: weather.hake
+            # data:
+            # type: hourly
             try:
                 ret = self._hass.services.call("weather", "get_forecasts", {"type": "hourly"})
             except Exception as e:

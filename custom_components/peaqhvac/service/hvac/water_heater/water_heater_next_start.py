@@ -59,7 +59,6 @@ class NextWaterBoost:
     def get_next_start(self, model: NextStartPostModel) -> NextStartExportModel:
         self.water_limit = 30 if model.hvac_preset == HvacPresets.Away else 40
         self.low_water_limit = self.water_limit - 20
-        
         self.dt = model.dt
         self.min_price = model.min_price
         data = self.get_data(model)
@@ -96,7 +95,7 @@ class NextWaterBoost:
         data = []
         for idx, p in enumerate(model.prices[self.dt.hour:], start=self.dt.hour):
             new_hour = (self.dt + timedelta(hours=idx - self.dt.hour)).replace(minute=50, second=0, microsecond=0)
-            second_hour = (self.dt + timedelta(hours=idx - self.dt.hour + 1))
+            second_hour = self.dt + timedelta(hours=idx - self.dt.hour + 1)
             temp_at_time = self._get_temperature_at_datetime(self.dt, new_hour, model.current_temp, model.temp_trend)
             if new_hour < self.reset_hour(self.dt):
                 continue

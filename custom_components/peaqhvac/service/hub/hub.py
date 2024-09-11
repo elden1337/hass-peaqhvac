@@ -1,10 +1,9 @@
 import logging
 from datetime import datetime
-
-from homeassistant.core import HomeAssistant, callback, Event, EventStateChangedData
-from homeassistant.helpers.event import async_track_state_change_event
 from functools import partial
 from typing import Callable
+
+from homeassistant.core import HomeAssistant, callback, Event, EventStateChangedData # pylint: disable=E0401
 
 from custom_components.peaqhvac.const import LATEST_WATER_BOOST, NEXT_WATER_START
 

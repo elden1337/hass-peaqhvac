@@ -7,9 +7,7 @@ from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.observer.observer_coordinator import Observer
 from custom_components.peaqhvac.service.hub.hubsensors import HubSensors
 from custom_components.peaqhvac.service.hub.state_changes import StateChanges
-from custom_components.peaqhvac.service.hub.weather_prognosis import \
-    WeatherPrognosis
-from custom_components.peaqhvac.service.hvac.hvacfactory import HvacFactory
+from custom_components.peaqhvac.service.hub.weather_prognosis import WeatherPrognosis
 from custom_components.peaqhvac.service.hvac.offset.offset_coordinator_factory import OffsetFactory
 import sys
 if 'pytest' not in sys.modules:

@@ -54,10 +54,8 @@ def get_offset_dict(offset_dict, dt_now) -> dict:
     }
 
 
-def set_offset_dict(prices: list[float], dt: datetime, min_price: float, existing: dict) -> dict:
-    ret = {}
+def set_offset_dict(prices: list[float], dt: datetime, min_price: float) -> dict:
     dt = dt.replace(minute=0, second=0, microsecond=0)
-    dt_date = dt.date()
     all_offsets = _deviation_from_mean(prices, min_price, dt)
     return all_offsets
 

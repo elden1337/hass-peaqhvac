@@ -102,7 +102,7 @@ class OffsetCoordinator:
             #     cache.update_cache(datetime.now().date(), self.prices, today_values)
             #     cache.update_cache((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow, tomorrow_values)
 
-            all_values = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price,{})
+            all_values = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price)
             _LOGGER.debug("all_values", all_values, self.prices, self.prices_tomorrow, self.min_price)
             offsets_per_day = self._calculate_offset_per_day(all_values, weather_adjusted_today)
             tolerance = self.model.tolerance if self.model.tolerance is not None else 3

@@ -3,14 +3,14 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Optional
-import homeassistant.helpers.config_validation as cv
+import homeassistant.helpers.config_validation as cv # pylint: disable=E0401
 import voluptuous as vol
-from homeassistant import config_entries
-from homeassistant.core import callback
+from homeassistant import config_entries # pylint: disable=E0401
+from homeassistant.core import callback  # pylint: disable=E0401
 
 from custom_components.peaqhvac.configflow.config_flow_schemas import USER_SCHEMA, OPTIONAL_SCHEMA
 from custom_components.peaqhvac.configflow.config_flow_validation import ConfigFlowValidation
-from .const import DOMAIN  # pylint:disable=unused-import
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 

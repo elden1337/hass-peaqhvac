@@ -1,9 +1,9 @@
 import logging
 from datetime import timedelta
 
-from homeassistant.components.switch import SwitchEntity
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.components.switch import SwitchEntity # pylint: disable=E0401
+from homeassistant.core import HomeAssistant # pylint: disable=E0401
+from homeassistant.helpers.restore_state import RestoreEntity # pylint: disable=E0401
 
 from .const import DOMAIN
 

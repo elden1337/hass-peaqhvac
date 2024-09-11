@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from peaqevcore.common.wait_timer import WaitTimer
-
 import logging
 from abc import ABC, abstractmethod
+from peaqevcore.common.wait_timer import WaitTimer
 from peaqevcore.models.hub.hubmember import HubMember
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 

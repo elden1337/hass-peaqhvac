@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 from abc import abstractmethod
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import TYPE_CHECKING, Tuple
 
 from peaqevcore.common.models.observer_types import ObserverTypes

@@ -49,7 +49,8 @@ class Nibe(IHvacType):
         try:
             speed = self.get_sensor(SensorType.FanSpeed)
             return float(self._handle_sensor(speed))
-        except Exception as e:
+        except TypeError as e:
+            _LOGGER.debug(f"Unable to get fan speed: {e}")
             return 0
 
     @property
@@ -58,7 +59,7 @@ class Nibe(IHvacType):
             temp = self.get_sensor(SensorType.HvacTemp)
             returntemp = self.get_sensor(SensorType.HotWaterReturn)
             return round(float(self._handle_sensor(temp)) - float(self._handle_sensor(returntemp)),2,)
-        except Exception as e:
+        except TypeError as e:
             _LOGGER.debug(f"Unable to calculate delta return: {e}")
             return 0
 
@@ -144,7 +145,7 @@ class Nibe(IHvacType):
     @staticmethod
     def _cap_nibe_offset_value(val: int) -> int:
         """Nibe only supports offsets between -10 and 10"""
-        _LOGGER.debug("Capping nibe offset value", val)
+        _LOGGER.debug(f"Capping nibe offset value: {val}")
         if abs(val) <= NIBE_MAX_THRESHOLD:
             return val
         return NIBE_MAX_THRESHOLD if val > NIBE_MAX_THRESHOLD else NIBE_MIN_THRESHOLD

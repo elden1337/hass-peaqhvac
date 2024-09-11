@@ -2,8 +2,8 @@
 import logging
 from datetime import timedelta
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry # pylint: disable=E0401
+from homeassistant.core import HomeAssistant # pylint: disable=E0401
 
 from .const import AVERAGESENSORS, DEMANDSENSORS, DOMAIN, NEXT_WATER_START, LATEST_WATER_BOOST, \
     TRENDSENSOR_DM, TRENDSENSOR_OUTDOORS, TRENDSENSOR_INDOORS, TRENDSENSOR_WATERTEMP
