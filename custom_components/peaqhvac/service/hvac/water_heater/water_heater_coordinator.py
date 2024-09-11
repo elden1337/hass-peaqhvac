@@ -1,27 +1,30 @@
 from __future__ import annotations
+import logging
+import time
+from datetime import datetime, timedelta
+from peaqevcore.common.wait_timer import WaitTimer
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from custom_components.peaqhvac.service.hub import Hub
-import logging
-import time
-from datetime import datetime, timedelta
 
 from peaqevcore.common.models.observer_types import ObserverTypes
 from peaqevcore.common.trend import Gradient
 
-from custom_components.peaqhvac.service.hvac.const import DEFAULT_WATER_BOOST
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
-from peaqevcore.common.wait_timer import WaitTimer
-from custom_components.peaqhvac.service.hvac.water_heater.const import *
-from custom_components.peaqhvac.service.hvac.water_heater.water_heater_next_start import NextWaterBoost, \
+from custom_components.peaqhvac.service.hvac.water_heater.const import (
+    WAITTIMER_TIMEOUT,
+    HIGHTEMP_THRESHOLD,
+    LOWTEMP_THRESHOLD
+)
+from custom_components.peaqhvac.service.hvac.water_heater.water_heater_next_start import (
+    NextWaterBoost,
     NextStartPostModel
+)
 from custom_components.peaqhvac.service.models.enums.demand import Demand
-from custom_components.peaqhvac.service.models.enums.hvac_presets import \
-    HvacPresets
+from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 from homeassistant.helpers.event import async_track_time_interval
-from custom_components.peaqhvac.service.hvac.water_heater.models.waterbooster_model import \
-    WaterBoosterModel
+from custom_components.peaqhvac.service.hvac.water_heater.models.waterbooster_model import WaterBoosterModel
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,6 +78,7 @@ class WaterHeater(IHeater):
             struct_time = time.strptime(strtime, "%Y-%m-%d %H:%M")
             new = time.mktime(struct_time)
         except ValueError as e:
+            _LOGGER.error(f"Could not import latest_boost_call: {e}")
             new = 0
         current = self.model.latest_boost_call
         self.model.latest_boost_call = max(new, current)
@@ -92,14 +96,14 @@ class WaterHeater(IHeater):
             if self._current_temp != floatval:
                 self._current_temp = floatval
                 old_demand = self.demand.value
-                self.demand = self._current_temp
+                self._update_demand()
                 if self.demand.value != old_demand:
                     _LOGGER.debug(
                         f"Water temp changed to {val} which caused demand to change from {old_demand} to {self.demand.value}")
                 self.observer.broadcast(ObserverTypes.WatertempChange)
                 self._update_operation()
-        except ValueError as E:
-            _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
+        except ValueError as e:
+            _LOGGER.warning(f"unable to set {val} as watertemperature. {e}")
             self.model.water_boost.value = False
 
     def _check_and_add_trend_reading(self, val):
@@ -116,8 +120,7 @@ class WaterHeater(IHeater):
     def demand(self) -> Demand:
         return self._demand
 
-    @demand.setter
-    def demand(self, temp):
+    def _update_demand(self):
         self._demand = self._get_demand()
 
     def _get_demand(self):
@@ -191,8 +194,7 @@ class WaterHeater(IHeater):
             if target_temp:
                 self.__set_toggle_boost_next_start(self.model.next_water_heater_start, target_temp)
         except Exception as e:
-            _LOGGER.error(
-                f"Could not check water-state: {e}")
+            _LOGGER.error(f"Could not check water-state: {e}")
 
     def __set_toggle_boost_next_start(self, next_start: datetime, target: float = None) -> None:
         try:

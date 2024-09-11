@@ -33,7 +33,8 @@ class OffsetCoordinatorPeaqEv(OffsetCoordinator):
     def min_price(self) -> float:
         try:
             return self._hub.sensors.peaqev_facade.min_price
-        except:
+        except Exception as e:
+            _LOGGER.error(f"Error in min_price: {e}")
             return 0
 
     async def async_update_prices(self, prices) -> None:

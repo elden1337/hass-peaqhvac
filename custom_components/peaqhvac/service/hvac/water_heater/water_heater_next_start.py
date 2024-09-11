@@ -1,22 +1,17 @@
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
+from statistics import mean
+from dataclasses import dataclass
 
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
-
 
 
 _LOGGER = logging.getLogger(__name__)
 
 REQUIRED_DEMAND_DELAY = 6
 
-#--------------------------------
 
-from datetime import datetime, timedelta
-from statistics import mean
-from dataclasses import dataclass
-
-
-@dataclass
+@dataclass  # pylint: disable=too-many-instance-attributes
 class PriceData:
     price: float
     price_spread: float
@@ -28,7 +23,7 @@ class PriceData:
     target_temp: int
 
 
-@dataclass
+@dataclass  # pylint: disable=too-many-instance-attributes
 class NextStartPostModel:
     prices: list
     demand_hours: list
@@ -43,6 +38,7 @@ class NextStartPostModel:
     def __post_init__(self):
         self.temp_trend = -0.5 if -0.5 < self.temp_trend < 0.1 else self.temp_trend
 
+
 @dataclass
 class NextStartExportModel:
     next_start: datetime
@@ -52,6 +48,7 @@ class NextStartExportModel:
 TARGET_TEMP = 47
 MAX_TARGET_TEMP = 53
 
+
 class NextWaterBoost:
     def __init__(self):
         self.water_limit: float = 40
@@ -59,14 +56,12 @@ class NextWaterBoost:
         self.min_price: float = 0
         self.dt: datetime = datetime.now()
 
-
     def get_next_start(self, model: NextStartPostModel) -> NextStartExportModel:
         self.water_limit = 30 if model.hvac_preset == HvacPresets.Away else 40
         self.low_water_limit = self.water_limit - 20
         
         self.dt = model.dt
         self.min_price = model.min_price
-
         data = self.get_data(model)
         selected = self.get_selected(data)
         if selected is None:
@@ -74,12 +69,12 @@ class NextWaterBoost:
         filtered = self.get_filtered(data, selected)
         selected = self.get_final_selected(filtered, selected)
         return NextStartExportModel(selected.time, selected.target_temp)
-   
-    def _calculate_target_temp_for_hour(self, temp_at_time: float, is_demand: bool, price: float, price_spread:float, min_price:float) -> int:
+
+    @staticmethod
+    def _calculate_target_temp_for_hour(temp_at_time: float, is_demand: bool, price: float, price_spread:float, min_price:float) -> int:
         target = TARGET_TEMP if price > min_price else MAX_TARGET_TEMP
         if int(target - temp_at_time) <= 0:
             return target
-
         add_temp = 0
         if price_spread < 0.5:
             add_temp = 20
@@ -87,15 +82,15 @@ class NextWaterBoost:
             add_temp = 15
         elif price_spread < 1:
             add_temp = 10
-
         if is_demand:
             add_temp += 10
 
         return min(int(temp_at_time+add_temp), target)
 
-    def _get_temperature_at_datetime(self, now_dt, target_dt, current_temp, temp_trend) -> float:
+    @staticmethod
+    def _get_temperature_at_datetime(now_dt, target_dt, current_temp, temp_trend) -> float:
         delay = (target_dt - now_dt).total_seconds() / 3600
-        return max(10,round(current_temp + (delay * temp_trend), 1))
+        return max(10, round(current_temp + (delay * temp_trend), 1))
 
     def _add_data_list(self, model: NextStartPostModel) -> list:
         data = []
