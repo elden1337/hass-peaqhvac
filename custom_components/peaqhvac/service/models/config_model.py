@@ -15,6 +15,7 @@ _LOGGER = logging.getLogger(__name__)
 @dataclass
 class MiscOptions:
     enabled_on_boot: bool = True
+    peaqev_discovered: bool = False
 
 
 @dataclass
@@ -34,7 +35,7 @@ class ConfigModel:
     hvacbrand: HvacBrand = field(init=False)
     systemid: str = field(init=False)
     _hvac_tolerance: int = None
-    hub = None
+    observer = None
 
     @property
     def hvac_tolerance(self) -> int:
@@ -44,8 +45,8 @@ class ConfigModel:
     def hvac_tolerance(self, val) -> None:
         if self._hvac_tolerance != val:
             self._hvac_tolerance = val
-            if self.hub is not None:
-                self.hub.observer.broadcast(ObserverTypes.HvacToleranceChanged)
+            if self.observer is not None:
+                self.observer.broadcast(ObserverTypes.HvacToleranceChanged)
             else:
                 _LOGGER.warning(
                     "tried to broadcast an update from hvac-tolerance but referenced hub was None."

@@ -17,7 +17,7 @@ class OffsetFactory:
 
     @staticmethod
     def create(hub: Hub, observer: IObserver) -> OffsetCoordinator:
-        if hub.peaqev_discovered:
+        if hub.options.misc_options.peaqev_discovered:
             return OffsetCoordinatorPeaqEv(hub, observer, None)
         return OffsetCoordinatorStandAlone(hub, observer, Hoursselection())
 

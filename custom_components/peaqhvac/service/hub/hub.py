@@ -15,6 +15,7 @@ from custom_components.peaqhvac.service.hvac.hvacfactory import HvacFactory
 from custom_components.peaqhvac.service.hvac.offset.offset_coordinator_factory import OffsetFactory
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.models.offsets_exportmodel import OffsetsExportModel
+from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
 from custom_components.peaqhvac.service.observer.observer_coordinator import Observer
 from custom_components.peaqhvac.extensionmethods import async_iscoroutine
 import sys
@@ -29,20 +30,25 @@ class Hub:
     hub_id = 1338
     hubname = "PeaqHvac"
 
-    def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
+    def __init__(self, hass: HomeAssistant, observer: IObserver, hub_options: ConfigModel):
         self._is_initialized = False
         self.state_machine = hass
-        self.observer = Observer(self) #todo: move to creation factory
+        self.observer = observer
         self.options = hub_options
-        self.peaqev_discovered: bool = self.get_peaqev()
-        self.sensors = HubSensors(self, hub_options, hass, self.peaqev_discovered)
+
+        self.sensors = HubSensors(self, hub_options, hass, self.options.misc_options.peaqev_discovered)
         self.states = StateChanges(self, hass)
         self.hvac = HvacFactory.create(hass, self.options, self, self.observer)
-        self.spotprice = SpotPriceFactory.create(hub=self, observer=self.observer, system=PeaqSystem.PeaqHvac, test=False, is_active=True)
+        self.spotprice = SpotPriceFactory.create(
+            hub=self,
+            observer=self.observer,
+            system=PeaqSystem.PeaqHvac,
+            test=False,
+            is_active=True
+        )
 
         self.prognosis = WeatherPrognosis(hass, self.sensors.average_temp_outdoors, self.observer)
         self.offset = OffsetFactory.create(self, observer=self.observer)
-        self.options.hub = self
 
     async def async_setup(self) -> None:
         await self.async_setup_trackers()
@@ -89,24 +95,24 @@ class Hub:
             except Exception as e:
                 _LOGGER.exception(f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}")
 
-    def get_peaqev(self):
-        try:
-            ret = self.state_machine.states.get("sensor.peaqev_threshold")
-            if ret is not None:
-                if ret.state:
-                    _LOGGER.debug(
-                        "Discovered Peaqev-entities, will adhere to peak-shaving."
-                    )
-                    return True
-            _LOGGER.debug(
-                "Unable to discover Peaqev-entities, will not adhere to peak-shaving."
-            )
-            return False
-        except:
-            _LOGGER.debug(
-                "Unable to discover Peaqev-entities, will not adhere to peak-shaving."
-            )
-            return False
+    # def get_peaqev(self):
+    #     try:
+    #         ret = self.state_machine.states.get("sensor.peaqev_threshold")
+    #         if ret is not None:
+    #             if ret.state:
+    #                 _LOGGER.debug(
+    #                     "Discovered Peaqev-entities, will adhere to peak-shaving."
+    #                 )
+    #                 return True
+    #         _LOGGER.debug(
+    #             "Unable to discover Peaqev-entities, will not adhere to peak-shaving."
+    #         )
+    #         return False
+    #     except:
+    #         _LOGGER.debug(
+    #             "Unable to discover Peaqev-entities, will not adhere to peak-shaving."
+    #         )
+    #         return False
 
     async def call_enable_peaq(self):
         self.sensors.peaqhvac_enabled.value = True

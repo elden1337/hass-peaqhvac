@@ -85,7 +85,7 @@ async def _gather_sensors(hub, config) -> list:
     ret.append(PeaqSimpleSensor(hub, config.entry_id, "next water start", NEXT_WATER_START, "mdi:clock-start"))
     ret.append(PeaqSimpleSensor(hub, config.entry_id, "latest water boost", LATEST_WATER_BOOST, "mdi:clock-end"))
 
-    if not hub.peaqev_discovered:
+    if not hub.options.misc_options.peaqev_discovered:
         simplesensors = [("Average price this month", "average_month"),
                          ("Average price 7 days", "average_weekly"),
                          ("Average price 30 days", "average_30"),
