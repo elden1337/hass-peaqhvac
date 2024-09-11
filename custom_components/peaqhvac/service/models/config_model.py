@@ -4,10 +4,12 @@ from typing import List
 
 from peaqevcore.common.models.observer_types import ObserverTypes
 
-from custom_components.peaqhvac.const import (HVACBRAND_IVT, HVACBRAND_NIBE,
-                                              HVACBRAND_THERMIA)
-from custom_components.peaqhvac.service.models.enums.hvacbrands import \
-    HvacBrand
+from custom_components.peaqhvac.const import (
+    HVACBRAND_IVT,
+    HVACBRAND_NIBE,
+    HVACBRAND_THERMIA,
+)
+from custom_components.peaqhvac.service.models.enums.hvacbrands import HvacBrand
 
 _LOGGER = logging.getLogger(__name__)
 

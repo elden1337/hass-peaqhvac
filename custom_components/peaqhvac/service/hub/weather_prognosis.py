@@ -7,10 +7,10 @@ from typing import Tuple
 import homeassistant.helpers.template as template
 from peaqevcore.common.models.observer_types import ObserverTypes
 
-from custom_components.peaqhvac.service.models.prognosis_export_model import \
-    PrognosisExportModel
-from custom_components.peaqhvac.service.models.weather_object import \
-    WeatherObject
+from custom_components.peaqhvac.service.models.prognosis_export_model import (
+    PrognosisExportModel,
+)
+from custom_components.peaqhvac.service.models.weather_object import WeatherObject
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,9 +38,7 @@ class WeatherPrognosis:
         self.update_weather_prognosis()
         if len(self._hvac_prognosis_list) == 0:
             try:
-                return self.get_hvac_prognosis(
-                    self.average_temp_outdoors.value
-                )
+                return self.get_hvac_prognosis(self.average_temp_outdoors.value)
             except Exception as e:
                 _LOGGER.warning(f"Could not get hvac-prognosis: {e}")
                 return []
@@ -54,11 +52,13 @@ class WeatherPrognosis:
             # data:
             # type: hourly
             try:
-                ret = self._hass.services.call("weather", "get_forecasts", {"type": "hourly"})
+                ret = self._hass.services.call(
+                    "weather", "get_forecasts", {"type": "hourly"}
+                )
             except Exception as e:
                 _LOGGER.error(f"Could not get weather-prognosis: {e}")
                 return
-        #ret = self._hass.states.get(self.entity)
+            # ret = self._hass.states.get(self.entity)
             if ret is not None:
                 try:
                     ret_attr = list(ret.attributes.get("forecast"))
@@ -73,10 +73,18 @@ class WeatherPrognosis:
             else:
                 _LOGGER.error("could not get weather-prognosis.")
 
-    def get_weatherprognosis_adjustment(self, offsets:dict[datetime, int]) -> dict:
+    def get_weatherprognosis_adjustment(self, offsets: dict[datetime, int]) -> dict:
         self.update_weather_prognosis()
-        ret = {k:v for k,v in offsets.items() if k.date == datetime.now().date()+timedelta(days=1)}
-        rr = {k:self._get_weatherprognosis_hourly_adjustment(k.hour, v) for k,v in offsets.items() if k.date == datetime.now().date()}
+        ret = {
+            k: v
+            for k, v in offsets.items()
+            if k.date == datetime.now().date() + timedelta(days=1)
+        }
+        rr = {
+            k: self._get_weatherprognosis_hourly_adjustment(k.hour, v)
+            for k, v in offsets.items()
+            if k.date == datetime.now().date()
+        }
         ret.update(rr)
         return ret
         # for hour, offset in offsets[0].items():
@@ -95,9 +103,7 @@ class WeatherPrognosis:
         corrected_temp_delta = 0
         now = datetime.now().replace(minute=0, second=0, microsecond=0)
 
-        valid_progs = [
-            p for idx, p in enumerate(self.prognosis_list) if p.DT >= now
-        ]
+        valid_progs = [p for idx, p in enumerate(self.prognosis_list) if p.DT >= now]
         if len(valid_progs) == 0:
             return ret
         for p in valid_progs:
@@ -112,10 +118,12 @@ class WeatherPrognosis:
             hour_prognosis = PrognosisExportModel(
                 prognosis_temp=p.Temperature,
                 corrected_temp=temp,
-                windchill_temp=self._correct_temperature_for_windchill(temp, p.Wind_Speed),
+                windchill_temp=self._correct_temperature_for_windchill(
+                    temp, p.Wind_Speed
+                ),
                 DT=p.DT,
                 TimeDelta=hourdiff,
-                _base_temp = self._current_temperature
+                _base_temp=self._current_temperature,
             )
             ret.append(hour_prognosis)
 
@@ -140,8 +148,17 @@ class WeatherPrognosis:
         if _next_prognosis is not None and int(hour) >= now.hour:
             divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
             adjustment_divisor = 2.5 if _next_prognosis.windchill_temp > -2 else 2
-            adj = (int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1)
-            #if 14 < hour < 19:
+            adj = (
+                int(
+                    round(
+                        (_next_prognosis.delta_temp_from_now / adjustment_divisor)
+                        * divisor,
+                        0,
+                    )
+                )
+                * -1
+            )
+            # if 14 < hour < 19:
             #    print(f"for {hour} the initial was {offset}, adjustment: {adj}, divisor:{divisor}, timedelta:{_next_prognosis.TimeDelta}, windchill:{_next_prognosis.windchill_temp}, deltatemp:{_next_prognosis.delta_temp_from_now}")
             ret = offset + adj
         return ret
@@ -182,7 +199,9 @@ class WeatherPrognosis:
                 return p
         return None
 
-    def _setup_weather_prognosis(self): #todo: this must be handled with weeather servicecall.
+    def _setup_weather_prognosis(
+        self,
+    ):  # todo: this must be handled with weeather servicecall.
         pass
         # try:
         #     entities = template.integration_entities(self._hass, "met")

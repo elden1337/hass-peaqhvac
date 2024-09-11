@@ -1,12 +1,22 @@
 """Platform for sensor integration."""
+
 import logging
 from datetime import timedelta
 
-from homeassistant.config_entries import ConfigEntry # pylint: disable=E0401
-from homeassistant.core import HomeAssistant # pylint: disable=E0401
+from homeassistant.config_entries import ConfigEntry  # pylint: disable=E0401
+from homeassistant.core import HomeAssistant  # pylint: disable=E0401
 
-from .const import AVERAGESENSORS, DEMANDSENSORS, DOMAIN, NEXT_WATER_START, LATEST_WATER_BOOST, \
-    TRENDSENSOR_DM, TRENDSENSOR_OUTDOORS, TRENDSENSOR_INDOORS, TRENDSENSOR_WATERTEMP
+from .const import (
+    AVERAGESENSORS,
+    DEMANDSENSORS,
+    DOMAIN,
+    NEXT_WATER_START,
+    LATEST_WATER_BOOST,
+    TRENDSENSOR_DM,
+    TRENDSENSOR_OUTDOORS,
+    TRENDSENSOR_INDOORS,
+    TRENDSENSOR_WATERTEMP,
+)
 from .sensors.min_maxsensor import AverageSensor
 from .sensors.money_data_sensor import PeaqMoneyDataSensor
 from .sensors.offsetsensor import OffsetSensor
@@ -33,35 +43,38 @@ async def async_setup_entry(
 async def _gather_sensors(hub, config) -> list:
     TRENDSENSORS = [
         {
-            "name":   TRENDSENSOR_INDOORS,
+            "name": TRENDSENSOR_INDOORS,
             "sensor": hub.sensors.temp_trend_indoors,
-            "icon":   "mdi:home-thermometer",
-            "unit":   "°C/h",
+            "icon": "mdi:home-thermometer",
+            "unit": "°C/h",
         },
         {
-            "name":   TRENDSENSOR_OUTDOORS,
+            "name": TRENDSENSOR_OUTDOORS,
             "sensor": hub.sensors.temp_trend_outdoors,
-            "icon":   "mdi:sun-thermometer",
-            "unit":   "°C/h",
+            "icon": "mdi:sun-thermometer",
+            "unit": "°C/h",
         },
         {
-            "name":   TRENDSENSOR_DM,
+            "name": TRENDSENSOR_DM,
             "sensor": hub.sensors.dm_trend,
-            "icon":   "mdi:hvac",
-            "unit":   "DM/h",
+            "icon": "mdi:hvac",
+            "unit": "DM/h",
             "extra_attributes": {
                 "time_at_zero": (hub.sensors.dm_trend.predicted_time_at_value, 0)
-            }
+            },
         },
         {
-            "name":                 TRENDSENSOR_WATERTEMP,
-            "sensor":           hub.hvac_service.water_heater.temp_trend,
-            "icon":             "mdi:thermometer-water",
-            "unit":             "°C/h",
+            "name": TRENDSENSOR_WATERTEMP,
+            "sensor": hub.hvac_service.water_heater.temp_trend,
+            "icon": "mdi:thermometer-water",
+            "unit": "°C/h",
             "extra_attributes": {
-                "time_at_40": (hub.hvac_service.water_heater.temp_trend.predicted_time_at_value, 40)
-            }
-        }
+                "time_at_40": (
+                    hub.hvac_service.water_heater.temp_trend.predicted_time_at_value,
+                    40,
+                )
+            },
+        },
     ]
 
     ret = []
@@ -70,32 +83,49 @@ async def _gather_sensors(hub, config) -> list:
     for a in AVERAGESENSORS:
         ret.append(AverageSensor(hub, config.entry_id, a))
     for sensor in TRENDSENSORS:
-        ret.append(TrendSensor(
-            hub=hub,
-            entry_id=config.entry_id,
-            name=sensor["name"],
-            icon=sensor["icon"],
-            unit_of_measurement=sensor["unit"],
-            sensor=sensor["sensor"],
-            extra_attributes=sensor.get("extra_attributes", {})
-))
+        ret.append(
+            TrendSensor(
+                hub=hub,
+                entry_id=config.entry_id,
+                name=sensor["name"],
+                icon=sensor["icon"],
+                unit_of_measurement=sensor["unit"],
+                sensor=sensor["sensor"],
+                extra_attributes=sensor.get("extra_attributes", {}),
+            )
+        )
     for key in DEMANDSENSORS:
         ret.append(PeaqSensor(hub, config.entry_id, key, DEMANDSENSORS[key]))
 
-    ret.append(PeaqSimpleSensor(hub, config.entry_id, "next water start", NEXT_WATER_START, "mdi:clock-start"))
-    ret.append(PeaqSimpleSensor(hub, config.entry_id, "latest water boost", LATEST_WATER_BOOST, "mdi:clock-end"))
+    ret.append(
+        PeaqSimpleSensor(
+            hub,
+            config.entry_id,
+            "next water start",
+            NEXT_WATER_START,
+            "mdi:clock-start",
+        )
+    )
+    ret.append(
+        PeaqSimpleSensor(
+            hub,
+            config.entry_id,
+            "latest water boost",
+            LATEST_WATER_BOOST,
+            "mdi:clock-end",
+        )
+    )
 
     if not hub.options.misc_options.peaqev_discovered:
-        simplesensors = [("Average price this month", "average_month"),
-                         ("Average price 7 days", "average_weekly"),
-                         ("Average price 30 days", "average_30"),
-                         ("Average price 3 days", "average_three_days")]
+        simplesensors = [
+            ("Average price this month", "average_month"),
+            ("Average price 7 days", "average_weekly"),
+            ("Average price 30 days", "average_30"),
+            ("Average price 3 days", "average_three_days"),
+        ]
 
         for name, attr in simplesensors:
-            ret.append(
-                PeaqSimpleMoneySensor(
-                    hub, config.entry_id, name, attr)
-            )
+            ret.append(PeaqSimpleMoneySensor(hub, config.entry_id, name, attr))
             _LOGGER.debug(f"Setting up sensor for {name} with attr {attr}")
 
         ret.append(PeaqMoneyDataSensor(hub, config.entry_id))

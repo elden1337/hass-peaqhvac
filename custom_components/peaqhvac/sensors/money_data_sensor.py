@@ -5,7 +5,10 @@ import logging
 
 from custom_components.peaqhvac import DOMAIN
 from custom_components.peaqhvac.extensionmethods import nametoid
-from custom_components.peaqhvac.sensors.const import MONEYCONTROLS, AVERAGE_SPOTPRICE_DATA
+from custom_components.peaqhvac.sensors.const import (
+    MONEYCONTROLS,
+    AVERAGE_SPOTPRICE_DATA,
+)
 
 if TYPE_CHECKING:
     from custom_components.peaqhvac.service.hub.hub import Hub
@@ -21,7 +24,7 @@ class PeaqMoneyDataSensor(SensorEntity, RestoreEntity):
 
     def __init__(self, hub: Hub, entry_id):
         name = f"{hub.hubname} {AVERAGE_SPOTPRICE_DATA}"
-        #super().__init__(hub, name, entry_id)
+        # super().__init__(hub, name, entry_id)
 
         self.hub = hub
         self._entry_id = entry_id
@@ -43,7 +46,9 @@ class PeaqMoneyDataSensor(SensorEntity, RestoreEntity):
                 self._state = "on"
                 if ret != self._average_spotprice_data:
                     _diff = self.diff_dicts(self._average_spotprice_data, ret)
-                    _LOGGER.debug(f"dict was changed: added: {_diff[0]}, removed: {_diff[1]}")
+                    _LOGGER.debug(
+                        f"dict was changed: added: {_diff[0]}, removed: {_diff[1]}"
+                    )
                 self._average_spotprice_data = ret
                 self.hub.spotprice.converted_average_data = True
 
@@ -64,7 +69,7 @@ class PeaqMoneyDataSensor(SensorEntity, RestoreEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        attr_dict = {"Spotprice average data":   self._average_spotprice_data }
+        attr_dict = {"Spotprice average data": self._average_spotprice_data}
         return attr_dict
 
     async def async_added_to_hass(self):
@@ -81,9 +86,9 @@ class PeaqMoneyDataSensor(SensorEntity, RestoreEntity):
     @property
     def device_info(self):
         return {
-            "identifiers":  {(DOMAIN, self.hub.hub_id, MONEYCONTROLS)},
-            "name":         f"{DOMAIN} {MONEYCONTROLS}",
-            "sw_version":   1,
+            "identifiers": {(DOMAIN, self.hub.hub_id, MONEYCONTROLS)},
+            "name": f"{DOMAIN} {MONEYCONTROLS}",
+            "sw_version": 1,
             "manufacturer": "Peaq systems",
         }
 

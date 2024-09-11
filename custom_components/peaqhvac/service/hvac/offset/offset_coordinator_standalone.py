@@ -5,11 +5,14 @@ import logging
 from peaqevcore.common.models.observer_types import ObserverTypes
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
 
-from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import OffsetCoordinator
+from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import (
+    OffsetCoordinator,
+)
 from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
 
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class OffsetCoordinatorStandAlone(OffsetCoordinator):
     """The class that provides the offsets for the hvac with peaqev installed"""
@@ -34,6 +37,8 @@ class OffsetCoordinatorStandAlone(OffsetCoordinator):
 
     async def async_update_prices(self, prices) -> None:
         await self.hours.async_update_prices(prices[0], prices[1])
-        _LOGGER.debug(f"Updated prices to {self.hours.prices, self.hours.prices_tomorrow}")
+        _LOGGER.debug(
+            f"Updated prices to {self.hours.prices, self.hours.prices_tomorrow}"
+        )
         self._set_offset()
         self._update_model()

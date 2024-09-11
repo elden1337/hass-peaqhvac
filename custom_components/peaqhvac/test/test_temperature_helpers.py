@@ -1,21 +1,31 @@
 import pytest
 
 from ..service.hub.target_temp import adjusted_tolerances
-from ..service.hvac.house_heater.temperature_helper import get_temp_extremas, get_tempdiff_inverted
+from ..service.hvac.house_heater.temperature_helper import (
+    get_temp_extremas,
+    get_tempdiff_inverted,
+)
 
 MINTOLERANCE = 0.2
 MAXTOLERANCE = 0.5
 
-def _current_tolerances(determinator: bool, current_offset: int, adjust_tolerances: bool = True) -> float:
+
+def _current_tolerances(
+    determinator: bool, current_offset: int, adjust_tolerances: bool = True
+) -> float:
     if adjust_tolerances:
-        tolerances= adjusted_tolerances(current_offset, MINTOLERANCE, MAXTOLERANCE)
+        tolerances = adjusted_tolerances(current_offset, MINTOLERANCE, MAXTOLERANCE)
     else:
         tolerances = MINTOLERANCE, MAXTOLERANCE
-    return tolerances[0] if (determinator > 0 or determinator is True) else tolerances[1]
+    return (
+        tolerances[0] if (determinator > 0 or determinator is True) else tolerances[1]
+    )
+
 
 def test_temp_extremas_one_positive():
     ter = get_temp_extremas(0, [0, 0, 0, 0, 1, 0, 0, 0, 0], _current_tolerances)
     assert ter == 0.8
+
 
 def test_temp_extremas_one_negative():
     ter = get_temp_extremas(0, [0, 0, 0, 0, -1, 0, 0, 0, 0], _current_tolerances)
@@ -32,6 +42,7 @@ def test_tempdiff_cold():
     assert ret3 == 2
     ret4 = get_tempdiff_inverted(-3, tempdiff, _current_tolerances)
     assert ret4 == 2
+
 
 def test_tempdiff_hot():
     tempdiff = 0.5

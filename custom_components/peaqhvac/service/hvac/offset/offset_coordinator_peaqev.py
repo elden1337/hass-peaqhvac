@@ -4,22 +4,34 @@ import logging
 
 from peaqevcore.common.models.observer_types import ObserverTypes
 from peaqevcore.services.hourselection.hoursselection import Hoursselection
-from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import OffsetCoordinator
+from custom_components.peaqhvac.service.hvac.offset.offset_coordinator import (
+    OffsetCoordinator,
+)
 from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class OffsetCoordinatorPeaqEv(OffsetCoordinator):
     """The class that provides the offsets for the hvac with peaqev installed"""
 
-    def __init__(self, hub, observer: IObserver, hours_type: Hoursselection = None): #type: ignore
+    def __init__(self, hub, observer: IObserver, hours_type: Hoursselection = None):  # type: ignore
         _LOGGER.debug("found peaqev and will not init hourselection")
         super().__init__(hub, observer, hours_type)
         self._prices = None
         self._prices_tomorrow = None
-        self._update_prices([hub.sensors.peaqev_facade.hours.prices, hub.sensors.peaqev_facade.hours.prices_tomorrow])
-        hub.sensors.peaqev_facade.peaqev_observer.add(ObserverTypes.PricesChanged, self.async_update_prices_blank)
-        hub.sensors.peaqev_facade.peaqev_observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices_blank)
+        self._update_prices(
+            [
+                hub.sensors.peaqev_facade.hours.prices,
+                hub.sensors.peaqev_facade.hours.prices_tomorrow,
+            ]
+        )
+        hub.sensors.peaqev_facade.peaqev_observer.add(
+            ObserverTypes.PricesChanged, self.async_update_prices_blank
+        )
+        hub.sensors.peaqev_facade.peaqev_observer.add(
+            ObserverTypes.SpotpriceInitialized, self.async_update_prices_blank
+        )
 
     @property
     def prices(self) -> list:
@@ -41,7 +53,12 @@ class OffsetCoordinatorPeaqEv(OffsetCoordinator):
         self._update_prices(prices)
 
     async def async_update_prices_blank(self) -> None:
-        self._update_prices([self._hub.sensors.peaqev_facade.hours.prices, self._hub.sensors.peaqev_facade.hours.prices_tomorrow])
+        self._update_prices(
+            [
+                self._hub.sensors.peaqev_facade.hours.prices,
+                self._hub.sensors.peaqev_facade.hours.prices_tomorrow,
+            ]
+        )
 
     def _update_prices(self, prices) -> None:
         _LOGGER.debug("Updating prices")

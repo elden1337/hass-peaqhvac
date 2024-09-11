@@ -1,8 +1,10 @@
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from custom_components.peaqhvac.const import (AVERAGESENSOR_INDOORS,
-                                              AVERAGESENSOR_OUTDOORS)
+from custom_components.peaqhvac.const import (
+    AVERAGESENSOR_INDOORS,
+    AVERAGESENSOR_OUTDOORS,
+)
 from custom_components.peaqhvac.sensors.sensorbase import SensorBase
 
 

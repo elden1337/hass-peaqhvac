@@ -15,14 +15,10 @@ class Observer(IObserver):
     def __init__(self, hass):
         self.hass = hass
         super().__init__()
-        async_track_time_interval(
-            self.hass, self.async_dispatch, timedelta(seconds=1)
-        )
+        async_track_time_interval(self.hass, self.async_dispatch, timedelta(seconds=1))
 
     async def async_broadcast_separator(self, func, command: Command):
         if await async_iscoroutine(func):
             await self.async_call_func(func=func, command=command),
         else:
-            await self.hass.async_add_executor_job(
-                self._call_func, func, command
-            )
+            await self.hass.async_add_executor_job(self._call_func, func, command)

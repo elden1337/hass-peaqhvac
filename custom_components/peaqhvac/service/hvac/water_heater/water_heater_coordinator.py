@@ -15,16 +15,18 @@ from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.hvac.water_heater.const import (
     WAITTIMER_TIMEOUT,
     HIGHTEMP_THRESHOLD,
-    LOWTEMP_THRESHOLD
+    LOWTEMP_THRESHOLD,
 )
 from custom_components.peaqhvac.service.hvac.water_heater.water_heater_next_start import (
     NextWaterBoost,
-    NextStartPostModel
+    NextStartPostModel,
 )
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 from homeassistant.helpers.event import async_track_time_interval
-from custom_components.peaqhvac.service.hvac.water_heater.models.waterbooster_model import WaterBoosterModel
+from custom_components.peaqhvac.service.hvac.water_heater.models.waterbooster_model import (
+    WaterBoosterModel,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,13 +72,15 @@ class WaterHeater(IHeater):
     def latest_boost_call(self) -> str:
         """For Lovelace-purposes. Converts and returns epoch-timer to readable datetime-string"""
         if self.model.latest_boost_call > 0 and self.control_module:
-            return time.strftime("%Y-%m-%d %H:%M", time.localtime(self.model.latest_boost_call))
+            return time.strftime(
+                "%Y-%m-%d %H:%M", time.localtime(self.model.latest_boost_call)
+            )
         return "-"
 
     def import_latest_boost_call(self, strtime):
         new = 0
         try:
-            if strtime != '-':
+            if strtime != "-":
                 struct_time = time.strptime(strtime, "%Y-%m-%d %H:%M")
                 new = time.mktime(struct_time)
         except ValueError as e:
@@ -100,7 +104,8 @@ class WaterHeater(IHeater):
                 self._update_demand()
                 if self.demand.value != old_demand:
                     _LOGGER.debug(
-                        f"Water temp changed to {val} which caused demand to change from {old_demand} to {self.demand.value}")
+                        f"Water temp changed to {val} which caused demand to change from {old_demand} to {self.demand.value}"
+                    )
                 self.observer.broadcast(ObserverTypes.WatertempChange)
                 self._update_operation()
         except ValueError as e:
@@ -125,8 +130,8 @@ class WaterHeater(IHeater):
         self._demand = self._get_demand()
 
     def _get_demand(self):
-        #ret = get_demand(self.current_temperature)
-        #return ret
+        # ret = get_demand(self.current_temperature)
+        # return ret
         return Demand.NoDemand
 
     @property
@@ -138,7 +143,9 @@ class WaterHeater(IHeater):
     def next_water_heater_start(self) -> datetime:
         next_start = self.model.next_water_heater_start
         if next_start < datetime.now() + timedelta(minutes=10):
-            self.model.bus_fire_once("peaqhvac.water_heater_warning", {"new": True}, next_start)
+            self.model.bus_fire_once(
+                "peaqhvac.water_heater_warning", {"new": True}, next_start
+            )
         return next_start
 
     def _get_next_start(self) -> int | None:
@@ -150,7 +157,8 @@ class WaterHeater(IHeater):
             return None
 
         model = NextStartPostModel(
-            prices=self.hub.spotprice.model.prices + self.hub.spotprice.model.prices_tomorrow,
+            prices=self.hub.spotprice.model.prices
+            + self.hub.spotprice.model.prices_tomorrow,
             non_hours=self.hub.options.heating_options.non_hours_water_boost,
             demand_hours=self.hub.options.heating_options.demand_hours_water_boost,
             current_temp=self.current_temperature,
@@ -176,7 +184,10 @@ class WaterHeater(IHeater):
         self._update_operation()
 
     def _check_and_reset_boost(self) -> None:
-        if self.model.water_boost.value and self.model.latest_boost_call - time.time() > 3600:
+        if (
+            self.model.water_boost.value
+            and self.model.latest_boost_call - time.time() > 3600
+        ):
             _LOGGER.debug("Water boost has been on for more than an hour. Turning off.")
             self.model.water_boost.value = False
 
@@ -193,16 +204,21 @@ class WaterHeater(IHeater):
             target_temp = self._get_next_start()
         try:
             if target_temp:
-                self.__set_toggle_boost_next_start(self.model.next_water_heater_start, target_temp)
+                self.__set_toggle_boost_next_start(
+                    self.model.next_water_heater_start, target_temp
+                )
         except Exception as e:
             _LOGGER.error(f"Could not check water-state: {e}")
 
-    def __set_toggle_boost_next_start(self, next_start: datetime, target: float = None) -> None:
+    def __set_toggle_boost_next_start(
+        self, next_start: datetime, target: float = None
+    ) -> None:
         try:
             if next_start <= datetime.now() and not self.model.water_boost.value:
                 if target is not None and target > self.current_temperature:
                     _LOGGER.debug(
-                        f"Water boost is needed. Target temp is {target} and current temp is {self.current_temperature}. Next start is {next_start}")
+                        f"Water boost is needed. Target temp is {target} and current temp is {self.current_temperature}. Next start is {next_start}"
+                    )
                     self.model.water_boost.value = True
                     self.model.latest_boost_call = time.time()
                     self.observer.broadcast("water boost start", target)
@@ -210,9 +226,14 @@ class WaterHeater(IHeater):
             _LOGGER.warning(f"Could not set water boost: {e}")
 
     def __is_below_start_threshold(self) -> bool:
-        return all([
-            datetime.now().minute >= 30,
-            self.hub.sensors.peaqev_facade.below_start_threshold])
+        return all(
+            [
+                datetime.now().minute >= 30,
+                self.hub.sensors.peaqev_facade.below_start_threshold,
+            ]
+        )
 
     def __is_price_below_min_price(self) -> bool:
-        return float(self.hub.spotprice.state) <= float(self.hub.sensors.peaqev_facade.min_price)
+        return float(self.hub.spotprice.state) <= float(
+            self.hub.sensors.peaqev_facade.min_price
+        )

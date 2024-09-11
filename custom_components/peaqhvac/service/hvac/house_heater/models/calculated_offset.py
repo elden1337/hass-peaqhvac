@@ -3,6 +3,7 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+
 @dataclass
 class CalculatedOffsetModel:
     current_offset: int

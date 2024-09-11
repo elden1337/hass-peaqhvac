@@ -8,7 +8,9 @@ from typing import TYPE_CHECKING, Tuple
 
 from peaqevcore.common.models.observer_types import ObserverTypes
 
-from custom_components.peaqhvac.service.hvac.water_heater.cycle_waterboost import async_cycle_waterboost
+from custom_components.peaqhvac.service.hvac.water_heater.cycle_waterboost import (
+    async_cycle_waterboost,
+)
 from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
 
 if TYPE_CHECKING:
@@ -17,11 +19,17 @@ if TYPE_CHECKING:
 from homeassistant.core import HomeAssistant
 
 import custom_components.peaqhvac.extensionmethods as ex
-from custom_components.peaqhvac.service.hvac.house_heater.house_heater_coordinator import HouseHeaterCoordinator
-from custom_components.peaqhvac.service.hvac.water_heater.water_heater_coordinator import WaterHeater
+from custom_components.peaqhvac.service.hvac.house_heater.house_heater_coordinator import (
+    HouseHeaterCoordinator,
+)
+from custom_components.peaqhvac.service.hvac.water_heater.water_heater_coordinator import (
+    WaterHeater,
+)
 from custom_components.peaqhvac.service.hvac.house_ventilation import HouseVentilation
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
-from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
+from custom_components.peaqhvac.service.models.enums.hvacoperations import (
+    HvacOperations,
+)
 from custom_components.peaqhvac.service.models.enums.sensortypes import SensorType
 from custom_components.peaqhvac.service.models.ihvac_model import IHvacModel
 
@@ -29,7 +37,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 UPDATE_INTERVALS = {
-    HvacOperations.Offset:    300,
+    HvacOperations.Offset: 300,
     HvacOperations.VentBoost: 1800,
 }
 
@@ -38,7 +46,7 @@ class IHvacType:
     _force_update: bool = False
     update_list: dict[HvacOperations, any] = {}
     periodic_update_timers: dict = {
-        HvacOperations.Offset:    0,
+        HvacOperations.Offset: 0,
         HvacOperations.VentBoost: 0,
     }
 
@@ -77,7 +85,7 @@ class IHvacType:
 
     @abstractmethod
     def _set_operation_call_parameters(
-            self, operation: HvacOperations, _value: any
+        self, operation: HvacOperations, _value: any
     ) -> Tuple[str, dict, str]:
         pass
 
@@ -102,10 +110,10 @@ class IHvacType:
     @property
     def hvac_electrical_addon(self) -> bool:
         value_conversion = {
-            "Alarm":   False,
+            "Alarm": False,
             "Blocked": False,
-            "Off":     False,
-            "Active":  True,
+            "Off": False,
+            "Active": True,
         }
         ret = self.get_value(SensorType.ElectricalAddition, str)
         return value_conversion.get(ret, False)
@@ -133,7 +141,9 @@ class IHvacType:
                 return ret
         try:
             _hvac_offset = self.hvac_offset
-            new_offset, force_update = await self.house_heater.async_adjusted_offset(self.model.current_offset)
+            new_offset, force_update = await self.house_heater.async_adjusted_offset(
+                self.model.current_offset
+            )
             if new_offset != self.model.current_offset:
                 self.model.current_offset = new_offset
                 self._force_update = force_update
@@ -193,7 +203,9 @@ class IHvacType:
             if await self.async_ready_to_update(HvacOperations.VentBoost):
                 _vent_state = int(self.house_ventilation.vent_boost)
                 if _vent_state != self.update_list.get(HvacOperations.VentBoost, None):
-                    _LOGGER.debug(f"Vent boost state changed to {_vent_state}. Adding to update list.")
+                    _LOGGER.debug(
+                        f"Vent boost state changed to {_vent_state}. Adding to update list."
+                    )
                     self.update_list[HvacOperations.VentBoost] = _vent_state
 
     async def async_update_heat(self) -> None:
@@ -205,7 +217,8 @@ class IHvacType:
         if self.hub.hvac_service.water_heater.control_module:
             _LOGGER.debug(f"init water boost process")
             self.hub.state_machine.async_create_task(
-                async_cycle_waterboost(target_temp, self.async_update_system, self.hub))
+                async_cycle_waterboost(target_temp, self.async_update_system, self.hub)
+            )
             _LOGGER.debug(f"return from water boost process")
 
     async def async_perform_periodic_updates(self) -> None:
@@ -218,7 +231,9 @@ class IHvacType:
         for r in removelist:
             self.update_list.pop(r)
 
-    async def async_update_system(self, operation: HvacOperations, set_val: any = None) -> bool:
+    async def async_update_system(
+        self, operation: HvacOperations, set_val: any = None
+    ) -> bool:
         if self.hub.sensors.peaqhvac_enabled.value:
             _value = set_val
             if self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5:
@@ -236,7 +251,10 @@ class IHvacType:
         return False
 
     def timer_timeout(self, operation) -> bool:
-        return time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation]
+        return (
+            time.time() - self.periodic_update_timers[operation]
+            > UPDATE_INTERVALS[operation]
+        )
 
     async def async_ready_to_update(self, operation) -> bool:
         match operation:

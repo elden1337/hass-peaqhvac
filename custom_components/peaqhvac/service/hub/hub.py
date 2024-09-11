@@ -3,12 +3,19 @@ from datetime import datetime
 from functools import partial
 from typing import Callable
 
-from homeassistant.core import HomeAssistant, callback, Event, EventStateChangedData # pylint: disable=E0401
+from homeassistant.core import (
+    HomeAssistant,
+    callback,
+    Event,
+    EventStateChangedData,
+)  # pylint: disable=E0401
 
 from custom_components.peaqhvac.const import LATEST_WATER_BOOST, NEXT_WATER_START
 
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
-from custom_components.peaqhvac.service.models.offsets_exportmodel import OffsetsExportModel
+from custom_components.peaqhvac.service.models.offsets_exportmodel import (
+    OffsetsExportModel,
+)
 from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
 from custom_components.peaqhvac.extensionmethods import async_iscoroutine
 
@@ -19,7 +26,9 @@ class Hub:
     hub_id = 1338
     hubname = "PeaqHvac"
 
-    def __init__(self, hass: HomeAssistant, observer: IObserver, hub_options: ConfigModel):
+    def __init__(
+        self, hass: HomeAssistant, observer: IObserver, hub_options: ConfigModel
+    ):
         self.trackerentities = []
         self._is_initialized = False
         self.state_machine = hass
@@ -34,10 +43,14 @@ class Hub:
 
     def price_below_min(self, hour: datetime) -> bool:
         try:
-            return self.spotprice.model.prices[hour.hour] <= self.sensors.peaqev_facade.min_price
+            return (
+                self.spotprice.model.prices[hour.hour]
+                <= self.sensors.peaqev_facade.min_price
+            )
         except:
             _LOGGER.warning(
-                f"Unable to get price for hour {hour}. min_price: {self.sensors.peaqev_facade.min_price}, num_prices_today: {len(self.spotprice.model.prices)}")
+                f"Unable to get price for hour {hour}. min_price: {self.sensors.peaqev_facade.min_price}, num_prices_today: {len(self.spotprice.model.prices)}"
+            )
             return False
 
     @property
@@ -64,7 +77,8 @@ class Hub:
                     await self.states.async_update_sensor(entity_id, new_state.state)
             except Exception as e:
                 _LOGGER.exception(
-                    f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}")
+                    f"Unable to handle data: {entity_id} old: {old_state}, new: {new_state}. Raised expection: {e}"
+                )
 
     async def call_enable_peaq(self):
         self.sensors.peaqhvac_enabled.value = True
@@ -78,8 +92,12 @@ class Hub:
 
     async def async_get_internal_sensor(self, entity):
         lookup = {
-            LATEST_WATER_BOOST: partial(getattr, self.hvac_service.water_heater, "latest_boost_call"),
-            NEXT_WATER_START:   partial(getattr, self.hvac_service.water_heater, "next_water_heater_start")
+            LATEST_WATER_BOOST: partial(
+                getattr, self.hvac_service.water_heater, "latest_boost_call"
+            ),
+            NEXT_WATER_START: partial(
+                getattr, self.hvac_service.water_heater, "next_water_heater_start"
+            ),
         }
 
         func: Callable = lookup.get(entity, None)
@@ -90,7 +108,8 @@ class Hub:
 
     async def async_offset_export_model(self) -> OffsetsExportModel:
         ret = OffsetsExportModel(
-            (self.offset.model.peaks_today, self.offset.model.peaks_tomorrow))
+            (self.offset.model.peaks_today, self.offset.model.peaks_tomorrow)
+        )
         ret.raw_offsets = self.offset.model.raw_offsets
         ret.current_offset = self.offset.model.current_offset_dict
         ret.current_offset_tomorrow = self.offset.model.current_offset_dict_tomorrow

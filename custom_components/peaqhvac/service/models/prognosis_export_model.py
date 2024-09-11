@@ -13,4 +13,4 @@ class PrognosisExportModel:
     _base_temp: float = field(repr=False)
 
     def __post_init__(self):
-        self.delta_temp_from_now=round(self.windchill_temp - self._base_temp, 1)
+        self.delta_temp_from_now = round(self.windchill_temp - self._base_temp, 1)

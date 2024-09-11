@@ -40,7 +40,12 @@ def get_cache_for_today(dt: date, prices: list) -> CacheDict:
     return None
 
 
-def update_cache(list_dt: date, prices: List[float], offsets: dict[int, float], now_dt: datetime = datetime.now()):
+def update_cache(
+    list_dt: date,
+    prices: List[float],
+    offsets: dict[int, float],
+    now_dt: datetime = datetime.now(),
+):
     global _offsetCache
     if len(prices) < 1 or len(offsets) < 1:
         return
@@ -62,4 +67,6 @@ def update_cache(list_dt: date, prices: List[float], offsets: dict[int, float], 
             for h in _offsetCache:
                 if h.dt != now_dt:
                     h.today = False
-    _offsetCache = [h for h in _offsetCache if h.dt >= now_dt.date() - timedelta(days=2)]
+    _offsetCache = [
+        h for h in _offsetCache if h.dt >= now_dt.date() - timedelta(days=2)
+    ]

@@ -61,6 +61,7 @@ def _parse_to_type_bool(value) -> bool:
         _LOGGER.error(msg)
         return False
 
+
 def dt_from_epoch(epoch: int) -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(epoch))
 

@@ -9,4 +9,3 @@ class IHvacModel:
     # current_offset_dict_combined: dict = field(default_factory=lambda: {})
 
     listenerentities: list = field(default_factory=lambda: [])
-

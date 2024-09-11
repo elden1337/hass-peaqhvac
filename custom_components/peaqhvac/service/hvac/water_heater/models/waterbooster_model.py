@@ -4,11 +4,12 @@ from datetime import datetime
 
 from custom_components.peaqhvac.service.observer.event_property import EventProperty
 
+
 class BusFireOnceMixin:
     _event_log = []
 
     def bus_fire_once(self, event, data, next_start=None):
-        if next_start not in self._event_log:            
+        if next_start not in self._event_log:
             self._hass.bus.fire(event, data)
             if next_start:
                 self._event_log.append(next_start)

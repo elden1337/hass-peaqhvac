@@ -2,17 +2,23 @@ import logging
 from datetime import timedelta
 
 from homeassistant.components.climate import ClimateEntity
-from homeassistant.components.climate.const import (PRESET_AWAY, PRESET_ECO,
-                                                    PRESET_NONE,
-                                                    HVACAction, HVACMode, ClimateEntityFeature)
+from homeassistant.components.climate.const import (
+    PRESET_AWAY,
+    PRESET_ECO,
+    PRESET_NONE,
+    HVACAction,
+    HVACMode,
+    ClimateEntityFeature,
+)
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.restore_state import RestoreEntity
 
 import custom_components.peaqhvac.extensionmethods as ex
 from custom_components.peaqhvac.const import CLIMATE_SENSOR, DOMAIN
-from custom_components.peaqhvac.service.models.enums.hvacmode import \
-    HvacMode as HvacModeInternal
+from custom_components.peaqhvac.service.models.enums.hvacmode import (
+    HvacMode as HvacModeInternal,
+)
 
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=10)
@@ -45,7 +51,9 @@ class PeaqClimate(ClimateEntity, RestoreEntity):
 
     @property
     def supported_features(self):
-        return ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
+        return (
+            ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
+        )
 
     @property
     def name(self):

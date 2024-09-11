@@ -6,8 +6,18 @@ from custom_components.peaqhvac.sensors.sensorbase import SensorBase
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class TrendSensor(SensorBase, RestoreEntity):
-    def __init__(self, hub, entry_id, name, icon, unit_of_measurement, sensor, extra_attributes ={}):
+    def __init__(
+        self,
+        hub,
+        entry_id,
+        name,
+        icon,
+        unit_of_measurement,
+        sensor,
+        extra_attributes={},
+    ):
         self._sensorname = name
         self.datasensor = sensor
         self._attr_name = f"{hub.hubname} {name}"

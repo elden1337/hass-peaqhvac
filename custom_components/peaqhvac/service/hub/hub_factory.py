@@ -8,9 +8,12 @@ from custom_components.peaqhvac.service.observer.observer_coordinator import Obs
 from custom_components.peaqhvac.service.hub.hubsensors import HubSensors
 from custom_components.peaqhvac.service.hub.state_changes import StateChanges
 from custom_components.peaqhvac.service.hub.weather_prognosis import WeatherPrognosis
-from custom_components.peaqhvac.service.hvac.offset.offset_coordinator_factory import OffsetFactory
+from custom_components.peaqhvac.service.hvac.offset.offset_coordinator_factory import (
+    OffsetFactory,
+)
 import sys
-if 'pytest' not in sys.modules:
+
+if "pytest" not in sys.modules:
     from peaqevcore.common.spotprice.spotprice_factory import SpotPriceFactory
     from peaqevcore.common.models.peaq_system import PeaqSystem
 
@@ -33,13 +36,9 @@ class HubFactory:
             observer=observer,
             system=PeaqSystem.PeaqHvac,
             test=False,
-            is_active=True
+            is_active=True,
         )
-        sensors = HubSensors(
-            observer=observer,
-            options=options,
-            hass=self.hass
-                             )
+        sensors = HubSensors(observer=observer, options=options, hass=self.hass)
         states = StateChanges(hub, self.hass)
         self.hub = hub
         await self.async_setup(spotprice, sensors, states)
@@ -50,9 +49,13 @@ class HubFactory:
         self.hub.states = states
         self.hub.spotprice = spotprice
 
-        self.hub.hvac_service = HvacFactory.create(self.hass, self.hub.options, self.hub, self.hub.observer)
+        self.hub.hvac_service = HvacFactory.create(
+            self.hass, self.hub.options, self.hub, self.hub.observer
+        )
 
-        self.hub.prognosis = WeatherPrognosis(self.hass, sensors.average_temp_outdoors, self.hub.observer)
+        self.hub.prognosis = WeatherPrognosis(
+            self.hass, sensors.average_temp_outdoors, self.hub.observer
+        )
         self.hub.offset = OffsetFactory.create(self.hub, self.hub.observer)
 
         await self.async_setup_trackers()
@@ -71,10 +74,16 @@ class HubFactory:
             ret = self.hass.states.get("sensor.peaqev_threshold")
             if ret is not None:
                 if ret.state:
-                    _LOGGER.debug("Discovered Peaqev-entities, will adhere to peak-shaving.")
+                    _LOGGER.debug(
+                        "Discovered Peaqev-entities, will adhere to peak-shaving."
+                    )
                     return True
-            _LOGGER.debug("Unable to discover Peaqev-entities, will not adhere to peak-shaving.")
+            _LOGGER.debug(
+                "Unable to discover Peaqev-entities, will not adhere to peak-shaving."
+            )
             return False
         except Exception as e:
-            _LOGGER.debug(f"Unable to discover Peaqev-entities, will not adhere to peak-shaving. Exception {e}")
+            _LOGGER.debug(
+                f"Unable to discover Peaqev-entities, will not adhere to peak-shaving. Exception {e}"
+            )
             return False

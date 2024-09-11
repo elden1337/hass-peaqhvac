@@ -3,15 +3,17 @@ from typing import Tuple
 
 from custom_components.peaqhvac.service.hvac.interfaces.ihvactype import IHvacType
 from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
-from custom_components.peaqhvac.service.models.enums.hvacoperations import \
-    HvacOperations
-from custom_components.peaqhvac.service.models.enums.sensortypes import \
-    SensorType
+from custom_components.peaqhvac.service.models.enums.hvacoperations import (
+    HvacOperations,
+)
+from custom_components.peaqhvac.service.models.enums.sensortypes import SensorType
 
 _LOGGER = logging.getLogger(__name__)
 
 NIBE_MAX_THRESHOLD = 10
 NIBE_MIN_THRESHOLD = -10
+
+
 class Nibe(IHvacType):
     domain = "Nibe"
     water_heater_entity = None
@@ -58,7 +60,11 @@ class Nibe(IHvacType):
         try:
             temp = self.get_sensor(SensorType.HvacTemp)
             returntemp = self.get_sensor(SensorType.HotWaterReturn)
-            return round(float(self._handle_sensor(temp)) - float(self._handle_sensor(returntemp)),2,)
+            return round(
+                float(self._handle_sensor(temp))
+                - float(self._handle_sensor(returntemp)),
+                2,
+            )
         except TypeError as e:
             _LOGGER.debug(f"Unable to calculate delta return: {e}")
             return 0
@@ -123,7 +129,9 @@ class Nibe(IHvacType):
                 return "switch"
         raise ValueError(f"Operation {operation} not supported")
 
-    def _transform_servicecall_value(self, value: any, operation: HvacOperations) -> any:
+    def _transform_servicecall_value(
+        self, value: any, operation: HvacOperations
+    ) -> any:
         match operation:
             case HvacOperations.Offset:
                 return "set_value"
@@ -136,7 +144,9 @@ class Nibe(IHvacType):
             ret["value"] = self._cap_nibe_offset_value(_value)
         return ret
 
-    def _set_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
+    def _set_operation_call_parameters(
+        self, operation: HvacOperations, _value: any
+    ) -> Tuple[str, dict, str]:
         call_operation = self._transform_servicecall_value(_value, operation)
         service_domain = self._service_domain_per_operation(operation)
         params = self._set_servicecall_params(operation, _value)

@@ -8,15 +8,13 @@ from typing import Callable
 
 from peaqevcore.common.models.observer_types import ObserverTypes
 
-from custom_components.peaqhvac.service.observer.const import (
-    COMMAND_WAIT, TIMEOUT)
-from custom_components.peaqhvac.service.observer.models.command import \
-    Command
-from custom_components.peaqhvac.service.observer.models.observer_model import \
-    ObserverModel
+from custom_components.peaqhvac.service.observer.const import COMMAND_WAIT, TIMEOUT
+from custom_components.peaqhvac.service.observer.models.command import Command
+from custom_components.peaqhvac.service.observer.models.observer_model import (
+    ObserverModel,
+)
 
 _LOGGER = logging.getLogger(__name__)
-
 
 
 class IObserver:
@@ -38,28 +36,30 @@ class IObserver:
     def deactivate(self) -> None:
         self.model.active = False
 
-    def _check_and_convert_enum_type(self, command) -> ObserverTypes|str:
+    def _check_and_convert_enum_type(self, command) -> ObserverTypes | str:
         if isinstance(command, str):
             try:
                 command = ObserverTypes(command)
-                _LOGGER.warning(f"Observer.add: command {command} was not of type ObserverTypes but was converted.")
+                _LOGGER.warning(
+                    f"Observer.add: command {command} was not of type ObserverTypes but was converted."
+                )
             except ValueError:
                 pass
-                #return ObserverTypes.Test
+                # return ObserverTypes.Test
         return command
 
-    def add(self, command: ObserverTypes|str, func):
+    def add(self, command: ObserverTypes | str, func):
         command = self._check_and_convert_enum_type(command)
         if command in self.model.subscribers.keys():
             self.model.subscribers[command].append(func)
         else:
             self.model.subscribers[command] = [func]
 
-    async def async_broadcast(self, command: ObserverTypes|str, argument=None):
+    async def async_broadcast(self, command: ObserverTypes | str, argument=None):
         command = self._check_and_convert_enum_type(command)
         self.broadcast(command, argument)
 
-    def broadcast(self, command: ObserverTypes|str, argument=None):
+    def broadcast(self, command: ObserverTypes | str, argument=None):
         command = self._check_and_convert_enum_type(command)
         _expiration = time.time() + TIMEOUT
         cc = Command(command, _expiration, argument)

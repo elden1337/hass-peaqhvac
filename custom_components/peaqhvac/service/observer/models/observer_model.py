@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from custom_components.peaqhvac.service.observer.models.command import Command
 
+
 @dataclass
 class ObserverModel:
     subscribers: dict = field(default_factory=lambda: {})

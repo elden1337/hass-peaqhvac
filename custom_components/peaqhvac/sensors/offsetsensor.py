@@ -1,6 +1,10 @@
 from custom_components.peaqhvac.sensors.sensorbase import SensorBase
-from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
-from custom_components.peaqhvac.service.models.offsets_exportmodel import OffsetsExportModel
+from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import (
+    CalculatedOffsetModel,
+)
+from custom_components.peaqhvac.service.models.offsets_exportmodel import (
+    OffsetsExportModel,
+)
 
 
 class OffsetSensor(SensorBase):
@@ -34,11 +38,15 @@ class OffsetSensor(SensorBase):
         return "mdi:stairs"
 
     async def async_update(self) -> None:
-        state_result = await self._hub.hvac_service.house_heater.async_adjusted_offset(self._hub.hvac_service.model.current_offset)
+        state_result = await self._hub.hvac_service.house_heater.async_adjusted_offset(
+            self._hub.hvac_service.model.current_offset
+        )
         self._state = state_result[0]
         offsetsmodel: OffsetsExportModel = await self._hub.async_offset_export_model()
-        data: CalculatedOffsetModel = await self._hub.hvac_service.house_heater.async_calculated_offsetdata(
-            self._hub.hvac_service.model.current_offset
+        data: CalculatedOffsetModel = (
+            await self._hub.hvac_service.house_heater.async_calculated_offsetdata(
+                self._hub.hvac_service.model.current_offset
+            )
         )
 
         self._offsets = offsetsmodel.current_offset
@@ -55,15 +63,15 @@ class OffsetSensor(SensorBase):
     @property
     def extra_state_attributes(self) -> dict:
         ret = {
-            "Current hour offset":  self._current_offset,
-            "Tempdiff offset":      self._tempdiff_offset,
+            "Current hour offset": self._current_offset,
+            "Tempdiff offset": self._tempdiff_offset,
             "Temp extremas offset": self._tempextremas_offset,
-            "Temp trend offset":    self._temptrend_offset,
-            "Today":                self._offsets,
-            "Tomorrow":             self._offsets_tomorrow,
-            "Raw":             self._raw_offsets,
-            "PeaksToday":           self._peaks_today,
-            "PeaksTomorrow":        self._peaks_tomorrow,
+            "Temp trend offset": self._temptrend_offset,
+            "Today": self._offsets,
+            "Tomorrow": self._offsets_tomorrow,
+            "Raw": self._raw_offsets,
+            "PeaksToday": self._peaks_today,
+            "PeaksTomorrow": self._peaks_tomorrow,
         }
         if self._aux_dict is not None:
             for key, val in self._aux_dict.items():

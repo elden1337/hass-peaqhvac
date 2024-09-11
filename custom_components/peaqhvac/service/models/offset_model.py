@@ -19,9 +19,15 @@ class OffsetModel:
 
     def __init__(self, hub):
         self.hub = hub
-        async_track_time_interval(self.hub.state_machine, self.recalculate_tolerance, timedelta(seconds=120))
-        self.hub.observer.add(ObserverTypes.HvacToleranceChanged, self.recalculate_tolerance)
-        self.hub.observer.add(ObserverTypes.TemperatureOutdoorsChanged, self.recalculate_tolerance)
+        async_track_time_interval(
+            self.hub.state_machine, self.recalculate_tolerance, timedelta(seconds=120)
+        )
+        self.hub.observer.add(
+            ObserverTypes.HvacToleranceChanged, self.recalculate_tolerance
+        )
+        self.hub.observer.add(
+            ObserverTypes.TemperatureOutdoorsChanged, self.recalculate_tolerance
+        )
 
     @property
     def peaks_today(self) -> list:
@@ -51,12 +57,19 @@ class OffsetModel:
 
     @property
     def current_offset_dict(self) -> dict:
-        return {k: v for k, v in self.calculated_offsets.items() if k.date() == datetime.now().date()}
+        return {
+            k: v
+            for k, v in self.calculated_offsets.items()
+            if k.date() == datetime.now().date()
+        }
 
     @property
     def current_offset_dict_tomorrow(self) -> dict:
-        return {k: v for k, v in self.calculated_offsets.items() if
-                k.date() == datetime.now().date() + timedelta(days=1)}
+        return {
+            k: v
+            for k, v in self.calculated_offsets.items()
+            if k.date() == datetime.now().date() + timedelta(days=1)
+        }
 
     def recalculate_tolerance(self, *args):
         if self.hub.options.hvac_tolerance is not None:
@@ -72,7 +85,9 @@ class OffsetModel:
                 )
             except Exception as e:
                 self._tolerance = self.hub.options.hvac_tolerance
-                _LOGGER.warning(f"Error on recalculation of tolerance. Setting default. {e}")
+                _LOGGER.warning(
+                    f"Error on recalculation of tolerance. Setting default. {e}"
+                )
             if any([old_raw != self.tolerance_raw, old_tolerance != self.tolerance]):
                 _LOGGER.debug(
                     f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self.hub.sensors.average_temp_outdoors.value}"
@@ -95,7 +110,9 @@ class OffsetModel:
 
         if tolerance_difference != self._tolerance_difference:
             self._tolerance_difference = tolerance_difference
-            _LOGGER.debug(f"Lowering tolerance with {tolerance_difference} based on current temperature {current_temp}C.")
+            _LOGGER.debug(
+                f"Lowering tolerance with {tolerance_difference} based on current temperature {current_temp}C."
+            )
         return tolerance_difference
 
     @staticmethod

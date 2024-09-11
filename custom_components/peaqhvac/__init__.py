@@ -1,4 +1,5 @@
 """The peaqhvac integration."""
+
 from __future__ import annotations
 
 import logging
@@ -16,8 +17,10 @@ from .services import async_setup_services
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_get_existing_param(conf, parameter: str, default_val: any):
     return conf.options.get(parameter, conf.data.get(parameter, default_val))
+
 
 async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
@@ -31,12 +34,26 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
     huboptions.outdoor_tempsensors = huboptions.set_sensors_from_string(
         await async_get_existing_param(config, "outdoor_tempsensors", "")
     )
-    huboptions.heating_options.outdoor_temp_stop_heating = await async_get_existing_param(config, "outdoor_temp_stop_heating", 15)
-    huboptions.heating_options.non_hours_water_boost = await async_get_existing_param(config, "non_hours_water_boost",[])
-    huboptions.heating_options.demand_hours_water_boost = await async_get_existing_param(config, "demand_hours_water_boost",[])
+    huboptions.heating_options.outdoor_temp_stop_heating = (
+        await async_get_existing_param(config, "outdoor_temp_stop_heating", 15)
+    )
+    huboptions.heating_options.non_hours_water_boost = await async_get_existing_param(
+        config, "non_hours_water_boost", []
+    )
+    huboptions.heating_options.demand_hours_water_boost = (
+        await async_get_existing_param(config, "demand_hours_water_boost", [])
+    )
 
-    huboptions.heating_options.low_degree_minutes = int((await async_get_existing_param(config, "low_degree_minutes","-600")).replace(" ", ""))
-    huboptions.heating_options.very_cold_temp = int((await async_get_existing_param(config, "very_cold_temp","-12")).replace(" ", ""))
+    huboptions.heating_options.low_degree_minutes = int(
+        (await async_get_existing_param(config, "low_degree_minutes", "-600")).replace(
+            " ", ""
+        )
+    )
+    huboptions.heating_options.very_cold_temp = int(
+        (await async_get_existing_param(config, "very_cold_temp", "-12")).replace(
+            " ", ""
+        )
+    )
     huboptions.systemid = config.data["systemid"]
 
     huboptions.hvacbrand = huboptions.set_hvacbrand(
@@ -47,7 +64,7 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
 
     hass.data[DOMAIN]["hub"] = hub
 
-    #await hub.async_setup()
+    # await hub.async_setup()
     await async_setup_services(hass, hub)
 
     await hass.config_entries.async_forward_entry_setups(config, PLATFORMS)
@@ -70,6 +87,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
+
 
 async def async_update_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     """Reload Peaqev component when options changed."""

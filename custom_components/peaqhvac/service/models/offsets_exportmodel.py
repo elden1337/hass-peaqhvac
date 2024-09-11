@@ -1,6 +1,7 @@
 from typing import Tuple
 from dataclasses import dataclass, field
 
+
 @dataclass
 class OffsetsExportModel:
     peaks: Tuple[list, list]
@@ -13,7 +14,7 @@ class OffsetsExportModel:
         return self._raw_offsets
 
     @raw_offsets.setter
-    def raw_offsets(self, val:dict) -> None:
+    def raw_offsets(self, val: dict) -> None:
         self._raw_offsets = self._offset_dict_to_list(val)
 
     @property
@@ -21,7 +22,7 @@ class OffsetsExportModel:
         return self._current_offset
 
     @current_offset.setter
-    def current_offset(self, val:dict) -> None:
+    def current_offset(self, val: dict) -> None:
         self._current_offset = self._offset_dict_to_list(val)
 
     @property
@@ -29,7 +30,7 @@ class OffsetsExportModel:
         return self._current_offset_tomorrow
 
     @current_offset_tomorrow.setter
-    def current_offset_tomorrow(self, val:dict) -> None:
+    def current_offset_tomorrow(self, val: dict) -> None:
         self._current_offset_tomorrow = self._offset_dict_to_list(val)
 
     @staticmethod

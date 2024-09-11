@@ -1,7 +1,6 @@
 from enum import Enum
 
-from homeassistant.components.climate.const import (PRESET_AWAY, PRESET_ECO,
-                                                    PRESET_NONE)
+from homeassistant.components.climate.const import PRESET_AWAY, PRESET_ECO, PRESET_NONE
 
 
 class HvacPresets(Enum):

@@ -15,10 +15,10 @@ def identify_peaks(prices: list) -> list[int]:
                 ret.append(idx)
         else:
             if all(
-                    [
-                        _check_deviation_peaks(p, prices[idx - 1]),
-                        _check_deviation_peaks(p, prices[idx + 1]),
-                    ]
+                [
+                    _check_deviation_peaks(p, prices[idx - 1]),
+                    _check_deviation_peaks(p, prices[idx + 1]),
+                ]
             ):
                 ret.append(idx)
     return ret
@@ -34,10 +34,10 @@ def identify_valleys(prices: list) -> list[int]:
                 ret.append(idx)
         else:
             if all(
-                    [
-                        _check_deviation_valleys(p, prices[idx - 1]),
-                        _check_deviation_valleys(p, prices[idx + 1]),
-                    ]
+                [
+                    _check_deviation_valleys(p, prices[idx - 1]),
+                    _check_deviation_valleys(p, prices[idx + 1]),
+                ]
             ):
                 ret.append(idx)
     return ret
@@ -68,13 +68,13 @@ def find_single_valleys(prices: list) -> list[int]:
             pass
         else:
             if all(
-                    [
-                        p < prices[idx - 1],
-                        p < prices[idx + 1],
-                        min(prices[idx - 1], prices[idx + 1])
-                        / max(prices[idx - 1], prices[idx + 1])
-                        > 0.8,
-                    ]
+                [
+                    p < prices[idx - 1],
+                    p < prices[idx + 1],
+                    min(prices[idx - 1], prices[idx + 1])
+                    / max(prices[idx - 1], prices[idx + 1])
+                    > 0.8,
+                ]
             ):
                 ret.append(idx)
     return ret

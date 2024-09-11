@@ -1,15 +1,21 @@
 """Config flow for Peaq integration."""
+
 from __future__ import annotations
 
 import logging
 from typing import Any, Optional
-import homeassistant.helpers.config_validation as cv # pylint: disable=E0401
+import homeassistant.helpers.config_validation as cv  # pylint: disable=E0401
 import voluptuous as vol
-from homeassistant import config_entries # pylint: disable=E0401
+from homeassistant import config_entries  # pylint: disable=E0401
 from homeassistant.core import callback  # pylint: disable=E0401
 
-from custom_components.peaqhvac.configflow.config_flow_schemas import USER_SCHEMA, OPTIONAL_SCHEMA
-from custom_components.peaqhvac.configflow.config_flow_validation import ConfigFlowValidation
+from custom_components.peaqhvac.configflow.config_flow_schemas import (
+    USER_SCHEMA,
+    OPTIONAL_SCHEMA,
+)
+from custom_components.peaqhvac.configflow.config_flow_validation import (
+    ConfigFlowValidation,
+)
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,7 +52,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(title=self.info["title"], data=self.data)
 
         return self.async_show_form(
-            step_id="optional", data_schema=OPTIONAL_SCHEMA, errors=errors, last_step=True
+            step_id="optional",
+            data_schema=OPTIONAL_SCHEMA,
+            errors=errors,
+            last_step=True,
         )
 
 
@@ -71,23 +80,38 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         _indoortemps = await self._get_existing_param("indoor_tempsensors", "")
         _outdoortemps = await self._get_existing_param("outdoor_tempsensors", "")
-        _stopheatingtemp = await self._get_existing_param("outdoor_temp_stop_heating", 15)
-        _nonhours_waterboost = await self._get_existing_param("non_hours_water_boost", [])
-        _demandhours_waterboost = await self._get_existing_param("demand_hours_water_boost", [])
+        _stopheatingtemp = await self._get_existing_param(
+            "outdoor_temp_stop_heating", 15
+        )
+        _nonhours_waterboost = await self._get_existing_param(
+            "non_hours_water_boost", []
+        )
+        _demandhours_waterboost = await self._get_existing_param(
+            "demand_hours_water_boost", []
+        )
         _lowdm = await self._get_existing_param("low_degree_minutes", "-600")
         _verycoldtemp = await self._get_existing_param("very_cold_temp", "-12")
 
         return self.async_show_form(
             step_id="init",
             last_step=True,
-            data_schema=vol.Schema({
-                vol.Optional("indoor_tempsensors", default=_indoortemps): cv.string,
-                vol.Optional("outdoor_tempsensors", default=_outdoortemps): cv.string,
-                vol.Optional("outdoor_temp_stop_heating", default=_stopheatingtemp): cv.positive_int,
-                vol.Optional("demand_hours_water_boost", default=_demandhours_waterboost): cv.multi_select(
-                    list(range(0, 24))),
-                vol.Optional("non_hours_water_boost", default=_nonhours_waterboost): cv.multi_select(list(range(0, 24))),
-                vol.Optional("low_degree_minutes", default=_lowdm): cv.string,
-                vol.Optional("very_cold_temp", default=_verycoldtemp): cv.string,
-                })
+            data_schema=vol.Schema(
+                {
+                    vol.Optional("indoor_tempsensors", default=_indoortemps): cv.string,
+                    vol.Optional(
+                        "outdoor_tempsensors", default=_outdoortemps
+                    ): cv.string,
+                    vol.Optional(
+                        "outdoor_temp_stop_heating", default=_stopheatingtemp
+                    ): cv.positive_int,
+                    vol.Optional(
+                        "demand_hours_water_boost", default=_demandhours_waterboost
+                    ): cv.multi_select(list(range(0, 24))),
+                    vol.Optional(
+                        "non_hours_water_boost", default=_nonhours_waterboost
+                    ): cv.multi_select(list(range(0, 24))),
+                    vol.Optional("low_degree_minutes", default=_lowdm): cv.string,
+                    vol.Optional("very_cold_temp", default=_verycoldtemp): cv.string,
+                }
+            ),
         )

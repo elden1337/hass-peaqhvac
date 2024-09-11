@@ -9,6 +9,8 @@ from custom_components.peaqhvac.service.models.enums.demand import Demand
 _LOGGER = logging.getLogger(__name__)
 
 UPDATE_INTERVAL = 60
+
+
 class IHeater(ABC):
 
     def __init__(self, hub):

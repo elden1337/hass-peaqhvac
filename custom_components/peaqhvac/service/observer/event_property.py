@@ -1,5 +1,6 @@
 from datetime import datetime
 
+
 class EventProperty:
     def __init__(self, name, prop_type: type, hass, default=None):
         self._value = default
@@ -25,10 +26,11 @@ class EventProperty:
         if self._timeout is None:
             return False
         return self._timeout < datetime.now()
+
     @property
     def timeout(self):
         return self._timeout
 
     @timeout.setter
-    def timeout(self, val: datetime|None):
+    def timeout(self, val: datetime | None):
         self._timeout = val

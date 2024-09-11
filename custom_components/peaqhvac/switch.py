@@ -1,9 +1,9 @@
 import logging
 from datetime import timedelta
 
-from homeassistant.components.switch import SwitchEntity # pylint: disable=E0401
-from homeassistant.core import HomeAssistant # pylint: disable=E0401
-from homeassistant.helpers.restore_state import RestoreEntity # pylint: disable=E0401
+from homeassistant.components.switch import SwitchEntity  # pylint: disable=E0401
+from homeassistant.core import HomeAssistant  # pylint: disable=E0401
+from homeassistant.helpers.restore_state import RestoreEntity  # pylint: disable=E0401
 
 from .const import DOMAIN
 
@@ -15,6 +15,7 @@ AWAYMODE = "away mode"
 CONTROL_WATER = "control water"
 CONTROL_HEAT = "control heat"
 CONTROL_VENTILATION = "control ventilation"
+
 
 async def async_setup_entry(
     hass: HomeAssistant, config_entry, async_add_entities

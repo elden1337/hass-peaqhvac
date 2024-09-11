@@ -2,8 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from time import mktime, strptime
 
-from custom_components.peaqhvac.service.models.enums.weather_type import \
-    WeatherType
+from custom_components.peaqhvac.service.models.enums.weather_type import WeatherType
 
 
 @dataclass

@@ -3,30 +3,30 @@ from typing import Tuple
 
 from peaqevcore.common.models.observer_types import ObserverTypes
 
-from custom_components.peaqhvac.service.models.enums.hvac_presets import \
-    HvacPresets
-from custom_components.peaqhvac.service.observer.observer_broadcaster import ObserverBroadcaster
+from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
+from custom_components.peaqhvac.service.observer.observer_broadcaster import (
+    ObserverBroadcaster,
+)
 
 MINTEMP = 15
 MAXTEMP = 27
 _LOGGER = logging.getLogger(__name__)
 
 
-def adjusted_tolerances(offset: int, min_tolerance, max_tolerance) -> Tuple[float, float]:
+def adjusted_tolerances(
+    offset: int, min_tolerance, max_tolerance
+) -> Tuple[float, float]:
     # if abs(offset) <= 1:
     return min_tolerance, max_tolerance
-    _max_tolerance = (
-        max_tolerance + (offset / 15) if offset > 0 else max_tolerance
-    )
-    _min_tolerance = (
-        min_tolerance + (abs(offset) / 10)
-        if offset < 0
-        else min_tolerance
-    )
+    _max_tolerance = max_tolerance + (offset / 15) if offset > 0 else max_tolerance
+    _min_tolerance = min_tolerance + (abs(offset) / 10) if offset < 0 else min_tolerance
     return max(_min_tolerance, 0.1), max(_max_tolerance, 0.1)
 
+
 class TargetTemp(ObserverBroadcaster):
-    def __init__(self, average_temp_outdoors, observer, initval=19, observer_message: str = None):
+    def __init__(
+        self, average_temp_outdoors, observer, initval=19, observer_message: str = None
+    ):
         self._average_temp_outdoors_sensor = average_temp_outdoors
         self._value = initval
         self._min_tolerance = None
@@ -54,7 +54,9 @@ class TargetTemp(ObserverBroadcaster):
         try:
             if val is not None:
                 self._value = val
-            self._internal_set_temp = self._value - HvacPresets.get_tempdiff(self.preset)
+            self._internal_set_temp = self._value - HvacPresets.get_tempdiff(
+                self.preset
+            )
             self._adjusted_value = self.adjusted_temp
             self._set_temperature_and_tolerances()
             self._broadcast_changes()
@@ -102,8 +104,6 @@ class TargetTemp(ObserverBroadcaster):
         _tolerances = HvacPresets.get_tolerances(preset)
         self._min_tolerance = _tolerances[0]
         self._max_tolerance = _tolerances[1]
-
-
 
     def _minmax(self, desired_temp) -> float:
         if desired_temp < MINTEMP:

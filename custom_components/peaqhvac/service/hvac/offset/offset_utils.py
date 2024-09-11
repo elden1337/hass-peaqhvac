@@ -2,9 +2,10 @@ import logging
 from datetime import datetime, timedelta
 from statistics import mean, stdev
 
-from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
-from custom_components.peaqhvac.service.models.enums.hvac_presets import \
-    HvacPresets
+from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import (
+    CalculatedOffsetModel,
+)
+from custom_components.peaqhvac.service.models.enums.hvac_presets import HvacPresets
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,10 +30,10 @@ def flat_day_lower_tolerance(prices):
 
 
 def offset_per_day(
-        day_values: dict,
-        all_prices: list[float],
-        tolerance: int | None,
-        indoors_preset: HvacPresets = HvacPresets.Normal,
+    day_values: dict,
+    all_prices: list[float],
+    tolerance: int | None,
+    indoors_preset: HvacPresets = HvacPresets.Normal,
 ) -> dict:
     ret = {}
     if tolerance is not None:
@@ -49,7 +50,7 @@ def offset_per_day(
 
 def get_offset_dict(offset_dict, dt_now) -> dict:
     return {
-        TODAY:    offset_dict.get(dt_now.date(), {}),
+        TODAY: offset_dict.get(dt_now.date(), {}),
         TOMORROW: offset_dict.get(dt_now.date() + timedelta(days=1), {}),
     }
 
@@ -69,7 +70,9 @@ def _get_timedelta(prices: list[float]) -> int:
             return 15
 
 
-def _deviation_from_mean(prices: list[float], min_price: float, dt: datetime) -> dict[datetime, float]:
+def _deviation_from_mean(
+    prices: list[float], min_price: float, dt: datetime
+) -> dict[datetime, float]:
     if not len(prices):
         return {}
     delta = _get_timedelta(prices)
@@ -114,7 +117,9 @@ def max_price_lower_internal(tempdiff: float, peaks_today: list) -> bool:
     return False
 
 
-def adjust_to_threshold(offsetdata: CalculatedOffsetModel, outdoors_value: int, tolerance: int) -> int:
+def adjust_to_threshold(
+    offsetdata: CalculatedOffsetModel, outdoors_value: int, tolerance: int
+) -> int:
     adjustment = offsetdata.sum_values()
     if adjustment is None or outdoors_value > 17:
         return min(0, adjustment)

@@ -17,13 +17,12 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-
 class PeaqSimpleMoneySensor(SensorEntity):
     device_class = SensorDeviceClass.MONETARY
 
     def __init__(self, hub: Hub, entry_id, sensor_name: str, caller_attribute: str):
         name = f"{hub.hubname} {sensor_name}"
-        #super().__init__(hub, name, entry_id)
+        # super().__init__(hub, name, entry_id)
 
         self._attr_name = name
         self._entry_id = entry_id
@@ -54,10 +53,7 @@ class PeaqSimpleMoneySensor(SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        return {
-            "Use Cent": self._use_cent,
-            "Price Source": self.hub.spotprice.source
-        }
+        return {"Use Cent": self._use_cent, "Price Source": self.hub.spotprice.source}
 
     @property
     def device_info(self):
@@ -72,4 +68,3 @@ class PeaqSimpleMoneySensor(SensorEntity):
     def unique_id(self):
         """Return a unique ID to use for this sensor."""
         return f"{DOMAIN}_{self._entry_id}_{nametoid(self._attr_name)}"
-
