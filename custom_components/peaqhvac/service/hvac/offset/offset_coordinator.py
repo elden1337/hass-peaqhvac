@@ -47,8 +47,15 @@ class OffsetCoordinator:
 
     @property
     def current_offset(self) -> int:
-        self._set_offset()
-        return self.model.raw_offsets[0].get(datetime.now().hour, 0)
+        ret = 0
+        try:
+            self._set_offset()
+            if len(self.model.raw_offsets):
+                ret = self.model.raw_offsets.get(datetime.now().replace(minute=0, second=0, microsecond=0), 0)
+        except KeyError as e:
+            _LOGGER.error(f"Unable to get current offset: {e}. raw_offsets: {self.model.raw_offsets}")
+        finally:
+            return ret
 
     #self.model.current_offset_dict_combined = ret.calculated_offsets
 

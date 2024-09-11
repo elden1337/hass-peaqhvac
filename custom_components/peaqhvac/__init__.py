@@ -10,6 +10,7 @@ from custom_components.peaqhvac.service.hub.hub import Hub
 
 from .const import DOMAIN, HVACBRAND_NIBE, LISTENER_FN_CLOSE, PLATFORMS
 from .service.hub import hub_factory
+from .service.hub.hub_factory import HubFactory
 from .service.models.config_model import ConfigModel
 from .services import async_setup_services
 
@@ -42,11 +43,11 @@ async def async_setup_entry(hass: HomeAssistant, config: ConfigEntry) -> bool:
         HVACBRAND_NIBE
     )  # todo:move to proper dropdown in configflow
 
-    hub = await hub_factory.async_create(hass, huboptions)
+    hub = await HubFactory(hass).async_create(huboptions)
 
     hass.data[DOMAIN]["hub"] = hub
 
-    await hub.async_setup()
+    #await hub.async_setup()
     await async_setup_services(hass, hub)
 
     await hass.config_entries.async_forward_entry_setups(config, PLATFORMS)

@@ -7,21 +7,12 @@ from functools import partial
 from typing import Callable
 
 from custom_components.peaqhvac.const import LATEST_WATER_BOOST, NEXT_WATER_START
-from custom_components.peaqhvac.service.hub.hubsensors import HubSensors
-from custom_components.peaqhvac.service.hub.state_changes import StateChanges
-from custom_components.peaqhvac.service.hub.weather_prognosis import \
-    WeatherPrognosis
-from custom_components.peaqhvac.service.hvac.hvacfactory import HvacFactory
-from custom_components.peaqhvac.service.hvac.offset.offset_coordinator_factory import OffsetFactory
+
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.models.offsets_exportmodel import OffsetsExportModel
 from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
-from custom_components.peaqhvac.service.observer.observer_coordinator import Observer
 from custom_components.peaqhvac.extensionmethods import async_iscoroutine
-import sys
-if 'pytest' not in sys.modules:
-    from peaqevcore.common.spotprice.spotprice_factory import SpotPriceFactory
-    from peaqevcore.common.models.peaq_system import PeaqSystem
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,37 +22,17 @@ class Hub:
     hubname = "PeaqHvac"
 
     def __init__(self, hass: HomeAssistant, observer: IObserver, hub_options: ConfigModel):
+        self.trackerentities = []
         self._is_initialized = False
         self.state_machine = hass
         self.observer = observer
         self.options = hub_options
-
-        self.sensors = HubSensors(self, hub_options, hass, self.options.misc_options.peaqev_discovered)
-        self.states = StateChanges(self, hass)
-        self.hvac = HvacFactory.create(hass, self.options, self, self.observer)
-        self.spotprice = SpotPriceFactory.create(
-            hub=self,
-            observer=self.observer,
-            system=PeaqSystem.PeaqHvac,
-            test=False,
-            is_active=True
-        )
-
-        self.prognosis = WeatherPrognosis(hass, self.sensors.average_temp_outdoors, self.observer)
-        self.offset = OffsetFactory.create(self, observer=self.observer)
-
-    async def async_setup(self) -> None:
-        await self.async_setup_trackers()
-
-    async def async_setup_trackers(self):
-        self.trackerentities = []
-        self.trackerentities.append(self.spotprice.entity)
-        self.trackerentities.extend(self.options.indoor_tempsensors)
-        self.trackerentities.extend(self.options.outdoor_tempsensors)
-        await self.states.async_initialize_values()
-        async_track_state_change_event(
-            self.state_machine, self.trackerentities, self._async_on_change
-        )
+        self.sensors = None
+        self.states = None
+        self.hvac = None
+        self.spotprice = None
+        self.prognosis = None
+        self.offset = None
 
     def price_below_min(self, hour:datetime) -> bool:
         try:
@@ -84,7 +55,7 @@ class Hub:
         return False
 
     @callback
-    async def _async_on_change(self, event: Event[EventStateChangedData]) -> None:
+    async def async_on_change(self, event: Event[EventStateChangedData]) -> None:
         entity_id = event.data["entity_id"]
         old_state = event.data["old_state"]
         new_state = event.data["new_state"]

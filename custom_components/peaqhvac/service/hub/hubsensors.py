@@ -23,9 +23,7 @@ class HubSensors:
     peaqev_installed: bool
     peaqev_facade: PeaqevFacadeBase
 
-    def __init__(
-        self, hub, options: ConfigModel, hass, peaqev_discovered: bool = False
-    ):
+    def __init__(self, hub, options: ConfigModel, hass):
         self.peaqhvac_enabled = HubMember(
             initval=options.misc_options.enabled_on_boot, data_type=bool
         )
@@ -43,9 +41,9 @@ class HubSensors:
             observer_message=ObserverTypes.SetTemperatureChanged, hub=hub
         )
 
-        if peaqev_discovered:
+        if options.misc_options.peaqev_discovered:
             self.peaqev_installed = True
-            self.peaqev_facade = PeaqevFacade(hass, peaqev_discovered)
+            self.peaqev_facade = PeaqevFacade(hass, True)
         else:
             self.peaqev_facade = PeaqevFacadeBase()
             self.peaqev_installed = False
