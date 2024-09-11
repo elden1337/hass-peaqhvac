@@ -43,7 +43,7 @@ def get_temp_trend_offset(temp_trend_is_clean: bool, predicted_temp: float, adju
         ret = max(round(new_temp_diff, 1), 0)
     else:
         ret = min(round(new_temp_diff, 1), 0)
-    return min((round(ret / 2, 1)), 1) * -1
+    return min((round(ret / 2, 1)), 1) * (-1 if ret > 0 else 1)
 
 
 def _temp_extremas_return(diffs, tolerance) -> float:
