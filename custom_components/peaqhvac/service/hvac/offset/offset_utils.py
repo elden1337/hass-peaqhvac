@@ -11,6 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 TODAY = "today"
 TOMORROW = "tomorrow"
 
+
 def flat_day_lower_tolerance(prices):
     if not len(prices):
         return 0
@@ -38,7 +39,7 @@ def offset_per_day(
         tolerance -= flat_day_lower_tolerance(all_prices)
         print(f"Flat day lower tolerance: {flat_day_lower_tolerance(all_prices)}")
         for k, v in day_values.items():
-            ret[k] = int(round((day_values[k] * tolerance) * -1, 0))
+            ret[k] = int(round((v * tolerance) * -1, 0))
             if indoors_preset is HvacPresets.Away:
                 ret[k] -= 1
             if abs(ret[k]) > tolerance:
@@ -74,7 +75,6 @@ def _deviation_from_mean(prices: list[float], min_price: float, dt: datetime) ->
     if not len(prices):
         return {}
     delta = _get_timedelta(prices)
-    dt_lister = dt.replace(hour=0)
     standardized_prices = [(p - mean(prices)) / stdev(prices) for p in prices]
     avg = mean(standardized_prices)
     devi = stdev(standardized_prices)
@@ -93,7 +93,6 @@ def _deviation_from_mean(prices: list[float], min_price: float, dt: datetime) ->
         deviation = (num - _avg) / _devi
         if _devi < 1:
             deviation *= 0.5
-        setval = 0
 
         if num <= min_price:
             setval = min(round(deviation, 2), 0)
@@ -102,7 +101,7 @@ def _deviation_from_mean(prices: list[float], min_price: float, dt: datetime) ->
             setval = round(setval, 2)
         else:
             setval = round(deviation, 2)
-        deviation_dict[dt_lister + timedelta(minutes=delta * i)] = setval
+        deviation_dict[dt.replace(hour=0) + timedelta(minutes=delta * i)] = setval
     return deviation_dict
 
 
@@ -111,7 +110,7 @@ def max_price_lower_internal(tempdiff: float, peaks_today: list) -> bool:
     if tempdiff >= 0.5:
         if datetime.now().hour in peaks_today:
             return True
-        elif datetime.now().hour < 23 and datetime.now().minute > 50:
+        if datetime.now().hour < 23 and datetime.now().minute > 50:
             if datetime.now().hour + 1 in peaks_today:
                 return True
     return False
