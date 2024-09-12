@@ -198,7 +198,7 @@ def test_offsets_cent_and_normal_match():
     prices = P231213 + P231214
     now_dt = datetime(2023, 12, 13, 20, 43, 0)
     r1 = set_offset_dict(prices, now_dt, 0)
-    r2 = set_offset_dict([p * 100 for p in prices], now_dt, 0, {})
+    r2 = set_offset_dict([p * 100 for p in prices], now_dt, 0)
     assert r1 == r2
 
 
