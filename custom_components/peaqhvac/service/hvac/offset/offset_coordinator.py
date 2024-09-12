@@ -55,7 +55,7 @@ class OffsetCoordinator:
     def current_offset(self) -> int:
         ret = 0
         try:
-            self._set_offset()
+            #self._set_offset()
             if len(self.model.raw_offsets):
                 latest_key = max((key for key in self.model.raw_offsets if key <= datetime.now()), default=None)
                 if latest_key is not None:
