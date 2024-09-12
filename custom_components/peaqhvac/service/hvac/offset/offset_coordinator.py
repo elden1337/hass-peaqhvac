@@ -143,7 +143,7 @@ class OffsetCoordinator:
                     )
             else:
                 _LOGGER.debug("No prognosis available", self._hub.prognosis.prognosis)
-            self.observer.broadcast(ObserverTypes.OffsetRecalculation)
+            self.observer.broadcast(ObserverTypes.OffsetRecalculation, self.current_offset)
         else:
             if self._hub.is_initialized:
                 _LOGGER.warning(f"Hub is ready but I'm unable to set offset. Prices num:{len(self.prices) if self.prices else 0}")
