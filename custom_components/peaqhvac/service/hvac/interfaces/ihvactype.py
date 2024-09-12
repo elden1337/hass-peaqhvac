@@ -137,6 +137,7 @@ class IHvacType:
 
     async def async_update_offset(self, raw_offset:int|None = None) -> bool:
         if raw_offset:
+            _LOGGER.debug(f"Raw offset pushed to update offset: {raw_offset}. Previous {self.raw_offset}")
             self.raw_offset = raw_offset
         ret = False
         if self.hub.sensors.peaqev_installed:
