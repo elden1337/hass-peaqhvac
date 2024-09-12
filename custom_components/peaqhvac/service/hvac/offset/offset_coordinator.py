@@ -57,9 +57,11 @@ class OffsetCoordinator:
         try:
             self._set_offset()
             if len(self.model.raw_offsets):
-                ret = self.model.raw_offsets.get(
-                    datetime.now().replace(minute=0, second=0, microsecond=0), 0
-                )
+                latest_key = max((key for key in self.model.raw_offsets if key <= datetime.now()), default=None)
+                if latest_key is not None:
+                    ret = self.model.raw_offsets[latest_key]
+                else:
+                    ret = 0
         except KeyError as e:
             _LOGGER.error(
                 f"Unable to get current offset: {e}. raw_offsets: {self.model.raw_offsets}"

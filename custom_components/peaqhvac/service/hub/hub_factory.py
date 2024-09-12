@@ -27,11 +27,15 @@ class HubFactory:
         self.hub = None
 
     async def async_create(self, options: ConfigModel) -> Hub:
+        _LOGGER.debug("Entering async_create in hub_factory")
         observer = Observer(self.hass)
+        _LOGGER.debug("Hubfactory > Created observer")
         options.observer = observer
         options.misc_options.peaqev_discovered = self._get_peaqev()
+        _LOGGER.debug("Hubfactory > Created options and set peaqev_discovered")
 
         hub = Hub(self.hass, observer, options)
+        _LOGGER.debug("Hubfactory > Created hub")
         spotprice = SpotPriceFactory.create(
             hub=hub,
             observer=observer,
@@ -39,8 +43,11 @@ class HubFactory:
             test=False,
             is_active=True,
         )
+        _LOGGER.debug("Hubfactory > Created spotprice")
         sensors = HubSensors(observer=observer, options=options, hass=self.hass)
+        _LOGGER.debug("Hubfactory > Created sensors")
         states = StateChanges(hub, self.hass)
+        _LOGGER.debug("Hubfactory > Created states")
         self.hub = hub
         await self.async_setup(spotprice, sensors, states)
         return hub
@@ -53,12 +60,13 @@ class HubFactory:
         self.hub.hvac_service = HvacFactory.create(
             self.hass, self.hub.options, self.hub, self.hub.observer
         )
-
+        _LOGGER.debug("Hubfactory > Created hvacfactory")
         self.hub.prognosis = WeatherPrognosis(
             self.hass, sensors.average_temp_outdoors, self.hub.observer
         )
+        _LOGGER.debug("Hubfactory > Created prognosis")
         self.hub.offset = OffsetFactory.create(self.hub, self.hub.observer)
-
+        _LOGGER.debug("Hubfactory > Created offset")
         await self.async_setup_trackers()
 
     async def async_setup_trackers(self):

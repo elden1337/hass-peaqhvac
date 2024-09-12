@@ -58,6 +58,8 @@ class TrendSensor(SensorBase, RestoreEntity):
         return attr_dict
 
     async def async_update(self) -> None:
+        if not self._hub.is_initialized:
+            return
         self._state = getattr(self.datasensor, "trend")
         self._samples = getattr(self.datasensor, "samples")
         self._oldest_sample = getattr(self.datasensor, "oldest_sample")

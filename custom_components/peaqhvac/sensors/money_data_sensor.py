@@ -37,6 +37,8 @@ class PeaqMoneyDataSensor(SensorEntity, RestoreEntity):
         return "mdi:database-outline"
 
     async def async_update(self) -> None:
+        if not self.hub.is_initialized:
+            return
         try:
             ret = self.hub.spotprice.average_data
         except:

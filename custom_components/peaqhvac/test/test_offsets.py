@@ -228,50 +228,30 @@ def test_assert_cheaper_hours_tomorrow_not_lower_offset_than_today():
 
     # assert 1 > 2
 
+def test_split_into_periods():
+    _tolerance = 10
+    indoors_preset = HvacPresets.Normal
+    prices = P231218
+    prices_tomorrow = P231219
+    now_dt = datetime(2023, 12, 18, 20, 43, 0)
+    offset_dict = set_offset_dict(prices + prices_tomorrow, now_dt, 0, False)
+    offs2 = offset_per_day(
+        all_prices=prices + prices_tomorrow,
+        day_values=offset_dict,
+        tolerance=_tolerance,
+        indoors_preset=indoors_preset,
+    )
 
-# def test_offsets_correct_curve_over_night_cached_today():
-#     _tolerance = 3
-#     indoors_preset = HvacPresets.Normal
-#     prices = P231215
-#     prices_tomorrow =  P231216
-#     now_dt = datetime(2023,12,15,0,3,0)
-#     offset_dict1 = set_offset_dict(prices, now_dt, 0, {})
-#     today1 = offset_per_day(
-#         all_prices=prices,
-#         day_values=offset_dict1,
-#         tolerance=_tolerance,
-#         indoors_preset=indoors_preset,
-#     )
-#
-#     ret1 = smooth_transitions(
-#         vals=today1,
-#         tolerance=_tolerance,
-#     )
-#     key_today_only = [1,1, 2, 2, 3, 2, -2,
-#  -4, -7, -6, -4, -3, -1, 0, 1, 0,
-#  -2, -1, 1, 2, 2, 3, 6, 4]
-#     assert [v for k,v in ret1.items()] == key_today_only
-#
-#     now_dt = datetime(2023,12,15,13,3,0)
-#     offset_dict2 = set_offset_dict(prices+prices_tomorrow, now_dt, 0, ret1)
-#     today2 = offset_per_day(
-#         all_prices=prices + prices_tomorrow,
-#         day_values=offset_dict2,
-#         tolerance=_tolerance,
-#         indoors_preset=indoors_preset,
-#     )
-#
-#     ret2 = smooth_transitions(
-#         vals=today2,
-#         tolerance=_tolerance,
-#     )
-#
-#     key_today = [-3, -2, -2, -2, -2, -2,
-#  -3, -4, -5, -5, -4, -4, -3, -2, -2, -2, -3, -3, -2, -2, -2, -2, -1, -2,
-#  0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2]
-#
-#     assert [v for k, v in ret2.items()] == key_today
+    ret = smooth_transitions(
+        vals=offs2,
+        tolerance=_tolerance,
+    )
 
+    print(offset_dict)
+    print(offs2)
+    print(ret)
+
+    assert 1 > 2
 
 def test_smooth_transistions_no_weather_prog_nothing_exceeds_tolerance():
     _tolerance = 3

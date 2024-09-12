@@ -24,6 +24,7 @@ class OffsetSensor(SensorBase):
         self._peaks_today = []
         self._peaks_tomorrow = []
         self._prognosis = []
+        self._aux_dict = None
 
     @property
     def unit_of_measurement(self):
@@ -38,6 +39,8 @@ class OffsetSensor(SensorBase):
         return "mdi:stairs"
 
     async def async_update(self) -> None:
+        if not self._hub.is_initialized:
+            return
         state_result = await self._hub.hvac_service.house_heater.async_adjusted_offset(
             self._hub.hvac_service.model.current_offset
         )

@@ -132,6 +132,7 @@ class HouseHeaterCoordinator(IHeater):
             self.hub.sensors.set_temp_indoors.adjusted_temp,
         )
 
+        _LOGGER.debug(f"current_offset: {current_offset}, tempdiff: {tempdiff}, tempextremas: {tempextremas}, temptrend: {temptrend}")
         return CalculatedOffsetModel(
             current_offset=current_offset,
             current_tempdiff=tempdiff,

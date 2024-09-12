@@ -35,6 +35,8 @@ class AverageSensor(SensorBase, RestoreEntity):
         return "mdi:thermometer"
 
     def update(self) -> None:
+        if not self._hub.is_initialized:
+            return
         if self._sensorname == AVERAGESENSOR_INDOORS:
             self._state = self._hub.sensors.average_temp_indoors.value
             self._min = self._hub.sensors.average_temp_indoors.min

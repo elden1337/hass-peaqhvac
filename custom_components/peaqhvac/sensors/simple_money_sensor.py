@@ -45,6 +45,8 @@ class PeaqSimpleMoneySensor(SensorEntity):
         return self._attr_unit_of_measurement
 
     async def async_update(self) -> None:
+        if not self.hub.is_initialized:
+            return
         self._use_cent = self.hub.spotprice.use_cent
         self._attr_unit_of_measurement = getattr(self.hub.spotprice, "currency")
         ret = getattr(self.hub.spotprice, self._caller_attribute)

@@ -155,7 +155,8 @@ class IHvacType:
             if self.model.current_offset != _hvac_offset:
                 await self.observer.async_broadcast(ObserverTypes.OffsetsChanged)
                 if self._force_update:
-                    await self.observer.async_broadcast(ObserverTypes.UpdateOperation)
+                    # await self.observer.async_broadcast(ObserverTypes.UpdateOperation)
+                    await self.request_periodic_updates()
                 ret = True
         except Exception as e:
             _LOGGER.exception(f"Error in updating offsets: {e}")

@@ -38,6 +38,8 @@ class PeaqSensor(SensorBase, RestoreEntity):
         return self._icon
 
     async def async_update(self) -> None:
+        if not self._hub.is_initialized:
+            return
         if self._sensorname == HEATINGDEMAND:
             self._state = self._hub.hvac_service.house_heater.demand.value
         elif self._sensorname == WATERDEMAND:

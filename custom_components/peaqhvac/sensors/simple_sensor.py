@@ -39,6 +39,8 @@ class PeaqSimpleSensor(SensorBase, RestoreEntity):
         return self._icon
 
     async def async_update(self) -> None:
+        if not self._hub.is_initialized:
+            return
         ret = await self._hub.async_get_internal_sensor(self._internal_entity)
         if ret is not None:
             if self._internal_entity == NEXT_WATER_START:

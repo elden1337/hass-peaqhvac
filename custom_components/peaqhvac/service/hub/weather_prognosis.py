@@ -202,7 +202,8 @@ class WeatherPrognosis:
     def _setup_weather_prognosis(
         self,
     ):  # todo: this must be handled with weeather servicecall.
-        pass
+        self._is_initialized = True
+
         # try:
         #     entities = template.integration_entities(self._hass, "met")
         #     if len(entities) < 1:
