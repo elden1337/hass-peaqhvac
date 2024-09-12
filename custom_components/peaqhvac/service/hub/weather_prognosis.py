@@ -33,18 +33,19 @@ class WeatherPrognosis:
 
     @property
     def prognosis(self) -> list:
-        if not self.is_initialized:
-            return []
-        self.update_weather_prognosis()
-        if len(self._hvac_prognosis_list) == 0:
-            try:
-                return self.get_hvac_prognosis(
-                    self.average_temp_outdoors.value
-                )
-            except Exception as e:
-                _LOGGER.warning(f"Could not get hvac-prognosis: {e}")
-                return []
-        return self._hvac_prognosis_list
+        return []
+        # if not self.is_initialized:
+        #     return []
+        # self.update_weather_prognosis()
+        # if len(self._hvac_prognosis_list) == 0:
+        #     try:
+        #         return self.get_hvac_prognosis(
+        #             self.average_temp_outdoors.value
+        #         )
+        #     except Exception as e:
+        #         _LOGGER.warning(f"Could not get hvac-prognosis: {e}")
+        #         return []
+        # return self._hvac_prognosis_list
 
     def update_weather_prognosis(self):
         if self.is_initialized:
