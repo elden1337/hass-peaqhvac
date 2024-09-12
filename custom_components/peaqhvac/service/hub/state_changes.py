@@ -44,7 +44,7 @@ class StateChanges:
 
         if entity == self._hub.spotprice.entity or self.latest_nordpool_update.is_timeout():
             await self._hub.spotprice.async_update_spotprice()
-            #await self._hass.async_add_executor_job(self._hub.prognosis.update_weather_prognosis)
+            #await self._hass.async_add_executor_job(self._hub.prognosis.update_weather_prognosis) #todo: add back when weather prognosis is fixed
             self.latest_nordpool_update.update()
 
         await self._hub.hvac.async_update_hvac()
