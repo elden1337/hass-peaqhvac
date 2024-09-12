@@ -49,7 +49,7 @@ class OffsetSensor(SensorBase):
         self._raw_offsets = offsetsmodel.raw_offsets
         self._peaks_today, self._peaks_tomorrow = offsetsmodel.peaks
 
-        self._current_offset = data.current_offset
+        self._current_offset = self._hub.offset.current_offset
         self._tempdiff_offset = data.current_tempdiff
         self._tempextremas_offset = data.current_temp_extremas
         self._temptrend_offset = data.current_temp_trend_offset
