@@ -197,7 +197,7 @@ P231219 = [
 def test_offsets_cent_and_normal_match():
     prices = P231213 + P231214
     now_dt = datetime(2023, 12, 13, 20, 43, 0)
-    r1 = set_offset_dict(prices, now_dt, 0, {})
+    r1 = set_offset_dict(prices, now_dt, 0)
     r2 = set_offset_dict([p * 100 for p in prices], now_dt, 0, {})
     assert r1 == r2
 
@@ -209,7 +209,7 @@ def test_assert_cheaper_hours_tomorrow_not_lower_offset_than_today():
     prices = P231218
     prices_tomorrow = P231219
     now_dt = datetime(2023, 12, 18, 20, 43, 0)
-    offset_dict = set_offset_dict(prices + prices_tomorrow, now_dt, 0, {})
+    offset_dict = set_offset_dict(prices + prices_tomorrow, now_dt, 0)
     offs2 = offset_per_day(
         all_prices=prices + prices_tomorrow,
         day_values=offset_dict,
@@ -279,7 +279,7 @@ def test_smooth_transistions_no_weather_prog_nothing_exceeds_tolerance():
     prices = P231213
     prices_tomorrow = P231214
     now_dt = datetime(2023, 12, 13, 20, 43, 0)
-    offset_dict = set_offset_dict(prices + prices_tomorrow, now_dt, 0, {})
+    offset_dict = set_offset_dict(prices + prices_tomorrow, now_dt, 0)
     print(offset_dict)
 
     offsets = offset_per_day(
@@ -303,7 +303,7 @@ def test_adjust_to_treshold_no_exceeding_values():
     prices = P231213
     prices_tomorrow = P231214
     now_dt = datetime(2023, 12, 13, 20, 43, 0)
-    offset_dict = set_offset_dict(prices + prices_tomorrow, now_dt, 0, {})
+    offset_dict = set_offset_dict(prices + prices_tomorrow, now_dt, 0)
 
     offsets = offset_per_day(
         all_prices=prices + prices_tomorrow,
