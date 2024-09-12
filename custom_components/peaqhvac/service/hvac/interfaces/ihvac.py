@@ -49,6 +49,7 @@ class IHvac:
         self.observer = observer
         self._hass = hass
         self._hvac_dm: int = None
+        self.raw_offset: int = 0
         self.house_heater = HouseHeaterCoordinator(hvac=self, hub=hub)
         self.water_heater = WaterHeater(hub=hub, observer=observer)
         self.house_ventilation = HouseVentilation(hvac=self, observer=observer)
@@ -127,14 +128,18 @@ class IHvac:
         await self.house_ventilation.async_check_vent_boost()
         await self.request_periodic_updates()
 
-    async def async_update_offset(self) -> bool:
+    async def async_update_offset(self, raw_offset:int|None = None) -> bool:
+        if raw_offset:
+            self.raw_offset = raw_offset
         ret = False
         if self.hub.sensors.peaqev_installed:
             if len(self.hub.sensors.peaqev_facade.offsets.get("today", {})) < 20:
                 return ret
         try:
             _hvac_offset = self.hvac_offset
-            new_offset, force_update = await self.house_heater.async_adjusted_offset(self.model.current_offset)
+            new_offset, force_update = await self.house_heater.async_adjusted_offset(
+                self.raw_offset
+            )
             if new_offset != self.model.current_offset:
                 self.model.current_offset = new_offset
                 self._force_update = force_update
