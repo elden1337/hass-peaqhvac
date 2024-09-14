@@ -14,9 +14,11 @@ _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = 60
 class IHeater(ABC):
 
-    def __init__(self, hub):
+    def __init__(self, hub, observer, implementation: str):
         self._demand: Demand = Demand.NoDemand
         self.hub = hub
+        self.observer = observer
+        self.implementation = implementation
         self._control_module: HubMember = HubMember(data_type=bool, initval=False)
         self._latest_update = WaitTimer(timeout=UPDATE_INTERVAL)
 
@@ -39,6 +41,7 @@ class IHeater(ABC):
     @control_module.setter
     def control_module(self, val) -> None:
         self._control_module.value = val
+        self.observer.broadcast("control_module_changed", (self.implementation, val))
 
     def _get_demand_for_current_hour(self) -> Demand:
         # if vacation or similar, return NoDemand
@@ -59,6 +62,3 @@ class IHeater(ABC):
     async def async_update_operation(self):
         pass
 
-    # def compare to heating demand
-    # def get current water temp from nibe
-    # def turn on waterboost or not

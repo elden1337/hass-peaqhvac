@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from peaqevcore.common.models.observer_types import ObserverTypes
 from peaqevcore.common.trend import Gradient
 
-from custom_components.peaqhvac.service.hvac.const import DEFAULT_WATER_BOOST
+from custom_components.peaqhvac.service.hvac.const import DEFAULT_WATER_BOOST, WATER_HEATER_NAME
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from peaqevcore.common.wait_timer import WaitTimer
 from custom_components.peaqhvac.service.hvac.water_heater.const import *
@@ -33,7 +33,7 @@ make the signaling less complicated, just calculate the need and check whether h
 
 class WaterHeater(IHeater):
     def __init__(self, hub, observer):
-        super().__init__(hub=hub)
+        super().__init__(hub=hub, observer=observer, implementation=WATER_HEATER_NAME)
         self.observer = observer
         self._current_temp = None
         self._is_initialized: bool = False

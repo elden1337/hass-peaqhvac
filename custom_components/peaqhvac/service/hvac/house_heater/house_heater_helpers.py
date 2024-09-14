@@ -10,6 +10,7 @@ from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class HouseHeaterHelpers:
     def __init__(self, hvac):
         self._hvac = hvac
