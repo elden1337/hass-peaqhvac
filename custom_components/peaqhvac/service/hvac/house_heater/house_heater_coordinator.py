@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import asyncio
 from typing import Tuple
 from custom_components.peaqhvac.service.hub.target_temp import adjusted_tolerances
 from custom_components.peaqhvac.service.hvac.house_heater.house_heater_helpers import HouseHeaterHelpers
@@ -19,6 +20,7 @@ OFFSET_MIN_VALUE = -10
 class HouseHeaterCoordinator(IHeater):
     def __init__(self, hvac, hub):
         self._degree_minutes = 0
+        self._lock = asyncio.Lock()
         self._current_adjusted_offset: int = 0
         self._helpers = HouseHeaterHelpers(hvac=hvac)
         super().__init__(hub=hub)
@@ -53,30 +55,31 @@ class HouseHeaterCoordinator(IHeater):
         self.current_adjusted_offset = OFFSET_MIN_VALUE
 
     async def async_adjusted_offset(self, current_offset: int) -> Tuple[int, bool]:
-        force_update: bool = False
+        async with self._lock:
+            force_update: bool = False
 
-        outdoor_temp = self.hub.sensors.average_temp_outdoors.value
-        temp_diff = self.hub.sensors.get_tempdiff()
+            outdoor_temp = self.hub.sensors.average_temp_outdoors.value
+            temp_diff = self.hub.sensors.get_tempdiff()
 
-        max_lower = self.hub.offset.max_price_lower(temp_diff)
-        if (self.turn_off_all_heat or max_lower) and outdoor_temp >= 0:
-            self._update_aux_offset_adjustments(max_lower)
-            return OFFSET_MIN_VALUE, True
+            max_lower = self.hub.offset.max_price_lower(temp_diff)
+            if (self.turn_off_all_heat or max_lower) and outdoor_temp >= 0:
+                self._update_aux_offset_adjustments(max_lower)
+                return OFFSET_MIN_VALUE, True
 
-        self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = 0
+            self._helpers.aux_offset_adjustments[OffsetAdjustments.PeakHour] = 0
 
-        offsetdata = await self.async_calculated_offsetdata(current_offset)
-        force_update = self._helpers.temporarily_lower_offset(offsetdata, force_update)
+            offsetdata = await self.async_calculated_offsetdata(current_offset)
+            force_update = self._helpers.temporarily_lower_offset(offsetdata, force_update)
 
-        if self.current_adjusted_offset != round(offsetdata.sum_values(), 0):
-            ret = adjust_to_threshold(
-                offsetdata,
-                self.hub.sensors.average_temp_outdoors.value,
-                self.hub.offset.model.tolerance
-            )
-            self.current_adjusted_offset = round(ret, 0)
+            if self.current_adjusted_offset != round(offsetdata.sum_values(), 0):
+                ret = adjust_to_threshold(
+                    offsetdata,
+                    self.hub.sensors.average_temp_outdoors.value,
+                    self.hub.offset.model.tolerance
+                )
+                self.current_adjusted_offset = round(ret, 0)
 
-        return self.current_adjusted_offset, force_update
+            return self.current_adjusted_offset, force_update
 
     def _get_demand(self) -> Demand:
         return self._helpers.helper_get_demand()
