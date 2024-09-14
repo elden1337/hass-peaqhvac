@@ -55,7 +55,6 @@ class IHvac:
         self.house_ventilation = HouseVentilation(hvac=self, observer=observer)
 
         self.observer.add(ObserverTypes.OffsetRecalculation, self.async_update_offset)
-        self.observer.add(ObserverTypes.UpdateOperation, self.request_periodic_updates)
         self.observer.add("water boost start", self.async_boost_water)
 
     @property
@@ -78,7 +77,7 @@ class IHvac:
         pass
 
     @abstractmethod
-    def _set_operation_call_parameters(
+    def set_operation_call_parameters(
             self, operation: HvacOperations, _value: any
     ) -> Tuple[str, dict, str]:
         pass
@@ -147,8 +146,11 @@ class IHvac:
                 self._force_update = force_update
             if self.model.current_offset != _hvac_offset:
                 await self.observer.async_broadcast(ObserverTypes.OffsetsChanged)
-                if self._force_update:
-                    await self.observer.async_broadcast(ObserverTypes.UpdateOperation)
+                #if self._force_update:
+                await self.observer.async_broadcast(
+                    command=ObserverTypes.UpdateOperation,
+                    argument=(HvacOperations.Offset, self.model.current_offset)
+                )
                 ret = True
         except Exception as e:
             _LOGGER.exception(f"Error in updating offsets: {e}")
@@ -234,7 +236,7 @@ class IHvac:
                     call_operation,
                     params,
                     domain,
-                ) = self._set_operation_call_parameters(operation, _value)
+                ) = self.set_operation_call_parameters(operation, _value)
 
                 await self._hass.services.async_call(domain, call_operation, params)
                 _LOGGER.debug(

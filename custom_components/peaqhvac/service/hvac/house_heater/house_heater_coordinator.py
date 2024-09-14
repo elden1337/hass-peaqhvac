@@ -6,7 +6,8 @@ from custom_components.peaqhvac.service.hub.target_temp import adjusted_toleranc
 from custom_components.peaqhvac.service.hvac.house_heater.house_heater_helpers import HouseHeaterHelpers
 from custom_components.peaqhvac.service.hvac.house_heater.models.calculated_offset import CalculatedOffsetModel
 from custom_components.peaqhvac.service.hvac.house_heater.models.offset_adjustments import OffsetAdjustments
-from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper import get_tempdiff_inverted, get_temp_trend_offset
+from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper import get_tempdiff_inverted, \
+    get_temp_extremas, get_temp_trend_offset
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.hvac.offset.offset_utils import adjust_to_threshold
 from custom_components.peaqhvac.service.models.enums.demand import Demand
@@ -98,6 +99,12 @@ class HouseHeaterCoordinator(IHeater):
             self.hub.sensors.get_tempdiff(),
             self._current_tolerances
         )
+        tempextremas = get_temp_extremas(
+            current_offset,
+            [self.hub.sensors.set_temp_indoors.adjusted_temp - t for t in
+             self.hub.sensors.average_temp_indoors.all_values],
+            self._current_tolerances
+        )
         temptrend = get_temp_trend_offset(
             self.hub.sensors.temp_trend_indoors.is_clean,
             self.hub.sensors.predicted_temp,
@@ -106,6 +113,7 @@ class HouseHeaterCoordinator(IHeater):
 
         return CalculatedOffsetModel(current_offset=current_offset,
                                      current_tempdiff=tempdiff,
+                                     current_temp_extremas=tempextremas,
                                      current_temp_trend_offset=temptrend)
 
     async def async_update_operation(self):
