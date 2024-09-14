@@ -15,7 +15,6 @@ class OffsetSensor(SensorBase):
         self._raw_offsets = []
         self._current_offset = None
         self._tempdiff_offset = None
-        self._tempextremas_offset = None
         self._temptrend_offset = None
         self._peaks_today = []
         self._peaks_tomorrow = []
@@ -51,7 +50,6 @@ class OffsetSensor(SensorBase):
 
         self._current_offset = self._hub.offset.current_offset
         self._tempdiff_offset = data.current_tempdiff
-        self._tempextremas_offset = data.current_temp_extremas
         self._temptrend_offset = data.current_temp_trend_offset
         self._aux_dict = self._hub.hvac.house_heater.aux_offset_adjustments
 
@@ -60,7 +58,6 @@ class OffsetSensor(SensorBase):
         ret = {
             "Current hour offset":  self._current_offset,
             "Tempdiff offset":      self._tempdiff_offset,
-            "Temp extremas offset": self._tempextremas_offset,
             "Temp trend offset":    self._temptrend_offset,
             "Today":                self._offsets,
             "Tomorrow":             self._offsets_tomorrow,

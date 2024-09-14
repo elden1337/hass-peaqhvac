@@ -138,7 +138,7 @@ def test_adjust_to_treshold_no_exceeding_values():
     )
 
     for k,v in smooth.items():
-        model = CalculatedOffsetModel(current_offset=v, current_tempdiff=random.uniform(-1, 1), current_temp_extremas=random.uniform(-1, 1), current_temp_trend_offset=random.uniform(-1, 1))
+        model = CalculatedOffsetModel(current_offset=v, current_tempdiff=random.uniform(-1, 1), current_temp_trend_offset=random.uniform(-1, 1))
         adj = adjust_to_threshold(model, 0, _tolerance)
         assert abs(adj) <= _tolerance
 

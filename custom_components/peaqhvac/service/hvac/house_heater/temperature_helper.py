@@ -17,22 +17,6 @@ def get_tempdiff_inverted(current_offset: int, temp_diff: float, determine_toler
     return ret * -1
 
 
-def get_temp_extremas(current_offset: int, all_temps: list, determine_tolerance: callable) -> float:
-    diffs = all_temps
-    cold_diffs, hot_diffs = [d for d in diffs if d > 0] + [0], [d for d in diffs if d < 0] + [0]
-    hot_large = abs(min(hot_diffs))
-    cold_large = abs(max(cold_diffs))
-    if hot_large == cold_large:
-        return 0
-    is_cold = cold_large > hot_large
-    tolerance = determine_tolerance(is_cold, current_offset, False)
-    if is_cold:
-        ret = _temp_extremas_return(cold_diffs, tolerance)
-        return ret / max(len(hot_diffs), 1)
-    ret = _temp_extremas_return(hot_diffs, tolerance)
-    return ret / max(len(cold_diffs), 1)
-
-
 def get_temp_trend_offset(temp_trend_is_clean: bool, predicted_temp: float, adjusted_temp: float) -> float:
     if not temp_trend_is_clean:
         return 0
