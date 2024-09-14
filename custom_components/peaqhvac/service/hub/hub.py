@@ -33,7 +33,7 @@ class Hub:
     def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
         self._is_initialized = False
         self.state_machine = hass
-        self.observer = Observer(self) #todo: move to creation factory
+        self.observer = Observer(hass) #todo: move to creation factory
         self.options = hub_options
         self.peaqev_discovered: bool = self.get_peaqev()
         self.sensors = HubSensors(self, hub_options, hass, self.peaqev_discovered)
