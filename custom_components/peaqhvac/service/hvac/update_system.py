@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Tuple
 
+from homeassistant.helpers.event import async_track_time_interval
 from peaqevcore.common.models.observer_types import ObserverTypes
 
 from custom_components.peaqhvac.service.hvac.water_heater.cycle_waterboost import async_cycle_waterboost
@@ -38,7 +39,9 @@ class UpdateSystem:
         self._set_operation_call_parameters: callable = operation_params_func
         self.observer = observer
         self._hass = hass
-
+        async_track_time_interval(
+            self._hass, self.async_perform_periodic_updates, timedelta(minutes=5)
+        )
         self.observer.add(ObserverTypes.UpdateOperation, self.async_receive_request)
         self.observer.add("water boost start", self.async_boost_water)
 
@@ -58,7 +61,7 @@ class UpdateSystem:
                 async_cycle_waterboost(target_temp, self.async_update_system, self.hub))
             _LOGGER.debug(f"return from water boost process")
 
-    async def async_perform_periodic_updates(self) -> None:
+    async def async_perform_periodic_updates(self, *args) -> None:
         remove_list = []
         for operation, v in self.update_list.items():
             if self.timer_timeout(operation):
