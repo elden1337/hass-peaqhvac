@@ -7,7 +7,6 @@ _LOGGER = logging.getLogger(__name__)
 class CalculatedOffsetModel:
     current_offset: int
     current_tempdiff: float
-    current_temp_extremas: float
     current_temp_trend_offset: float
 
     def sum_values(self, extra_current: int = None) -> float:
@@ -16,7 +15,6 @@ class CalculatedOffsetModel:
             [
                 current,
                 self.current_tempdiff,
-                self.current_temp_extremas,
                 self.current_temp_trend_offset,
             ]
         )
