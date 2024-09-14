@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from abc import abstractmethod
-from asyncio import Lock
+import asyncio
 from typing import Callable
 
 from peaqevcore.common.models.observer_types import ObserverTypes
@@ -28,7 +28,7 @@ class IObserver:
 
     def __init__(self):
         self.model = ObserverModel()
-        self._lock = Lock()
+        self._lock = asyncio.Lock()
 
     def activate(self, init_broadcast: ObserverTypes = None) -> None:
         self.model.active = True
