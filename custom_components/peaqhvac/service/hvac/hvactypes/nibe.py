@@ -135,7 +135,7 @@ class Nibe(IHvac):
             ret["value"] = self._cap_nibe_offset_value(_value)
         return ret
 
-    def _set_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
+    def set_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
         call_operation = self._transform_servicecall_value(_value, operation)
         service_domain = self._service_domain_per_operation(operation)
         params = self._set_servicecall_params(operation, _value)

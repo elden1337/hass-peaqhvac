@@ -13,6 +13,7 @@ from custom_components.peaqhvac.service.hub.weather_prognosis import \
     WeatherPrognosis
 from custom_components.peaqhvac.service.hvac.hvacfactory import HvacFactory
 from custom_components.peaqhvac.service.hvac.offset.offset_coordinator_factory import OffsetFactory
+from custom_components.peaqhvac.service.hvac.update_system import UpdateSystem
 from custom_components.peaqhvac.service.models.config_model import ConfigModel
 from custom_components.peaqhvac.service.models.offsets_exportmodel import OffsetsExportModel
 from custom_components.peaqhvac.service.observer.observer_coordinator import Observer
@@ -38,7 +39,14 @@ class Hub:
         self.sensors = HubSensors(self, hub_options, hass, self.peaqev_discovered)
         self.states = StateChanges(self, hass)
         self.hvac = HvacFactory.create(hass, self.options, self, self.observer)
-        self.spotprice = SpotPriceFactory.create(hub=self, observer=self.observer, system=PeaqSystem.PeaqHvac, test=False, is_active=True)
+        self.update_system = UpdateSystem(hass, self, self.observer, self.hvac.set_operation_call_parameters)
+        self.spotprice = SpotPriceFactory.create(
+            hub=self,
+            observer=self.observer,
+            system=PeaqSystem.PeaqHvac,
+            test=False,
+            is_active=True
+        )
 
         self.prognosis = WeatherPrognosis(hass, self.sensors.average_temp_outdoors, self.observer)
         self.offset = OffsetFactory.create(self, observer=self.observer)
