@@ -86,10 +86,6 @@ class OffsetModel:
                 tolerance_difference = -2
             case _ if current_temp <= -7:
                 tolerance_difference = -1
-            case _ if -5 < current_temp < 10:
-                tolerance_difference = 0
-            case _ if 10 <= current_temp < 13:
-                tolerance_difference = 1
             case _:
                 tolerance_difference = 0
 
