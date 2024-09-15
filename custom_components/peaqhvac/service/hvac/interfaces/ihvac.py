@@ -55,7 +55,6 @@ class IHvac:
         self.house_ventilation = HouseVentilation(hvac=self, observer=observer)
 
         self.observer.add(ObserverTypes.OffsetRecalculation, self.async_update_offset)
-        self.observer.add("water boost start", self.async_boost_water)
 
     @property
     @abstractmethod
@@ -125,7 +124,6 @@ class IHvac:
         await self.house_heater.async_update_demand()
         await self.water_heater.async_update_demand()
         await self.house_ventilation.async_check_vent_boost()
-        await self.request_periodic_updates()
 
     async def async_update_offset(self, raw_offset:int|None = None) -> bool:
         if raw_offset:
@@ -192,25 +190,6 @@ class IHvac:
                 return None
         return state.state
 
-    async def request_periodic_updates(self) -> None:
-        await self.async_update_ventilation()
-        if self.hub.hvac.house_heater.control_module:
-            await self.async_update_heat()
-        await self.async_perform_periodic_updates()
-
-    async def async_update_ventilation(self) -> None:
-        if self.house_ventilation.booster_update:
-            if await self.async_ready_to_update(HvacOperations.VentBoost):
-                _vent_state = int(self.house_ventilation.vent_boost)
-                if _vent_state != self.update_list.get(HvacOperations.VentBoost, None):
-                    _LOGGER.debug(f"Vent boost state changed to {_vent_state}. Adding to update list.")
-                    self.update_list[HvacOperations.VentBoost] = _vent_state
-
-    async def async_update_heat(self) -> None:
-        if await self.async_update_offset():
-            if await self.async_ready_to_update(HvacOperations.Offset):
-                self.update_list[HvacOperations.Offset] = self.model.current_offset
-
     async def async_boost_water(self, target_temp: float) -> None:
         if self.hub.hvac.water_heater.control_module:
             _LOGGER.debug(f"init water boost process")
@@ -218,57 +197,3 @@ class IHvac:
                 async_cycle_waterboost(target_temp, self.async_update_system, self.hub))
             _LOGGER.debug(f"return from water boost process")
 
-    async def async_perform_periodic_updates(self) -> None:
-        removelist = []
-        for operation, v in self.update_list.items():
-            if self.timer_timeout(operation):
-                if await self.async_update_system(operation=operation, set_val=v):
-                    self.periodic_update_timers[operation] = time.time()
-                    removelist.append(operation)
-        for r in removelist:
-            self.update_list.pop(r)
-
-    async def async_update_system(self, operation: HvacOperations, set_val: any = None) -> bool:
-        if self.hub.sensors.peaqhvac_enabled.value:
-            _value = set_val
-            if self.hub.sensors.average_temp_outdoors.initialized_percentage > 0.5:
-                (
-                    call_operation,
-                    params,
-                    domain,
-                ) = self.set_operation_call_parameters(operation, _value)
-
-                await self._hass.services.async_call(domain, call_operation, params)
-                _LOGGER.debug(
-                    f"Requested to update hvac-{operation.name} with value {set_val}. Actual value: {params} for {call_operation}"
-                )
-                return True
-        return False
-
-    def timer_timeout(self, operation) -> bool:
-        return time.time() - self.periodic_update_timers[operation] > UPDATE_INTERVALS[operation]
-
-    async def async_ready_to_update(self, operation) -> bool:
-        match operation:
-            case HvacOperations.WaterBoost | HvacOperations.VentBoost:
-                return any(
-                    [
-                        self.timer_timeout(operation),
-                        self.hub.sensors.peaqev_facade.exact_threshold >= 100,
-                    ]
-                )
-            case HvacOperations.Offset:
-                if not self.hub.hvac.house_heater.control_module:
-                    return False
-                if self._force_update:
-                    self._force_update = False
-                    return True
-                return any(
-                    [
-                        self.timer_timeout(operation),
-                        datetime.now().minute == 0,
-                        self.hub.sensors.peaqev_facade.exact_threshold >= 100,
-                    ]
-                )
-            case _:
-                return False
