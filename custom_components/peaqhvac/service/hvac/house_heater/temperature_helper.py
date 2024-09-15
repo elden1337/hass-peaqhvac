@@ -17,22 +17,38 @@ def get_tempdiff_inverted(current_offset: int, temp_diff: float, determine_toler
     return ret * -1
 
 
-def get_temp_trend_offset(temp_trend_is_clean: bool, predicted_temp: float, adjusted_temp: float) -> float:
-    if not temp_trend_is_clean:
-        return 0
+def get_temp_trend_offset(do_calc: bool, temp_diff_offset: float, predicted_temp: float, adjusted_temp: float) -> float:
+    ret = 0
+    if not do_calc:
+        return ret
+
     new_temp_diff = round(predicted_temp - adjusted_temp, 3)
+
     if abs(new_temp_diff) <= 0.1:
-        return 0
+        return ret
+
+    # Protect against overcompensating
+    if temp_diff_offset > 0:
+        if predicted_temp < adjusted_temp:
+            return ret
+    elif temp_diff_offset < 0:
+        if predicted_temp > adjusted_temp:
+            return ret
+
+    trend_factor = 1
+    if abs(temp_diff_offset) > 1:
+        trend_factor = min(1 + (abs(temp_diff_offset) - 1) * 0.3, 3.0)
+
     if predicted_temp >= adjusted_temp:
-        ret = max(round(new_temp_diff, 1), 0)
+        ret = max(round(new_temp_diff * trend_factor, 1), 0)
+        print(f"Positive Adjustment: {ret} (Trend Factor: {trend_factor})")
     else:
-        ret = min(round(new_temp_diff, 1), 0)
-    return min((round(ret / 2, 1)), 1) * (-1 if ret > 0 else 1)
+        ret = min(round(new_temp_diff * trend_factor, 1), 0)
+        print(f"Negative Adjustment: {ret} (Trend Factor: {trend_factor})")
+
+    # Apply a softer correction when the offset is already significant to avoid overcompensation
+    ret = round(ret/2,1)
+    ret = min(ret, 1.0)
+    return ret * -1
 
 
-def _temp_extremas_return(diffs, tolerance) -> float:
-    avg_diff = max(diffs[:-1])
-    dev = 1 if avg_diff >= 0 else -1
-    ret = (abs(avg_diff) - tolerance) * dev
-    ret = max(ret, 0) if dev == 1 else min(ret, 0)
-    return round(ret, 2)

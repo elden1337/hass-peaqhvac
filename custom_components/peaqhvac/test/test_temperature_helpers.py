@@ -1,7 +1,7 @@
 import pytest
 
 from ..service.hub.target_temp import adjusted_tolerances
-from ..service.hvac.house_heater.temperature_helper import get_tempdiff_inverted
+from ..service.hvac.house_heater.temperature_helper import get_tempdiff_inverted, get_temp_trend_offset
 
 MINTOLERANCE = 0.2
 MAXTOLERANCE = 0.5
@@ -25,6 +25,7 @@ def test_tempdiff_cold():
     ret4 = get_tempdiff_inverted(-3, tempdiff, _current_tolerances)
     assert ret4 == 2
 
+
 def test_tempdiff_hot():
     tempdiff = 0.5
     ret1 = get_tempdiff_inverted(0, tempdiff, _current_tolerances)
@@ -35,3 +36,42 @@ def test_tempdiff_hot():
     assert ret3 == -1
     ret4 = get_tempdiff_inverted(-3, tempdiff, _current_tolerances)
     assert ret4 == -1
+
+
+def test_temp_trend_offset_expected_colder_than_desired_with_diff_offset():
+    for i in range(1, 10):
+        ret = get_temp_trend_offset(True, i, 19.8, 20)
+        assert ret == 0
+
+
+def test_temp_trend_offset_expected_colder_than_desired_with_diff_neg_offset():
+    for i in range(1, 10):
+        ret = get_temp_trend_offset(True, i*-1, 19.8, 20)
+        assert ret != 0
+
+
+def test_temp_trend_offset_expected_warmer_than_desired_with_diff_offset():
+    for i in range(1, 10):
+        ret = get_temp_trend_offset(True, i, 20.8, 20)
+        assert ret != 0
+
+
+def test_temp_trend_offset_expected_warmer_than_desired_with_diff_neg_offset():
+    for i in range(1, 10):
+        ret = get_temp_trend_offset(True, i*-1, 20.8, 20)
+        assert ret == 0
+
+
+def test_too_cold_only_pos_trend():
+    for i in range(1, 10):
+        icheck = i*-1
+        ret = get_temp_trend_offset(True, icheck, 19.5, 20)
+        assert ret > 0 if icheck < 0 else ret < 0
+
+
+def test_assert_too_hot_only_neg_trend():
+    for i in range(1, 10):
+        icheck = i
+        ret = get_temp_trend_offset(True, icheck, 20.5, 20)
+        assert ret > 0 if icheck < 0 else ret < 0
+
