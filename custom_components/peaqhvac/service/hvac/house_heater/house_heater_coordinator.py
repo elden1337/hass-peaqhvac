@@ -102,9 +102,10 @@ class HouseHeaterCoordinator(IHeater):
             self._current_tolerances
         )
         temptrend = get_temp_trend_offset(
-            self.hub.sensors.temp_trend_indoors.is_clean,
-            self.hub.sensors.predicted_temp,
-            self.hub.sensors.set_temp_indoors.adjusted_temp
+            do_calc=self.hub.sensors.temp_trend_indoors.is_clean,
+            temp_diff_offset=tempdiff,
+            predicted_temp=self.hub.sensors.predicted_temp,
+            adjusted_temp=self.hub.sensors.set_temp_indoors.adjusted_temp
         )
 
         return CalculatedOffsetModel(current_offset=current_offset,
