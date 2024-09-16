@@ -6,6 +6,6 @@ class ObserverBroadcaster:
         self._observer_message = message
         self.hub = hub
 
-    def _broadcast_changes(self):
+    def _broadcast_changes(self, val=None):
         if self._observer_message is not None:
-            self.hub.observer.broadcast(self._observer_message)
+            self.hub.observer.broadcast(self._observer_message, val)
