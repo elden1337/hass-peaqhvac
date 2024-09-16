@@ -61,7 +61,6 @@ class OffsetCoordinator:
         finally:
             return ret
 
-    #self.model.current_offset_dict_combined = ret.calculated_offsets
 
     def _update_prognosis(self) -> None:
         self.model.prognosis = self._hub.prognosis.prognosis

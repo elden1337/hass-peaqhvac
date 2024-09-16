@@ -41,9 +41,9 @@ class UpdateSystem:
         self._set_operation_call_parameters: callable = operation_params_func
         self.observer = observer
         self._hass = hass
-        async_track_time_interval(
-            self._hass, self.async_perform_periodic_updates, timedelta(minutes=5)
-        )
+        #async_track_time_interval(
+        #    self._hass, self.async_handle_per_req, timedelta(minutes=5)
+        #)
         self.observer.add(ObserverTypes.UpdateOperation, self.async_receive_request)
         self.observer.add("water boost start", self.async_boost_water)
         self.observer.add("control_module_changed", self.async_control_module_changed)
@@ -52,7 +52,12 @@ class UpdateSystem:
         self.control_modules[data[0]] = data[1]
         await self.async_perform_periodic_updates()
 
+    async def async_handle_per_req(self):
+        _LOGGER.debug(f"dispatch five min update. {self.update_list}")
+        await self.async_perform_periodic_updates()
+
     async def async_receive_request(self, request: Tuple[HvacOperations, any]) -> None:
+        _LOGGER.debug(f"received update req: {request}")
         operation, value = request
         if operation == HvacOperations.Offset and self.control_modules.get(HOUSE_HEATER_NAME, False):
             self.update_list[operation] = value
