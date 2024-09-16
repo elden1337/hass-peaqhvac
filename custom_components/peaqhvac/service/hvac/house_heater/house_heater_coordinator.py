@@ -79,7 +79,7 @@ class HouseHeaterCoordinator(IHeater):
                 )
                 self.current_adjusted_offset = round(ret, 0)
 
-            return self.current_adjusted_offset, force_update
+        return self.current_adjusted_offset, force_update
 
     def _get_demand(self) -> Demand:
         return self._helpers.helper_get_demand()

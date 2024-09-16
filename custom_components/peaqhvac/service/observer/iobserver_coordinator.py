@@ -60,6 +60,7 @@ class IObserver:
         self.broadcast(command, argument)
 
     def broadcast(self, command: ObserverTypes|str, argument=None):
+        _LOGGER.debug(f"received broadcast: {command} - {argument}")
         command = self._check_and_convert_enum_type(command)
         _expiration = time.time() + TIMEOUT
         cc = Command(command, _expiration, argument)
