@@ -45,7 +45,7 @@ class UpdateSystem:
         #    self._hass, self.async_handle_per_req, timedelta(minutes=5)
         #)
         self.observer.add(ObserverTypes.UpdateOperation, self.async_receive_request)
-        self.observer.add("water boost start", self.async_boost_water)
+        self.observer.add("water_boost_start", self.async_boost_water)
         self.observer.add("control_module_changed", self.async_control_module_changed)
 
     async def async_control_module_changed(self, data: Tuple[str, bool]) -> None:

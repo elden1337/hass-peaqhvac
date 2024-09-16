@@ -201,7 +201,7 @@ class WaterHeater(IHeater):
                         f"Water boost is needed. Target temp is {target} and current temp is {self.current_temperature}. Next start is {next_start}")
                     self.model.water_boost.value = True
                     self.model.latest_boost_call = time.time()
-                    self.observer.broadcast("water boost start", target)
+                    self.observer.broadcast("water_boost_start", target)
         except Exception as e:
             _LOGGER.warning(f"Could not set water boost: {e}")
 

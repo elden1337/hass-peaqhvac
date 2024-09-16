@@ -53,10 +53,7 @@ class HouseVentilation:
             if self._latest_seen_fan_speed > self._hvac.fan_speed:
                 """Decreased"""
                 self._current_vent_state = False
-                self.observer.broadcast(
-                    command=ObserverTypes.UpdateOperation,
-                    argument=(HvacOperations.VentBoost, int(self.vent_boost))
-                )
+                self.broadcast_changes()
             self._latest_seen_fan_speed = self._hvac.fan_speed
 
     async def async_check_vent_boost(self, caller=None) -> None:
@@ -76,10 +73,7 @@ class HouseVentilation:
             ]) and self.vent_boost:
             _LOGGER.debug(f"recovered dm or very cold. stopping went boost. dm: {self._hvac.hvac_dm} > {self._hvac.hub.options.heating_options.low_degree_minutes + 100}, temp: {self._hvac.hub.sensors.average_temp_outdoors.value}")
             self.vent_boost = False
-            await self.observer.async_broadcast(
-                command=ObserverTypes.UpdateOperation,
-                argument=(HvacOperations.VentBoost, int(self.vent_boost))
-            )
+            await self.async_broadcast_changes()
 
     def _vent_boost_warmth(self) -> bool:
         return all(
@@ -120,7 +114,16 @@ class HouseVentilation:
             _LOGGER.debug(msg)
             self._wait_timer_boost.update()
             self.vent_boost = True
-            await self.observer.async_broadcast(
-                command=ObserverTypes.UpdateOperation,
-                argument=(HvacOperations.VentBoost, int(self.vent_boost))
-            )
+            await self.async_broadcast_changes()
+
+    async def async_broadcast_changes(self):
+        await self.observer.async_broadcast(
+            command=ObserverTypes.UpdateOperation,
+            argument=(HvacOperations.VentBoost, int(self.vent_boost))
+        )
+
+    def broadcast_changes(self):
+        self.observer.broadcast(
+            command=ObserverTypes.UpdateOperation,
+            argument=(HvacOperations.VentBoost, int(self.vent_boost))
+        )

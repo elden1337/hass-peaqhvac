@@ -46,6 +46,7 @@ class ConfigModel:
             self._hvac_tolerance = val
             if self.hub is not None:
                 self.hub.observer.broadcast(ObserverTypes.HvacToleranceChanged, self._hvac_tolerance)
+                self.hub.observer.broadcast("OffsetPrecalculation")
             else:
                 _LOGGER.warning(
                     "tried to broadcast an update from hvac-tolerance but referenced hub was None."

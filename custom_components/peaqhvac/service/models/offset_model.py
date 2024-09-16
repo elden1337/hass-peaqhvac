@@ -88,7 +88,7 @@ class OffsetModel:
                 _LOGGER.debug(
                     f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self._outdoor_temp}"
                 )
-                self.hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
+                self.hub.observer.broadcast("OffsetPrecalculation")
 
     def get_tolerance_difference(self, current_temp) -> int:
         """change the tolerance based on the current outside temperature"""
