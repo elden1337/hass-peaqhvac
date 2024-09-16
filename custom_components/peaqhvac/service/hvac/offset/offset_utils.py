@@ -111,49 +111,20 @@ def _deviation_from_mean(
 def handle_splitting(data: dict[datetime, float]) -> dict[datetime, float]:
     sorted_keys = sorted(data.keys())
     result = {}
+    NUM_SPLITS = 4
 
     for i in range(len(sorted_keys) - 1):
         current_key = sorted_keys[i]
-        next_key = sorted_keys[i + 1]
         current_value = data[current_key]
-        next_value = data[next_key]
 
-        # Calculate the difference
-        diff = next_value - current_value
+        diff = data[sorted_keys[i + 1]] - current_value
+        interval = timedelta(minutes=15)
+        split_values = [current_value + (diff / NUM_SPLITS) * (i + 1) for i in range(NUM_SPLITS)]
 
-        # Determine the split intervals
-        if abs(diff) > 1.0:  # Large difference, split into half-hour intervals
-            interval = timedelta(minutes=30)
-            num_splits = 2
-        elif abs(diff) > 0.5:  # Moderate difference, split into 20-minute intervals
-            interval = timedelta(minutes=20)
-            num_splits = 3
-        elif abs(diff) > 0.2:  # Small difference, split into quarterly intervals
-            interval = timedelta(minutes=15)
-            num_splits = 4
-        else:
-            interval = timedelta(minutes=60)
-            num_splits = 1
-
-
-        # Calculate the split values
-        split_values = [current_value] * num_splits
-
-        # Adjust the last split value to be closer to the next hour's deviation
-        if num_splits > 1:
-            split_values[-1] = (split_values[-1] + next_value) / 2
-
-        # Ensure the average of the split values equals the original value
-        total_adjustment = current_value * num_splits - sum(split_values)
-        adjustment_per_split = total_adjustment / num_splits
-        split_values = [v + adjustment_per_split for v in split_values]
-
-        # Add the split values to the result
-        for j in range(num_splits):
+        for j in range(NUM_SPLITS):
             split_key = current_key + interval * j
             result[split_key] = split_values[j]
 
-    # Add the last key-value pair
     result[sorted_keys[-1]] = data[sorted_keys[-1]]
 
     return result
