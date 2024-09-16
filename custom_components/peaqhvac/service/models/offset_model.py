@@ -58,7 +58,10 @@ class OffsetModel:
         return {k: v for k, v in self.calculated_offsets.items() if
                 k.date() == datetime.now().date() + timedelta(days=1)}
 
-    def recalculate_tolerance(self, *args):
+    def recalculate_tolerance(self, val=None):
+        if not val:
+            return
+        outdoor_temp = val
         if self.hub.options.hvac_tolerance is not None:
             old_tolerance = self._tolerance
             old_raw = self.tolerance_raw
@@ -67,7 +70,7 @@ class OffsetModel:
                 self._tolerance = self.get_boundrary(
                     adjustment=self.hub.options.hvac_tolerance,
                     set_tolerance=self.get_tolerance_difference(
-                        self.hub.sensors.average_temp_outdoors.value
+                        outdoor_temp
                     ),
                 )
             except Exception as e:
