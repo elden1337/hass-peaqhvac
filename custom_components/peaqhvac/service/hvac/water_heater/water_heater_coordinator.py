@@ -96,7 +96,6 @@ class WaterHeater(IHeater):
                 if self.demand.value != old_demand:
                     _LOGGER.debug(
                         f"Water temp changed to {val} which caused demand to change from {old_demand} to {self.demand.value}")
-                self.observer.broadcast(ObserverTypes.WatertempChange)
                 self._update_operation()
         except ValueError as E:
             _LOGGER.warning(f"unable to set {val} as watertemperature. {E}")
