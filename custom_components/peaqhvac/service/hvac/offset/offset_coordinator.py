@@ -28,8 +28,8 @@ class OffsetCoordinator:
         self.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
         self.observer.add(ObserverTypes.HvacPresetChanged, self._set_offset)
         self.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
-        self.observer.add(ObserverTypes.HvacToleranceChanged, self._set_offset)
-        self.observer.add("OffsetPrecalculation", self._set_offset)
+        #self.observer.add(ObserverTypes.HvacToleranceChanged, self._set_offset)
+        #self.observer.add("OffsetPrecalculation", self._set_offset)
 
     @property
     @abstractmethod

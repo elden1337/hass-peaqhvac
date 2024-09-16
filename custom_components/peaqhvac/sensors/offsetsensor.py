@@ -33,12 +33,13 @@ class OffsetSensor(SensorBase):
         return "mdi:stairs"
 
     async def async_update(self) -> None:
-        self._state = self._hub.hvac.model.current_offset
+        #self._state = self._hub.hvac.model.current_offset
 
         offsetsmodel: OffsetsExportModel = await self._hub.async_offset_export_model()
         data: CalculatedOffsetModel = await self._hub.hvac.house_heater.async_calculated_offsetdata(
             self._hub.hvac.model.current_offset
         )
+        self._state = data.current_offset
 
         self._offsets = offsetsmodel.current_offset
         self._offsets_tomorrow = offsetsmodel.current_offset_tomorrow
