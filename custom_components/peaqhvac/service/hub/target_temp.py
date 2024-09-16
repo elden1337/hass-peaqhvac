@@ -25,6 +25,7 @@ def adjusted_tolerances(offset: int, min_tolerance, max_tolerance) -> Tuple[floa
     )
     return max(_min_tolerance, 0.1), max(_max_tolerance, 0.1)
 
+
 class TargetTemp(ObserverBroadcaster):
     def __init__(self, initval=19, observer_message: str = None, hub=None):
         self.hub = hub
