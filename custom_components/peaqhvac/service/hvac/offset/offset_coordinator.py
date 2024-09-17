@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import asyncio
 from abc import abstractmethod
 from datetime import datetime, timedelta
 from peaqevcore.common.models.observer_types import ObserverTypes
@@ -14,23 +15,25 @@ from custom_components.peaqhvac.service.models.offset_model import OffsetModel
 from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
 from homeassistant.helpers.event import async_track_time_interval
 
+from custom_components.peaqhvac.service.util.debouncer import Debouncer
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class OffsetCoordinator:
+class OffsetCoordinator(Debouncer):
     """The class that provides the offsets for the hvac"""
     def __init__(self, hub, observer: IObserver, hours_type: Hoursselection = None): #type: ignore
+        super().__init__(self._set_offset)
         self._hub = hub
         self.observer = observer
         self.model = OffsetModel(hub)
         self.hours = hours_type
         self._current_raw_offset: int|None = None #move from here?
-        self.latest_raw_offset_update_hour: int = -1
         self.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
-        self.observer.add(ObserverTypes.HvacPresetChanged, self._set_offset)
-        self.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
-        self.observer.add("ObserverTypes.OffsetPreRecalculation", self._set_offset)
+        self.observer.add(ObserverTypes.HvacPresetChanged, self.debounce)
+        self.observer.add(ObserverTypes.SetTemperatureChanged, self.debounce)
+        self.observer.add("ObserverTypes.OffsetPreRecalculation", self.debounce)
+
         async_track_time_interval(
             self._hub.state_machine, self._create_current_raw_offset, timedelta(minutes=1)
         )
@@ -148,10 +151,3 @@ class OffsetCoordinator:
         self.model.peaks_today = identify_peaks(self.prices)
         self.model.peaks_tomorrow = identify_peaks(self.prices_tomorrow)
         self.model.raw_offsets = self._update_offset()
-
-
-
-
-
-
-
