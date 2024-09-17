@@ -44,12 +44,12 @@ class ConfigModel:
     def hvac_tolerance(self, val) -> None:
         if self._hvac_tolerance != val:
             self._hvac_tolerance = val
-            if self.hub is not None:
-                self.hub.observer.broadcast(ObserverTypes.HvacToleranceChanged)
-            else:
-                _LOGGER.warning(
-                    "tried to broadcast an update from hvac-tolerance but referenced hub was None."
-                )
+            # if self.hub is not None:
+            #     self.hub.observer.broadcast(ObserverTypes.HvacToleranceChanged)
+            # else:
+            #     _LOGGER.warning(
+            #         "tried to broadcast an update from hvac-tolerance but referenced hub was None."
+            #     )
 
     def set_hvacbrand(self, configstring: str) -> HvacBrand:
         branddict = {

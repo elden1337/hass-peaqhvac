@@ -29,7 +29,8 @@ class IObserver:
     """
     def __init__(self):
         self.model = ObserverModel()
-        self._lock = asyncio.Lock()
+        self._dequeue_lock = asyncio.Lock()
+        self._dispatch_lock = asyncio.Lock()
 
     def activate(self, init_broadcast: ObserverTypes = None) -> None:
         self.model.active = True
@@ -65,6 +66,7 @@ class IObserver:
         cc = Command(command, _expiration, argument)
         if cc not in self.model.broadcast_queue:
             if cc not in self.model.dispatch_delay_queue.keys():
+                self.model.dispatch_delay_queue[cc] = time.time()
                 _LOGGER.debug(f"received broadcast: {command} - {argument}")
                 self.model.broadcast_queue.append(cc)
 
@@ -76,21 +78,23 @@ class IObserver:
 
     async def async_dequeue_and_broadcast(self, command: Command):
         #if await self.async_ok_to_broadcast(command):
-        async with self._lock:
+        async with self._dequeue_lock:
+            await self.async_update_dispatch_delay(command)
             for func in self.model.subscribers.get(command.command, []):
                 _LOGGER.debug(f"broadcasting {command.command} with {command.argument}")
                 await self.async_broadcast_separator(func, command)
             if command in self.model.broadcast_queue:
                 self.model.broadcast_queue.remove(command)
-            await self.async_update_dispatch_delay(command)
 
     async def async_update_dispatch_delay(self, command: Command):
-        q: Command
-        old_items = [k for k, v in self.model.dispatch_delay_queue.items() if time.time() - v > DISPATCH_DELAY_TIMEOUT]
-        for old in old_items:
-            self.model.dispatch_delay_queue.pop(old)
-        if command not in self.model.dispatch_delay_queue.keys():
-            self.model.dispatch_delay_queue[command] = time.time()
+        async with self._dispatch_lock:
+            q: Command
+            old_items = [k for k, v in self.model.dispatch_delay_queue.items() if time.time() - v > DISPATCH_DELAY_TIMEOUT]
+            for old in old_items:
+                self.model.dispatch_delay_queue.pop(old)
+                #_LOGGER.debug(f"removed {old} from dispatch_delay_queue")
+            # if command not in self.model.dispatch_delay_queue.keys():
+            #     self.model.dispatch_delay_queue[command] = time.time()
 
     @abstractmethod
     async def async_broadcast_separator(self, func, command):

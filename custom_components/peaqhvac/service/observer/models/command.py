@@ -16,5 +16,5 @@ class Command:
 
     def __hash__(self):
         # Create a hash using the attributes of the command
-        return hash((self.command, self.expiration, self.argument))
+        return hash((self.command, self.argument))
 
