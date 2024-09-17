@@ -22,7 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 UPDATE_INTERVALS = {
-    HvacOperations.Offset:    180,
+    HvacOperations.Offset:    20,
     HvacOperations.VentBoost: 1800,
 }
 

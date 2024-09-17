@@ -30,7 +30,11 @@ class HubSensors:
             initval=options.misc_options.enabled_on_boot, data_type=bool
         )
         self.hvac_tolerance = options.hvac_tolerance
-        self.average_temp_indoors = Average(entities=options.indoor_tempsensors)
+        self.average_temp_indoors = Average(
+            entities=options.indoor_tempsensors,
+            observer_message="ObserverTypes.TemperatureIndoorsChanged",
+            hub=hub
+        )
         self.average_temp_outdoors = Average(
             entities=options.outdoor_tempsensors,
             observer_message=ObserverTypes.TemperatureOutdoorsChanged,

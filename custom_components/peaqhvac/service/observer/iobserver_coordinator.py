@@ -69,6 +69,11 @@ class IObserver:
                 self.model.dispatch_delay_queue[cc] = time.time()
                 _LOGGER.debug(f"received broadcast: {command} - {argument}")
                 self.model.broadcast_queue.append(cc)
+        #     else:
+        #         _LOGGER.debug(f"Command {command} with argument {argument} is already in dispatch_delay_queue: {self.model.dispatch_delay_queue[cc]}")
+        # else:
+        #     _LOGGER.debug(
+        #         f"Command {command} with argument {argument} is already in broadcast_queue: {[q for q in self.model.broadcast_queue if q == cc]}")
 
     async def async_dispatch(self, *args):
         q: Command
