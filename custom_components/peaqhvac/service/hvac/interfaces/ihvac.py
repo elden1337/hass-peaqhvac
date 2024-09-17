@@ -128,7 +128,6 @@ class IHvac:
     async def async_update_offset(self, raw_offset:int|None = None) -> bool:
         if raw_offset:
             if int(raw_offset) != self.raw_offset:
-                _LOGGER.debug(f"Raw offset pushed to update offset: {raw_offset}. Previous {self.raw_offset}")
                 self.raw_offset = int(raw_offset)
         ret = False
         if self.hub.sensors.peaqev_installed:
@@ -144,7 +143,6 @@ class IHvac:
                 self._force_update = force_update
             if self.model.current_offset != _hvac_offset:
                 await self.observer.async_broadcast(ObserverTypes.OffsetsChanged)
-                #if self._force_update:
                 await self.observer.async_broadcast(
                     command=ObserverTypes.UpdateOperation,
                     argument=(HvacOperations.Offset, self.model.current_offset)
@@ -190,10 +188,4 @@ class IHvac:
                 return None
         return state.state
 
-    async def async_boost_water(self, target_temp: float) -> None:
-        if self.hub.hvac.water_heater.control_module:
-            _LOGGER.debug(f"init water boost process")
-            self.hub.state_machine.async_create_task(
-                async_cycle_waterboost(target_temp, self.async_update_system, self.hub))
-            _LOGGER.debug(f"return from water boost process")
 

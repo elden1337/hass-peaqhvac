@@ -12,6 +12,7 @@ from custom_components.peaqhvac.service.hvac.offset.peakfinder import (
     identify_peaks, smooth_transitions)
 from custom_components.peaqhvac.service.models.offset_model import OffsetModel
 from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
+from homeassistant.helpers.event import async_track_time_interval
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -24,11 +25,16 @@ class OffsetCoordinator:
         self.observer = observer
         self.model = OffsetModel(hub)
         self.hours = hours_type
+        self._current_raw_offset: int|None = None #move from here?
         self.latest_raw_offset_update_hour: int = -1
         self.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
         self.observer.add(ObserverTypes.HvacPresetChanged, self._set_offset)
         self.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
         self.observer.add(ObserverTypes.HvacToleranceChanged, self._set_offset)
+        async_track_time_interval(
+            self._hub.state_machine, self._create_current_raw_offset, timedelta(minutes=1)
+        )
+        self._create_current_raw_offset()
 
     @property
     @abstractmethod
@@ -46,20 +52,28 @@ class OffsetCoordinator:
         pass
 
     @property
-    def current_offset(self) -> int:
+    def current_offset(self) -> int|None:
+        return self._current_raw_offset
+
+    def _create_current_raw_offset(self, *args) -> None:
         ret = 0
+        initialized = False
         try:
             if len(self.model.raw_offsets):
                 latest_key = max((key for key in self.model.raw_offsets if key <= datetime.now()), default=None)
                 if latest_key is not None:
                     ret = self.model.raw_offsets[latest_key]
+                    initialized = True
         except KeyError as e:
             _LOGGER.error(
                 f"Unable to get current offset: {e}. raw_offsets: {self.model.raw_offsets}"
             )
         finally:
-            return ret
-
+            if self._current_raw_offset is not None or initialized:
+                if self._current_raw_offset != ret:
+                    self._current_raw_offset = ret
+                    _LOGGER.debug(f"current_raw_offset updated to {self._current_raw_offset}")
+                    self._set_offset()
 
     def _update_prognosis(self) -> None:
         self.model.prognosis = self._hub.prognosis.prognosis
@@ -74,38 +88,9 @@ class OffsetCoordinator:
         return max_price_lower_internal(tempdiff, self.model.peaks_today)
 
     def _update_offset(self, weather_adjusted_today: dict | None = None) -> dict:
-        cached_today = cache.get_cache_for_today(datetime.now().date(), self.prices)
-        cached_tomorrow = cache.get_cache_for_today((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow)
-        cached_midnight_problem = cache.get_cache_for_today(datetime.now().date() - timedelta(days=1), self.prices)
-
-        #todo: re-add caching
         try:
-            # if all([cached_today, cached_tomorrow]):
-            #     #_LOGGER.debug("Using cached values for today and tomorrow")
-            #     today_values = cached_today.offsets
-            #     tomorrow_values = cached_tomorrow.offsets
-            # elif cached_today:
-            #     #_LOGGER.debug("Using cached values for today")
-            #     existing_data = {datetime.now().date(): cached_today.offsets}
-            #     d = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price, existing_data)
-            #     today_values = d.get(datetime.now().date(), {})
-            #     tomorrow_values = d.get((datetime.now() + timedelta(days=1)).date(), {})
-            #     cache.update_cache((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow, tomorrow_values)
-            # elif cached_midnight_problem:
-            #     """interim fix til we have dates on all price-lists"""
-            #     #_LOGGER.debug("Midnight issue occurred")
-            #     today_values = cached_midnight_problem.offsets
-            #     tomorrow_values = {}
-            # else:
-            #     #_LOGGER.debug("no cached values found")
-            #     d = set_offset_dict(self.prices + self.prices_tomorrow, datetime.now(), self.min_price, {})
-            #     today_values = d.get(datetime.now().date(), {})
-            #     tomorrow_values = d.get((datetime.now() + timedelta(days=1)).date(), {})
-            #     cache.update_cache(datetime.now().date(), self.prices, today_values)
-            #     cache.update_cache((datetime.now() + timedelta(days=1)).date(), self.prices_tomorrow, tomorrow_values)
-
             all_values = set_offset_dict(self.prices+self.prices_tomorrow, datetime.now(), self.min_price,{})
-            _LOGGER.debug("all_values", all_values, self.prices, self.prices_tomorrow, self.min_price)
+            #_LOGGER.debug(f"all_values: {all_values}")
             offsets_per_day = self._calculate_offset_per_day(all_values, weather_adjusted_today)
             tolerance = self.model.tolerance if self.model.tolerance is not None else 3
             for k, v in offsets_per_day.items():
@@ -151,7 +136,10 @@ class OffsetCoordinator:
                         f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
                     )
             if len(self.model.raw_offsets):
-                self.observer.broadcast(ObserverTypes.OffsetRecalculation, self.current_offset)
+                if not self.current_offset:
+                    self._create_current_raw_offset()
+                if self.current_offset:
+                    self.observer.broadcast(ObserverTypes.OffsetRecalculation, self.current_offset)
         else:
             if self._hub.is_initialized:
                 _LOGGER.warning(f"Hub is ready but I'm unable to set offset. Prices num:{len(self.prices) if self.prices else 0}")
@@ -159,6 +147,7 @@ class OffsetCoordinator:
     def _update_model(self) -> None:
         self.model.peaks_today = identify_peaks(self.prices)
         self.model.peaks_tomorrow = identify_peaks(self.prices_tomorrow)
+        self.model.raw_offsets = self._update_offset()
 
 
 
