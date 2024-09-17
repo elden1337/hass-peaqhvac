@@ -13,3 +13,8 @@ class Command:
         if all([self.command == other.command, self.argument == other.argument]):
             return True
         return False
+
+    def __hash__(self):
+        # Create a hash using the attributes of the command
+        return hash((self.command, self.expiration, self.argument))
+

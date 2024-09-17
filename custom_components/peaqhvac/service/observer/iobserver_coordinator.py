@@ -21,7 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class IObserver:
     """
-    Observer class handles updates throughout peaqev.
+    Observer class handles updates throughout peaq.
     Attach to hub class and subscribe to updates (string matches) in other classes connected to the hub.
     When broadcasting, you may use one argument that the of-course needs to correspond to your receiving function.
     """
@@ -42,7 +42,7 @@ class IObserver:
         if isinstance(command, str):
             try:
                 command = ObserverTypes(command)
-                _LOGGER.warning(f"Observer.add: command {command} was not of type ObserverTypes but was converted.")
+                _LOGGER.debug(f"Observer.add: command {command} was not of type ObserverTypes but was converted.")
             except ValueError:
                 pass
                 #return ObserverTypes.Test
@@ -74,19 +74,13 @@ class IObserver:
                 await self.async_dequeue_and_broadcast(q)
 
     async def async_dequeue_and_broadcast(self, command: Command):
-        if await self.async_ok_to_broadcast(command.command):
+        if await self.async_ok_to_broadcast(command):
             async with self._lock:
-                # _LOGGER.debug(
-                #     f"ready to broadcast: {command.command.name} with params: {command.argument}"
-                # )
                 for func in self.model.subscribers.get(command.command, []):
+                    _LOGGER.debug(f"broadcasting {command.command} with {command.argument}")
                     await self.async_broadcast_separator(func, command)
                 if command in self.model.broadcast_queue:
                     self.model.broadcast_queue.remove(command)
-        # else:
-        #     _LOGGER.debug(
-        #         f"not able to broadcast: {command.command.name} with params: {command.argument}"
-        #     )
 
     @abstractmethod
     async def async_broadcast_separator(self, func, command):
@@ -127,11 +121,12 @@ class IObserver:
         except Exception as e:
             _LOGGER.error(f"async_call_func for {func} with command {command}: {e}")
 
-    async def async_ok_to_broadcast(self, command) -> bool:
+    async def async_ok_to_broadcast(self, command: Command) -> bool:
         if command not in self.model.wait_queue.keys():
             self.model.wait_queue[command] = time.time()
             return True
         if time.time() - self.model.wait_queue.get(command, 0) > COMMAND_WAIT:
             self.model.wait_queue[command] = time.time()
             return True
+        _LOGGER.debug(f"Catched command {command} in wait_queue")
         return False

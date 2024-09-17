@@ -5,5 +5,5 @@ from custom_components.peaqhvac.service.observer.models.command import Command
 class ObserverModel:
     subscribers: dict = field(default_factory=lambda: {})
     broadcast_queue: list[Command] = field(default_factory=lambda: [])
-    wait_queue: dict[str, float] = field(default_factory=lambda: {})
+    wait_queue: dict[Command, float] = field(default_factory=lambda: {})
     active: bool = False

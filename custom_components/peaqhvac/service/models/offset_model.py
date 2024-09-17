@@ -16,12 +16,17 @@ class OffsetModel:
     tolerance_raw = None
     prognosis = None
     _tolerance_difference: int = 0
+    _outdoor_temp: int|None = None
 
     def __init__(self, hub):
         self.hub = hub
         #async_track_time_interval(self.hub.state_machine, self.recalculate_tolerance, timedelta(seconds=120))
         self.hub.observer.add(ObserverTypes.HvacToleranceChanged, self.recalculate_tolerance)
-        self.hub.observer.add(ObserverTypes.TemperatureOutdoorsChanged, self.recalculate_tolerance)
+        self.hub.observer.add(ObserverTypes.TemperatureOutdoorsChanged, self._set_outdoor_temp)
+
+    def _set_outdoor_temp(self, val):
+        self._outdoor_temp = val
+        self.recalculate_tolerance()
 
     @property
     def peaks_today(self) -> list:
@@ -58,27 +63,30 @@ class OffsetModel:
         return {k: v for k, v in self.calculated_offsets.items() if
                 k.date() == datetime.now().date() + timedelta(days=1)}
 
-    def recalculate_tolerance(self, val=None):
-        if not val:
-            return
-        outdoor_temp = val
+    def recalculate_tolerance(self):
         if self.hub.options.hvac_tolerance is not None:
             old_tolerance = self._tolerance
             old_raw = self.tolerance_raw
             self.tolerance_raw = self.hub.options.hvac_tolerance
-            try:
-                self._tolerance = self.get_boundrary(
-                    adjustment=self.hub.options.hvac_tolerance,
-                    set_tolerance=self.get_tolerance_difference(
-                        outdoor_temp
-                    ),
-                )
-            except Exception as e:
-                self._tolerance = self.hub.options.hvac_tolerance
-                _LOGGER.warning(f"Error on recalculation of tolerance. Setting default. {e}")
-            if any([old_raw != self.tolerance_raw, old_tolerance != self.tolerance]):
+            if not self._outdoor_temp:
+                self._tolerance = self.tolerance_raw
+            else:
+                try:
+                    self._tolerance = self.get_boundrary(
+                        adjustment=self.hub.options.hvac_tolerance,
+                        set_tolerance=self.get_tolerance_difference(
+                            self._outdoor_temp
+                        ),
+                    )
+                except Exception as e:
+                    self._tolerance = self.hub.options.hvac_tolerance
+                    _LOGGER.warning(f"Error on recalculation of tolerance. Setting default. {e}")
+            if any([
+                old_raw != self.tolerance_raw,
+                old_tolerance != self.tolerance
+            ]):
                 _LOGGER.debug(
-                    f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self.hub.sensors.average_temp_outdoors.value}"
+                    f"Tolerance has been updated. New tol is {self.tolerance} and raw is {self.tolerance_raw} for temp {self._outdoor_temp}"
                 )
                 self.hub.observer.broadcast("ObserverTypes.OffsetPreRecalculation")
 
