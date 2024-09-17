@@ -49,7 +49,6 @@ class OffsetCoordinator:
     def current_offset(self) -> int:
         ret = 0
         try:
-            # self._set_offset()
             if len(self.model.raw_offsets):
                 latest_key = max((key for key in self.model.raw_offsets if key <= datetime.now()), default=None)
                 if latest_key is not None:
@@ -137,16 +136,11 @@ class OffsetCoordinator:
             return weather_adjusted_today
 
     def _set_offset(self) -> None:
-        #_LOGGER.debug("entering set_offset")
         if self.prices is not None:
-            #_LOGGER.debug("prices are not none")
             self.model.raw_offsets = self._update_offset()
-            #_LOGGER.debug("1")
             self.model.calculated_offsets = self.model.raw_offsets
-            #_LOGGER.debug("2")
             if len(self._hub.prognosis.prognosis) > 0:
                 try:
-                    #_LOGGER.debug("3A")
                     _weather_dict = self._hub.prognosis.get_weatherprognosis_adjustment(self.model.raw_offsets)
                     _LOGGER.debug("weather-prognosis", _weather_dict)
                     if len(_weather_dict.items()) > 0:
@@ -156,10 +150,8 @@ class OffsetCoordinator:
                     _LOGGER.warning(
                         f"Unable to calculate prognosis-offsets. Setting normal calculation: {e}"
                     )
-            #else:
-                #_LOGGER.debug("3B")
-                #_LOGGER.debug("No prognosis available")
-            self.observer.broadcast(ObserverTypes.OffsetRecalculation, self.current_offset)
+            if len(self.model.raw_offsets):
+                self.observer.broadcast(ObserverTypes.OffsetRecalculation, self.current_offset)
         else:
             if self._hub.is_initialized:
                 _LOGGER.warning(f"Hub is ready but I'm unable to set offset. Prices num:{len(self.prices) if self.prices else 0}")

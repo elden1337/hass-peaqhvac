@@ -19,7 +19,7 @@ class OffsetModel:
 
     def __init__(self, hub):
         self.hub = hub
-        async_track_time_interval(self.hub.state_machine, self.recalculate_tolerance, timedelta(seconds=120))
+        #async_track_time_interval(self.hub.state_machine, self.recalculate_tolerance, timedelta(seconds=120))
         self.hub.observer.add(ObserverTypes.HvacToleranceChanged, self.recalculate_tolerance)
         self.hub.observer.add(ObserverTypes.TemperatureOutdoorsChanged, self.recalculate_tolerance)
 
