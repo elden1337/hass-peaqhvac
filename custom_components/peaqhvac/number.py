@@ -55,8 +55,6 @@ class PeaqNumber(NumberEntity, RestoreEntity):
     def set_native_value(self, value: float) -> None:
         self._state = value
         self._hub.options.hvac_tolerance = int(float(self._state))
-        self._hub.observer.broadcast(ObserverTypes.HvacToleranceChanged)
-        self._hub.observer.broadcast(ObserverTypes.OffsetRecalculation)
 
     async def async_added_to_hass(self):
         state = await super().async_get_last_state()

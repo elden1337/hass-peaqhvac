@@ -30,7 +30,7 @@ class OffsetCoordinator:
         self.observer.add(ObserverTypes.PrognosisChanged, self._update_prognosis)
         self.observer.add(ObserverTypes.HvacPresetChanged, self._set_offset)
         self.observer.add(ObserverTypes.SetTemperatureChanged, self._set_offset)
-        self.observer.add(ObserverTypes.HvacToleranceChanged, self._set_offset)
+        self.observer.add("ObserverTypes.OffsetPreRecalculation", self._set_offset)
         async_track_time_interval(
             self._hub.state_machine, self._create_current_raw_offset, timedelta(minutes=1)
         )
