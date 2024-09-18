@@ -15,6 +15,14 @@ class Command:
         return False
 
     def __hash__(self):
-        # Create a hash using the attributes of the command
-        return hash((self.command, self.argument))
+        def make_hashable(obj):
+            if isinstance(obj, (tuple, list)):
+                return tuple(make_hashable(e) for e in obj)
+            if isinstance(obj, dict):
+                return tuple(sorted((k, make_hashable(v)) for k, v in obj.items()))
+            if isinstance(obj, set):
+                return tuple(sorted(make_hashable(e) for e in obj))
+            return obj
+
+        return hash((self.command, make_hashable(self.argument)))
 
