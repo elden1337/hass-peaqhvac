@@ -44,8 +44,10 @@ class Average(ObserverBroadcaster):
 
     @value.setter
     def value(self, val) -> None:
-        self._value = val
-        self._broadcast_changes(self._value)
+        if isinstance(val, (float, int)):
+            if round(val, 2) != round(self._value, 2):
+                self._value = val
+                self._broadcast_changes(self._value)
 
     @property
     def median(self) -> float:
