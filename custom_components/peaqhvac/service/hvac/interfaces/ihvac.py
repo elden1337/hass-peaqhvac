@@ -143,6 +143,7 @@ class IHvac:
                 self.raw_offset
             )
             if new_offset != self.model.current_offset:
+                _LOGGER.debug(f"Offset changed from {self.model.current_offset} to {new_offset}, with raw input {self.raw_offset}.")
                 self.model.current_offset = new_offset
                 self._force_update = force_update
             if self.model.current_offset != _hvac_offset:

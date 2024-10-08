@@ -1,5 +1,6 @@
 import logging
 import statistics
+import math
 
 from peaqevcore.common.models.observer_types import ObserverTypes
 
@@ -45,7 +46,7 @@ class Average(ObserverBroadcaster):
     @value.setter
     def value(self, val) -> None:
         if isinstance(val, (float, int)):
-            if round(val, 2) != round(self._value, 2):
+            if not math.isclose(val, self._value, rel_tol=1e-02):
                 self._value = val
                 self._broadcast_changes(self._value)
 

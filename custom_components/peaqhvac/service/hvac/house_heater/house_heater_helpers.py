@@ -83,17 +83,15 @@ class HouseHeaterHelpers:
             self.aux_offset_adjustments[OffsetAdjustments.KeepCompressorRunning] = 0
         return force_update
 
-    def temporarily_lower_offset(self, offsetdata: CalculatedOffsetModel, force_update: bool) -> bool:
+    def temporarily_lower_offset(self, offsetdata: CalculatedOffsetModel) -> bool:
         if self._wait_timer_breach.is_timeout():
             if any([self._lower_offset_threshold_breach(), self._lower_offset_addon()]):
                 self.aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = -2
                 offsetdata.current_offset -= 2
-                force_update = True
         elif self._hvac.hub.sensors.peaqev_installed:
             if self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes and self._hvac.hub.sensors.average_temp_outdoors.value > -10:
                 self.aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = -1
                 offsetdata.current_offset -= 1
-                force_update = True
         else:
             self.aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = 0
-        return force_update
+        return True
