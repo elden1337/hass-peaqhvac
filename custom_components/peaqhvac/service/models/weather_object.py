@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
-from time import mktime, strptime
+from datetime import datetime, timezone
 
 from custom_components.peaqhvac.service.models.enums.weather_type import \
     WeatherType
@@ -21,5 +20,6 @@ class WeatherObject:
         self.DT = self._parse_datetime()
 
     def _parse_datetime(self) -> datetime:
-        time_obj = strptime(self._DTstr, "%Y-%m-%dT%H:%M:%S+00:00")
-        return datetime.fromtimestamp(mktime(time_obj))
+        time_obj = datetime.strptime(self._DTstr, "%Y-%m-%dT%H:%M:%S+00:00")
+        utc_time = time_obj.replace(tzinfo=timezone.utc)
+        return utc_time.astimezone()
