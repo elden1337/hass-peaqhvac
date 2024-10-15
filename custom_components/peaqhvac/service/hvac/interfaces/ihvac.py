@@ -55,7 +55,7 @@ class IHvac:
 
         self.observer.add(ObserverTypes.OffsetRecalculation, self.async_update_offset)
         self.observer.add("ObserverTypes.TemperatureIndoorsChanged", self.async_receive_temperature_change)
-        async_track_time_interval(self._hass, self.async_receive_temperature_change, timedelta(seconds=30))
+        async_track_time_interval(self._hass, self.async_receive_temperature_change, timedelta(seconds=60))
 
     async def async_receive_temperature_change(self, *args):
         await self.async_update_offset()
