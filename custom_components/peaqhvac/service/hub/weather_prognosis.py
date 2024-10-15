@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Tuple
 
 import homeassistant.helpers.template as template
+from homeassistant.helpers.event import async_track_time_interval
 from peaqevcore.common.models.observer_types import ObserverTypes
 
 from custom_components.peaqhvac.service.models.prognosis_export_model import \
@@ -16,85 +17,80 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class WeatherPrognosis:
-    def __init__(self, hass, average_temp_outdoors, observer):
+    def __init__(self, hass, average_temp_outdoors, observer, weather_entity: str):
         self._hass = hass
         self.average_temp_outdoors = average_temp_outdoors
         self.observer = observer
         self.prognosis_list: list[WeatherObject] = []
         self._hvac_prognosis_list: list = []
+        self._weather_export_model: list = []
         self._current_temperature = 1000
-        self.entity = ""
-        self._is_initialized: bool = False
-        self._setup_weather_prognosis()
-
-    @property
-    def is_initialized(self) -> bool:
-        return self._is_initialized
+        self.entity = weather_entity
+        if self.entity is not None:
+            async_track_time_interval(self._hass, self.async_update_weather, timedelta(seconds=30))
 
     @property
     def prognosis(self) -> list:
-        return []
-        # if not self.is_initialized:
-        #     return []
-        # self.update_weather_prognosis()
-        # if len(self._hvac_prognosis_list) == 0:
-        #     try:
-        #         return self.get_hvac_prognosis(
-        #             self.average_temp_outdoors.value
-        #         )
-        #     except Exception as e:
-        #         _LOGGER.warning(f"Could not get hvac-prognosis: {e}")
-        #         return []
-        # return self._hvac_prognosis_list
+        return self._weather_export_model
 
-    def update_weather_prognosis(self):
-        if self.is_initialized:
-        #     action: weather.get_forecasts
-        #     target:
-        #     entity_id: weather.hake
-        # data:
-        # type: hourly
+    async def async_update_weather(self, *args):
+        await self.update_weather_prognosis()
+
+        if len(self._hvac_prognosis_list) > 0:
+            ret = self._hvac_prognosis_list
+        else:
             try:
-                ret = self._hass.services.call("weather", "get_forecasts", {"type": "hourly"})
+                ret = self.get_hvac_prognosis(
+                    self.average_temp_outdoors.value
+                )
             except Exception as e:
-                _LOGGER.error(f"Could not get weather-prognosis: {e}")
+                _LOGGER.warning(f"Could not get hvac-prognosis: {e}")
+                ret = []
+        if ret != self._weather_export_model:
+            self.observer.broadcast(ObserverTypes.PrognosisChanged)
+            self._weather_export_model = ret
+
+    async def update_weather_prognosis(self):
+        try:
+            ret = await self._hass.services.async_call(
+                "weather",
+                "get_forecasts",
+                {"type": "hourly", "entity_id": self.entity},
+                blocking=True,
+                return_response=True
+            )
+        except Exception as e:
+            _LOGGER.error(f"Could not get weather-prognosis: {e}")
+            return
+        if ret is not None:
+            try:
+                ret_attr = ret.get(self.entity, {}).get("forecast", [])
+                if len(ret_attr):
+                    self._set_prognosis(ret_attr)
+                else:
+                    _LOGGER.error(
+                        f"Wether prognosis cannot be updated :({len(ret_attr)})"
+                    )
+            except Exception as e:
                 return
-        #ret = self._hass.states.get(self.entity)
-            if ret is not None:
-                try:
-                    ret_attr = list(ret.attributes.get("forecast"))
-                    if len(ret_attr) > 0:
-                        self._set_prognosis(ret_attr)
-                    else:
-                        _LOGGER.error(
-                            f"Wether prognosis cannot be updated :({len(ret_attr)})"
-                        )
-                except Exception:
-                    return
-            else:
-                _LOGGER.error("could not get weather-prognosis.")
+        else:
+            _LOGGER.error("could not get weather-prognosis.")
 
     def get_weatherprognosis_adjustment(self, offsets:dict[datetime, int]) -> dict:
-        self.update_weather_prognosis()
         ret = {k:v for k,v in offsets.items() if k.date == datetime.now().date()+timedelta(days=1)}
         rr = {k:self._get_weatherprognosis_hourly_adjustment(k.hour, v) for k,v in offsets.items() if k.date == datetime.now().date()}
         ret.update(rr)
         return ret
-        # for hour, offset in offsets[0].items():
-        #     ret[0][hour] = self._get_weatherprognosis_hourly_adjustment(hour, offset)
-        # return {hour: offset for (hour, offset) in ret[0].items()}, ret[1]
 
     def get_hvac_prognosis(self, current_temperature: float) -> list:
         ret = []
-        if not self.is_initialized:
-            return ret
         try:
             self._current_temperature = float(current_temperature)
         except Exception as e:
-            _LOGGER.debug(f"Could not parse temperature as float: {e}")
+            _LOGGER.warning(f"Could not parse temperature as float: {e}")
             return ret
         corrected_temp_delta = 0
-        now = datetime.now().replace(minute=0, second=0, microsecond=0)
+        now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
 
         valid_progs = [
             p for idx, p in enumerate(self.prognosis_list) if p.DT >= now
@@ -132,20 +128,23 @@ class WeatherPrognosis:
         return p.Temperature
 
     def _get_weatherprognosis_hourly_adjustment(self, hour, offset) -> int:
-        now = datetime.now().replace(hour=hour, minute=0, second=0, microsecond=0)
-        proghour = now
-        if now.minute > 30:
-            proghour = now + timedelta(hours=1)
-        _next_prognosis = self._get_two_hour_prog(proghour)
-        ret = offset
-        if _next_prognosis is not None and int(hour) >= now.hour:
-            divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
-            adjustment_divisor = 2.5 if _next_prognosis.windchill_temp > -2 else 2
-            adj = (int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1)
-            #if 14 < hour < 19:
-            #    print(f"for {hour} the initial was {offset}, adjustment: {adj}, divisor:{divisor}, timedelta:{_next_prognosis.TimeDelta}, windchill:{_next_prognosis.windchill_temp}, deltatemp:{_next_prognosis.delta_temp_from_now}")
-            ret = offset + adj
-        return ret
+        try:
+            now = datetime.now().replace(hour=hour, minute=0, second=0, microsecond=0)
+            proghour = now
+            if now.minute > 30:
+                proghour = now + timedelta(hours=1)
+            proghour = proghour.astimezone(timezone.utc)
+            _next_prognosis = self._get_two_hour_prog(proghour)
+            ret = offset
+            if _next_prognosis is not None and int(hour) >= now.hour:
+                divisor = max((11 - _next_prognosis.TimeDelta) / 10, 0)
+                adjustment_divisor = 2.5 if _next_prognosis.windchill_temp > -2 else 2
+                adj = (int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1)
+                ret = offset + adj
+            return ret
+        except Exception as e:
+            _LOGGER.error(f"Could not get weatherprognosis adjustment: {e}")
+            return offset
 
     def _set_prognosis(self, import_list: list):
         old_prognosis = self.prognosis_list
@@ -182,26 +181,3 @@ class WeatherPrognosis:
             if c == 10800:
                 return p
         return None
-
-    def _setup_weather_prognosis(self): #todo: this must be handled with weeather servicecall.
-        self._is_initialized = True
-
-        # try:
-        #     entities = template.integration_entities(self._hass, "met")
-        #     if len(entities) < 1:
-        #         _LOGGER.warning("no entities found for weather. Cannot use weather prognosis")
-        #     _ent = [e for e in entities]
-        #     if len(_ent) >= 1:
-        #         self.entity = _ent[0]
-        #         self._is_initialized = True
-        #         self.update_weather_prognosis()
-        #         _LOGGER.debug("Weather prognosis is initialized")
-        #         if len(_ent) > 1:
-        #             _LOGGER.warning(
-        #                 f"Peaqev found more than one weather-entity. Using the first one: {self.entity}"
-        #             )
-        #     else:
-        #         pass
-        # except Exception as e:
-        #     msg = f"Peaqev was unable to get a single weather-entity. Disabling Weather-prognosis: {e}"
-        #     _LOGGER.error(msg)

@@ -33,6 +33,7 @@ class ConfigModel:
     outdoor_tempsensors: List = field(default_factory=lambda: [])
     hvacbrand: HvacBrand = field(init=False)
     systemid: str = field(init=False)
+    weather_entity: str|None = None
     _hvac_tolerance: int = None
     hub = None
 

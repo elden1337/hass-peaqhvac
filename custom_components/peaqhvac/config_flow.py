@@ -76,6 +76,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         _demandhours_waterboost = await self._get_existing_param("demand_hours_water_boost", [])
         _lowdm = await self._get_existing_param("low_degree_minutes", "-600")
         _verycoldtemp = await self._get_existing_param("very_cold_temp", "-12")
+        _weather_entity = await self._get_existing_param("weather_entity", None)
 
         return self.async_show_form(
             step_id="init",
@@ -89,5 +90,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional("non_hours_water_boost", default=_nonhours_waterboost): cv.multi_select(list(range(0, 24))),
                 vol.Optional("low_degree_minutes", default=_lowdm): cv.string,
                 vol.Optional("very_cold_temp", default=_verycoldtemp): cv.string,
+                vol.Optional("weather_entity", default=_weather_entity): cv.string,
                 })
         )

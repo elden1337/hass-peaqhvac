@@ -15,5 +15,6 @@ OPTIONAL_SCHEMA = vol.Schema({
     vol.Optional("demand_hours_water_boost", default=[]): cv.multi_select(list(range(0, 24))),
     vol.Optional("low_degree_minutes", default="-600"): cv.string,
     vol.Optional("very_cold_temp", default="-12"): cv.string,
+    vol.Optional("weather_entity"): cv.string,
 })
 

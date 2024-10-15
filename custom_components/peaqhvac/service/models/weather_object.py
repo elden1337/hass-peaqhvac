@@ -22,4 +22,4 @@ class WeatherObject:
     def _parse_datetime(self) -> datetime:
         time_obj = datetime.strptime(self._DTstr, "%Y-%m-%dT%H:%M:%S+00:00")
         utc_time = time_obj.replace(tzinfo=timezone.utc)
-        return utc_time.astimezone()
+        return utc_time

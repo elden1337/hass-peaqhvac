@@ -48,12 +48,14 @@ class Hub:
             is_active=True
         )
 
-        self.prognosis = WeatherPrognosis(hass, self.sensors.average_temp_outdoors, self.observer)
+        self.prognosis = WeatherPrognosis(hass, self.sensors.average_temp_outdoors, self.observer, self.options.weather_entity)
         self.offset = OffsetFactory.create(self, observer=self.observer)
         self.options.hub = self
 
     async def async_setup(self) -> None:
         await self.async_setup_trackers()
+        if self.options.weather_entity is not None:
+            await self.prognosis.async_update_weather()
 
     async def async_setup_trackers(self):
         self.trackerentities = []
@@ -79,7 +81,7 @@ class Hub:
         return self._check_initialized()
 
     def _check_initialized(self) -> bool:
-        if all([self.spotprice.is_initialized, self.prognosis.is_initialized]):
+        if all([self.spotprice.is_initialized]):
             self._is_initialized = True
             self.observer.activate()
             return True

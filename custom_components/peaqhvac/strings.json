@@ -14,7 +14,8 @@
           "non_hours_water_boost": "[%key:common::config_flow::data::non_hours_water_boost%]",
           "demand_hours_water_boost": "[%key:common::config_flow::data::demand_hours_water_boost%]",
           "low_degree_minutes": "[%key:common::config_flow::data::low_degree_minutes%]",
-          "very_cold_temp": "[%key:common::config_flow::data::very_cold_temp%]"
+          "very_cold_temp": "[%key:common::config_flow::data::very_cold_temp%]",
+          "weather_entity": "[%key:common::config_flow::data::weather_entity%]"
         }
       }
     },
@@ -37,7 +38,8 @@
           "non_hours_water_boost": "[%key:common::config_flow::data::non_hours_water_boost%]",
           "demand_hours_water_boost": "[%key:common::config_flow::data::demand_hours_water_boost%]",
           "low_degree_minutes": "[%key:common::config_flow::data::low_degree_minutes%]",
-          "very_cold_temp": "[%key:common::config_flow::data::very_cold_temp%]"
+          "very_cold_temp": "[%key:common::config_flow::data::very_cold_temp%]",
+          "weather_entity": "[%key:common::config_flow::data::weather_entity%]"
         }
       }
     }
