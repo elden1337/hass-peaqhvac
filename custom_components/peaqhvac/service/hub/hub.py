@@ -54,7 +54,8 @@ class Hub:
 
     async def async_setup(self) -> None:
         await self.async_setup_trackers()
-        if self.options.weather_entity is not None:
+        if self.prognosis.entity is not None:
+            _LOGGER.debug("Weather-prognosis is enabled, will update weather.")
             await self.prognosis.async_update_weather()
 
     async def async_setup_trackers(self):

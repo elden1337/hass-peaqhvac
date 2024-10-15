@@ -26,6 +26,7 @@ class WeatherPrognosis:
         self._weather_export_model: list = []
         self._current_temperature = 1000
         self.entity = weather_entity
+        _LOGGER.debug("WeatherPrognosis initialized with entity: %s", self.entity)
         if self.entity is not None:
             async_track_time_interval(self._hass, self.async_update_weather, timedelta(seconds=30))
 
@@ -35,7 +36,6 @@ class WeatherPrognosis:
 
     async def async_update_weather(self, *args):
         await self.update_weather_prognosis()
-
         if len(self._hvac_prognosis_list) > 0:
             ret = self._hvac_prognosis_list
         else:
@@ -51,6 +51,7 @@ class WeatherPrognosis:
             self._weather_export_model = ret
 
     async def update_weather_prognosis(self):
+        #_LOGGER.debug("Updating weather-prognosis")
         try:
             ret = await self._hass.services.async_call(
                 "weather",
@@ -72,6 +73,7 @@ class WeatherPrognosis:
                         f"Wether prognosis cannot be updated :({len(ret_attr)})"
                     )
             except Exception as e:
+                _LOGGER.error(f"Could not update weather-prognosis: {e}")
                 return
         else:
             _LOGGER.error("could not get weather-prognosis.")
@@ -79,6 +81,8 @@ class WeatherPrognosis:
     def get_weatherprognosis_adjustment(self, offsets:dict[datetime, int]) -> dict:
         ret = {k:v for k,v in offsets.items() if k.date == datetime.now().date()+timedelta(days=1)}
         rr = {k:self._get_weatherprognosis_hourly_adjustment(k.hour, v) for k,v in offsets.items() if k.date == datetime.now().date()}
+        # if ret == rr:
+        #     _LOGGER.debug("No changes when updating offsets with weather this time.")
         ret.update(rr)
         return ret
 
@@ -147,7 +151,7 @@ class WeatherPrognosis:
             return offset
 
     def _set_prognosis(self, import_list: list):
-        old_prognosis = self.prognosis_list
+        #_LOGGER.debug(f"set prognosis, {len(import_list)}. {import_list[0]}")
         ret = []
         for i in import_list:
             ret.append(
@@ -161,8 +165,10 @@ class WeatherPrognosis:
                     Precipitation=i["precipitation"],
                 )
             )
-        self.prognosis_list = ret
-        if self.prognosis_list != old_prognosis:
+        _LOGGER.debug(ret)
+        if ret != self.prognosis_list:
+            #_LOGGER.debug("Prognosis updated")
+            self.prognosis_list = ret
             self.observer.broadcast(ObserverTypes.PrognosisChanged)
 
     def _correct_temperature_for_windchill(
