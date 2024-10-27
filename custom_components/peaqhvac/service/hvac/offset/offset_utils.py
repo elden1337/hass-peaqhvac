@@ -120,8 +120,8 @@ def max_price_lower_internal(tempdiff: float, peaks_today: list) -> bool:
 
 
 def adjust_to_threshold(offsetdata: CalculatedOffsetModel, outdoors_value: int, tolerance: int) -> int:
-    adjustment = offsetdata.sum_values()
-    if adjustment is None or outdoors_value > 17:
+    adjustment = offsetdata.sum_values() or 0
+    if outdoors_value > 17:
         return min(0, adjustment)
     _tolerance = 3 if tolerance is None else tolerance
     ret = (
