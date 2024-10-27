@@ -51,7 +51,6 @@ class WeatherPrognosis:
             self._weather_export_model = ret
 
     async def update_weather_prognosis(self):
-        #_LOGGER.debug("Updating weather-prognosis")
         try:
             ret = await self._hass.services.async_call(
                 "weather",
@@ -81,8 +80,6 @@ class WeatherPrognosis:
     def get_weatherprognosis_adjustment(self, offsets:dict[datetime, int]) -> dict:
         ret = {k:v for k,v in offsets.items() if k.date == datetime.now().date()+timedelta(days=1)}
         rr = {k:self._get_weatherprognosis_hourly_adjustment(k.hour, v) for k,v in offsets.items() if k.date == datetime.now().date()}
-        # if ret == rr:
-        #     _LOGGER.debug("No changes when updating offsets with weather this time.")
         ret.update(rr)
         return ret
 
@@ -151,7 +148,6 @@ class WeatherPrognosis:
             return offset
 
     def _set_prognosis(self, import_list: list):
-        #_LOGGER.debug(f"set prognosis, {len(import_list)}. {import_list[0]}")
         ret = []
         for i in import_list:
             ret.append(
@@ -165,9 +161,7 @@ class WeatherPrognosis:
                     Precipitation=i["precipitation"],
                 )
             )
-        _LOGGER.debug(ret)
         if ret != self.prognosis_list:
-            #_LOGGER.debug("Prognosis updated")
             self.prognosis_list = ret
             self.observer.broadcast(ObserverTypes.PrognosisChanged)
 
