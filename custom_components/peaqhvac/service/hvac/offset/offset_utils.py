@@ -75,7 +75,9 @@ def _deviation_from_mean(prices: list[float], min_price: float, dt: datetime) ->
         return {}
     delta = _get_timedelta(prices)
     dt_lister = dt.replace(hour=0)
-    standardized_prices = [(p - mean(prices)) / stdev(prices) for p in prices]
+    min_list_price = min(min(prices),0)
+    shifted_prices = [p - min_list_price for p in prices]
+    standardized_prices = [(p - mean(shifted_prices)) / stdev(shifted_prices) for p in shifted_prices]
     avg = mean(standardized_prices)
     devi = stdev(standardized_prices)
     avg2 = avg
