@@ -7,7 +7,7 @@
 > This is to not be questioned regarding IP going forward.
 > 
 > For the time being I want to let the codebases stay online, and will accept pull requests and occasionally do patch updates and bug fixes to > keep the solutions running.
-> However, I will not take part in general feature discussions any longer, starting from 2024-11-01.
+> However, I will not take part in general feature discussions any longer, starting from 2024-12-01.
 > 
 > If you wish you may fork the projects and create features that you send me as pull requests. That way we can keep the flow going without > my direct interference in the inventions.
 > For any usage not covered by the general download by hacs, look towards the license on the repos for guidance. Here's a snapshot of what > the licenses on my code requires: https://creativecommons.org/licenses/by-nc-nd/4.0/deed.en
@@ -100,7 +100,6 @@ After this calculation several things do happen, depending on the number of temp
 1. **Weather:** If peaqhvac detects an anomaly of more than 2.5C in the coming three hours from now, it will adjust the offset to pre-heat/pre-cold and make the curve more lean
 2. **Temp diff:** Depending on your mode of operation, PeaqHvac is more or less forgiving towards temperature-changes. Normal operation for instance has a tolerance of -0.2C and +0.4C. These tolerances may also change depending on the base-offset. If the current indoor-temp breaches these thresholds, temp-diff will add/remove steps from the offset.
 3. **Temp trend:** If the current trend of temperatures indoors tells the system that within an hour, it will breach the tolerances descired above, this function will add/remove steps.
-4. **Temp extremas:** _If you have more than one indoor-tempsensor only_ This will add/deduct small fractions of steps based on how much of an extreme the very lowest/highest temps are compared to the mean. This function will rarely hit a full step-change, but gives an indication of how flat or jumpy your indoors temps are.
 
 #### Key functions that do occur occasionally:
 * **High ventilation at sunwarm:** If current temp is > 1C above set, and if both indoor and outdoor trends are rising heavily, the temperature will boost to take the "free" warm air into the system. _This happens down to a minimum of -5C_
@@ -112,15 +111,10 @@ After this calculation several things do happen, depending on the number of temp
 
 ### Water
 
-If control water is enabled a brief hot-waterboost will run (for ten minutes) when:
-1. current offset is > 0 (relatively cheap hour) and watertemp is below 42C at approx 10 min past the hour
-2. current offset is <= 0 (relatively expensive hour) and watertemp is below 30C at approx 10 min past the hour
-
-Furthermore, when the cheapest hour in the known span occurs a real boost (up to the set boost-temp) will happen. This will often include a small amount of electrical addon.
-
-_In future versions the hot water will get more love, for instance a secondary threshold to run boost or not (if cheap is not cheap enough) and to divert from certain hours alltogether despite the temp being too low._
-
-
+The included logic for water heating temp is not self learning, but is adjusting to a number of factors.
+Should you require water at a specific time, you may override the boost with the myuplink service calls.
+The boost may require multiple runs to heat to your desired temp depending on your current peak energy level.
+The boost signals when it is about to start both in the frontend, and through the HA servicebus to warn other integrations if they are listening (such as PeaqEV).
 
 ## Included sensors
 
