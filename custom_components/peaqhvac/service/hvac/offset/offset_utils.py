@@ -54,9 +54,7 @@ def get_offset_dict(offset_dict, dt_now) -> dict:
 
 
 def set_offset_dict(prices: list[float], dt: datetime, min_price: float, existing: dict) -> dict:
-    ret = {}
     dt = dt.replace(minute=0, second=0, microsecond=0)
-    dt_date = dt.date()
     all_offsets = _deviation_from_mean(prices, min_price, dt)
     return all_offsets
 
@@ -95,7 +93,6 @@ def _deviation_from_mean(prices: list[float], min_price: float, dt: datetime) ->
         deviation = (num - _avg) / _devi
         if _devi < 1:
             deviation *= 0.5
-        setval = 0
 
         if num <= min_price:
             setval = min(round(deviation, 2), 0)
