@@ -86,11 +86,21 @@ class HouseHeaterHelpers:
     def temporarily_lower_offset(self, offsetdata: CalculatedOffsetModel) -> bool:
         if self._wait_timer_breach.is_timeout():
             if any([self._lower_offset_threshold_breach(), self._lower_offset_addon()]):
-                self.aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = -2
+                net_adjustment = -2
+            else:
+                net_adjustment = 0
         elif self._hvac.hub.sensors.peaqev_installed:
-            if self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes and self._hvac.hub.sensors.average_temp_outdoors.value > -10:
-                self.aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = -1
+            if (self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes
+                    and self._hvac.hub.sensors.average_temp_outdoors.value > -10):
+                net_adjustment = -1
+            else:
+                net_adjustment = 0
         else:
-            self.aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = 0
-        offsetdata.current_offset += self.aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset]
+            net_adjustment = 0
+
+        last_adjustment = self.aux_offset_adjustments.get(OffsetAdjustments.TemporarilyLowerOffset, 0)
+        adjustment_difference = net_adjustment - last_adjustment
+        offsetdata.current_offset += adjustment_difference
+        self.aux_offset_adjustments[OffsetAdjustments.TemporarilyLowerOffset] = net_adjustment
+
         return True
