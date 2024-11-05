@@ -52,7 +52,8 @@ class ConfigModel:
             #         "tried to broadcast an update from hvac-tolerance but referenced hub was None."
             #     )
 
-    def set_hvacbrand(self, configstring: str) -> HvacBrand:
+    @staticmethod
+    def set_hvacbrand(configstring: str) -> HvacBrand:
         branddict = {
             HVACBRAND_NIBE: HvacBrand.Nibe,
             HVACBRAND_IVT: HvacBrand.IVT,
@@ -70,7 +71,8 @@ class ConfigModel:
             result_list.append(self._set_single_sensor(inputstr))
         return result_list
 
-    def _set_single_sensor(self, sensor: str):
+    @staticmethod
+    def _set_single_sensor(sensor: str):
         ret = sensor
         if not sensor.startswith("sensor."):
             ret = f"sensor.{sensor}"

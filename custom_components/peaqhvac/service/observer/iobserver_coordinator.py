@@ -40,7 +40,8 @@ class IObserver:
     def deactivate(self) -> None:
         self.model.active = False
 
-    def _check_and_convert_enum_type(self, command) -> ObserverTypes|str:
+    @staticmethod
+    def _check_and_convert_enum_type(command) -> ObserverTypes | str:
         if isinstance(command, str):
             try:
                 command = ObserverTypes(command)

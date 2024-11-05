@@ -1,4 +1,4 @@
-from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, PEAQENABLED
@@ -13,8 +13,7 @@ night-cool
 
 async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entities):
     hub = hass.data[DOMAIN]["hub"]
-    peaqsensors = []
-    peaqsensors.append(PeaqBinarySensorEnabled(hub))
+    peaqsensors = [PeaqBinarySensorEnabled(hub)]
     async_add_entities(peaqsensors)
 
 

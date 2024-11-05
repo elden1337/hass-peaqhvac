@@ -75,7 +75,8 @@ class NextWaterBoost:
         selected = self.get_final_selected(filtered, selected)
         return NextStartExportModel(selected.time, selected.target_temp)
    
-    def _calculate_target_temp_for_hour(self, temp_at_time: float, is_demand: bool, price: float, price_spread:float, min_price:float) -> int:
+    @staticmethod
+    def _calculate_target_temp_for_hour(temp_at_time: float, is_demand: bool, price: float, price_spread:float, min_price:float) -> int:
         target = TARGET_TEMP if price > min_price else MAX_TARGET_TEMP
         if int(target - temp_at_time) <= 0:
             return target
@@ -93,7 +94,8 @@ class NextWaterBoost:
 
         return min(int(temp_at_time+add_temp), target)
 
-    def _get_temperature_at_datetime(self, now_dt, target_dt, current_temp, temp_trend) -> float:
+    @staticmethod
+    def _get_temperature_at_datetime(now_dt, target_dt, current_temp, temp_trend) -> float:
         delay = (target_dt - now_dt).total_seconds() / 3600
         return max(10,round(current_temp + (delay * temp_trend), 1))
 
@@ -129,7 +131,8 @@ class NextWaterBoost:
         return temp_at_time <= calculated_water_limit
 
 
-    def reset_hour(self, dt) -> datetime:
+    @staticmethod
+    def reset_hour(dt) -> datetime:
         return dt.replace(minute=0,second=0,microsecond=0)
 
     def get_data(self, model: NextStartPostModel) -> list:

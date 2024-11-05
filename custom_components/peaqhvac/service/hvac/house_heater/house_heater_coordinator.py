@@ -14,6 +14,8 @@ from custom_components.peaqhvac.service.hvac.offset.offset_utils import adjust_t
 from custom_components.peaqhvac.service.models.enums.demand import Demand
 from peaqevcore.common.models.observer_types import ObserverTypes
 
+from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
+
 _LOGGER = logging.getLogger(__name__)
 
 OFFSET_MIN_VALUE = -10
@@ -114,8 +116,8 @@ class HouseHeaterCoordinator(IHeater):
                                      current_temp_trend_offset=temptrend)
         if ret != self._calculated_offsetdata:
             self._calculated_offsetdata = ret
-            _LOGGER.debug("Calculated offsetdata updated, so pushing update operation.")
-            await self.observer.async_broadcast(ObserverTypes.UpdateOperation, None)
+            # _LOGGER.debug("Calculated offsetdata updated, so pushing update operation.")
+            # await self.observer.async_broadcast(ObserverTypes.UpdateOperation, (HvacOperations.Offset, ret.sum_values()))
         return ret
 
     async def async_update_operation(self):

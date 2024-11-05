@@ -19,6 +19,7 @@ class OffsetSensor(SensorBase):
         self._peaks_today = []
         self._peaks_tomorrow = []
         self._prognosis = []
+        self._aux_dict = {}
 
     @property
     def unit_of_measurement(self):

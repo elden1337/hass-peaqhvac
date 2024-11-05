@@ -12,6 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 NIBE_MAX_THRESHOLD = 10
 NIBE_MIN_THRESHOLD = -10
+
 class Nibe(IHvac):
     domain = "Nibe"
     water_heater_entity = None
@@ -27,7 +28,6 @@ class Nibe(IHvac):
         types = {
             SensorType.HvacMode: f"sensor.{self.hub.options.systemid}_priority",
             SensorType.Offset: f"number.{self.hub.options.systemid}_heating_offset_climate_system_1",
-            #SensorType.DegreeMinutes: f"sensor.{self.hub.options.systemid}_degree_minutes_40941",
             SensorType.DegreeMinutes: f"number.{self.hub.options.systemid}_current_value",
             SensorType.WaterTemp: f"sensor.{self.hub.options.systemid}_hot_water_charging_bt6",
             SensorType.HvacTemp: f"sensor.{self.hub.options.systemid}_supply_line_bt2",
@@ -51,6 +51,7 @@ class Nibe(IHvac):
             speed = self.get_sensor(SensorType.FanSpeed)
             return float(self._handle_sensor(speed))
         except Exception as e:
+            _LOGGER.exception(e)
             return 0
 
     @property
@@ -63,59 +64,8 @@ class Nibe(IHvac):
             _LOGGER.debug(f"Unable to calculate delta return: {e}")
             return 0
 
-    @property
-    def hvac_mode(self) -> HvacMode:
-        """
-            'enumValues': [
-          {
-            'value': '10',
-            'text': 'Off',
-            'icon': ''
-          },
-          {
-            'value': '20',
-            'text': 'Hot water',
-            'icon': ''
-          },
-          {
-            'value': '30',
-            'text': 'Heating',
-            'icon': ''
-          },
-          {
-            'value': '40',
-            'text': 'Pool',
-            'icon': ''
-          },
-          {
-            'value': '41',
-            'text': 'Pool 2',
-            'icon': ''
-          },
-          {
-            'value': '50',
-            'text': 'Transfer',
-            'icon': ''
-          },
-          {
-            'value': '60',
-            'text': 'Cooling',
-            'icon': ''
-          }
-        ],
-        """
-        value_lookup = {
-            "Off": HvacMode.Idle,
-            "Hot water": HvacMode.Water,
-            "Heating": HvacMode.Heat,
-        }
-        sensor = self.get_sensor(SensorType.HvacMode)
-        ret = self._handle_sensor(sensor)
-        if ret is not None:
-            return value_lookup.get(ret, HvacMode.Unknown)
-        return HvacMode.Unknown
-
-    def _service_domain_per_operation(self, operation: HvacOperations) -> str:
+    @staticmethod
+    def _service_domain_per_operation(operation: HvacOperations) -> str:
         match operation:
             case HvacOperations.Offset:
                 return "number"
@@ -123,7 +73,8 @@ class Nibe(IHvac):
                 return "switch"
         raise ValueError(f"Operation {operation} not supported")
 
-    def _transform_servicecall_value(self, value: any, operation: HvacOperations) -> any:
+    @staticmethod
+    def _transform_servicecall_value(value: any, operation: HvacOperations) -> any:
         match operation:
             case HvacOperations.Offset:
                 return "set_value"

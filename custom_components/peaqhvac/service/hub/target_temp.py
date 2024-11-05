@@ -15,15 +15,15 @@ _LOGGER = logging.getLogger(__name__)
 def adjusted_tolerances(offset: int, min_tolerance, max_tolerance) -> Tuple[float, float]:
     # if abs(offset) <= 1:
     return min_tolerance, max_tolerance
-    _max_tolerance = (
-        max_tolerance + (offset / 15) if offset > 0 else max_tolerance
-    )
-    _min_tolerance = (
-        min_tolerance + (abs(offset) / 10)
-        if offset < 0
-        else min_tolerance
-    )
-    return max(_min_tolerance, 0.1), max(_max_tolerance, 0.1)
+    # _max_tolerance = (
+    #     max_tolerance + (offset / 15) if offset > 0 else max_tolerance
+    # )
+    # _min_tolerance = (
+    #     min_tolerance + (abs(offset) / 10)
+    #     if offset < 0
+    #     else min_tolerance
+    # )
+    # return max(_min_tolerance, 0.1), max(_max_tolerance, 0.1)
 
 
 class TargetTemp(ObserverBroadcaster):
@@ -106,7 +106,8 @@ class TargetTemp(ObserverBroadcaster):
 
 
 
-    def _minmax(self, desired_temp) -> float:
+    @staticmethod
+    def _minmax(desired_temp) -> float:
         if desired_temp < MINTEMP:
             return MINTEMP
         if desired_temp > MAXTEMP:

@@ -59,7 +59,7 @@ class HouseVentilation:
                 )
             self._latest_seen_fan_speed = self._hvac.fan_speed
 
-    async def async_check_vent_boost(self, caller=None) -> None:
+    async def async_check_vent_boost(self, *args) -> None:
         if self._hvac.hub.sensors.temp_trend_indoors.samples > 0 and time.time() - self._wait_timer_boost.value > WAITTIMER_VENT:
             if self._vent_boost_warmth():
                 await self.async_vent_boost_start("Vent boosting because of warmth.")

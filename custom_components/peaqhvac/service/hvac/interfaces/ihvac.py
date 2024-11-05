@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from abc import abstractmethod
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import TYPE_CHECKING, Tuple
 
 from homeassistant.helpers.event import async_track_time_interval
@@ -33,6 +33,19 @@ UPDATE_INTERVALS = {
     HvacOperations.VentBoost: 1800,
 }
 
+ADDON_VALUE_CONVERSION = {
+            "Alarm":   False,
+            "Blocked": False,
+            "Off":     False,
+            "Active":  True,
+        }
+
+HVACMODE_LOOKUP = {
+            "Off":       HvacMode.Idle,
+            "Hot water": HvacMode.Water,
+            "Heating":   HvacMode.Heat,
+        }
+
 
 class IHvac:
     _force_update: bool = False
@@ -47,8 +60,6 @@ class IHvac:
         self.hub = hub
         self.observer = observer
         self._hass = hass
-        self._hvac_dm: int = None
-        self.raw_offset: int = 0
         self.house_heater = HouseHeaterCoordinator(hvac=self, hub=hub, observer=observer)
         self.water_heater = WaterHeater(hub=hub, observer=observer)
         self.house_ventilation = HouseVentilation(hvac=self, observer=observer)
@@ -66,9 +77,45 @@ class IHvac:
         pass
 
     @property
-    @abstractmethod
     def hvac_mode(self) -> HvacMode:
-        pass
+        """
+                    'enumValues': [
+                  {
+                    'value': '10',
+                    'text': 'Off',
+                  },
+                  {
+                    'value': '20',
+                    'text': 'Hot water',
+                  },
+                  {
+                    'value': '30',
+                    'text': 'Heating',
+                  },
+                  {
+                    'value': '40',
+                    'text': 'Pool',
+                  },
+                  {
+                    'value': '41',
+                    'text': 'Pool 2',
+                  },
+                  {
+                    'value': '50',
+                    'text': 'Transfer',
+                  },
+                  {
+                    'value': '60',
+                    'text': 'Cooling',
+                  }
+                ],
+                """
+
+        sensor = self.get_sensor(SensorType.HvacMode)
+        ret = self._handle_sensor(sensor)
+        if ret is not None:
+            return HVACMODE_LOOKUP.get(ret, HvacMode.Unknown)
+        return HvacMode.Unknown
 
     @property
     @abstractmethod
@@ -94,8 +141,8 @@ class IHvac:
         ret = self.get_value(SensorType.DegreeMinutes, int)
         if ret not in range(-10000, 101):
             _LOGGER.warning(f"DM is out of range: {ret}")
-        if self._hvac_dm != ret:
-            self._hvac_dm = ret
+        if self.model.hvac_dm != ret:
+            self.model.hvac_dm = ret
             self.hub.sensors.dm_trend.add_reading(ret, time.time())
         return ret
 
@@ -105,14 +152,8 @@ class IHvac:
 
     @property
     def hvac_electrical_addon(self) -> bool:
-        value_conversion = {
-            "Alarm":   False,
-            "Blocked": False,
-            "Off":     False,
-            "Active":  True,
-        }
         ret = self.get_value(SensorType.ElectricalAddition, str)
-        return value_conversion.get(ret, False)
+        return ADDON_VALUE_CONVERSION.get(ret, False)
 
     @property
     def hvac_compressor_start(self) -> int:
@@ -131,8 +172,8 @@ class IHvac:
 
     async def async_update_offset(self, raw_offset:int|None = None) -> bool:
         if raw_offset:
-            if int(raw_offset) != self.raw_offset:
-                self.raw_offset = int(raw_offset)
+            if int(raw_offset) != self.model.raw_offset:
+                self.model.raw_offset = int(raw_offset)
         ret = False
         if self.hub.sensors.peaqev_installed:
             if len(self.hub.sensors.peaqev_facade.offsets.get("today", {})) < 20:
@@ -140,10 +181,10 @@ class IHvac:
         try:
             _hvac_offset = self.hvac_offset
             new_offset, force_update = await self.house_heater.async_adjusted_offset(
-                self.raw_offset
+                self.model.raw_offset
             )
             if new_offset != self.model.current_offset:
-                _LOGGER.debug(f"Offset changed from {self.model.current_offset} to {new_offset}, with raw input {self.raw_offset}.")
+                _LOGGER.debug(f"Offset changed from {self.model.current_offset} to {new_offset}, with raw input {self.model.raw_offset}.")
                 self.model.current_offset = new_offset
                 self._force_update = force_update
             if self.model.current_offset != _hvac_offset:

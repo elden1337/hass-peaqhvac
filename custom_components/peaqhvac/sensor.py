@@ -64,9 +64,8 @@ async def _gather_sensors(hub, config) -> list:
         }
     ]
 
-    ret = []
+    ret = [OffsetSensor(hub, config.entry_id, "calculated hvac offset")]
 
-    ret.append(OffsetSensor(hub, config.entry_id, "calculated hvac offset"))
     for a in AVERAGESENSORS:
         ret.append(AverageSensor(hub, config.entry_id, a))
     for sensor in TRENDSENSORS:

@@ -33,6 +33,7 @@ class Hub:
     def __init__(self, hass: HomeAssistant, hub_options: ConfigModel):
         self._is_initialized = False
         self.state_machine = hass
+        self.trackerentities = []
         self.observer = Observer(hass) #todo: move to creation factory
         self.options = hub_options
         self.peaqev_discovered: bool = self.get_peaqev()
@@ -59,7 +60,6 @@ class Hub:
             await self.prognosis.async_update_weather()
 
     async def async_setup_trackers(self):
-        self.trackerentities = []
         self.trackerentities.append(self.spotprice.entity)
         self.trackerentities.extend(self.options.indoor_tempsensors)
         self.trackerentities.extend(self.options.outdoor_tempsensors)
@@ -67,13 +67,6 @@ class Hub:
         async_track_state_change_event(
             self.state_machine, self.trackerentities, self._async_on_change
         )
-
-    def price_below_min(self, hour:datetime) -> bool:
-        try:
-            return self.spotprice.model.prices[hour.hour] <= self.sensors.peaqev_facade.min_price
-        except:
-            _LOGGER.warning(f"Unable to get price for hour {hour}. min_price: {self.sensors.peaqev_facade.min_price}, num_prices_today: {len(self.spotprice.model.prices)}")
-            return False
 
     @property
     def is_initialized(self) -> bool:
@@ -124,11 +117,6 @@ class Hub:
 
     async def call_disable_peaq(self):
         self.sensors.peaqhvac_enabled.value = False
-
-    async def call_set_mode(self, mode):
-        # match towards enum. set hub to that state.
-        pass
-
 
     async def async_get_internal_sensor(self, entity):
         lookup = {

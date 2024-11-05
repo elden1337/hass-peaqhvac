@@ -88,7 +88,7 @@ class PeaqevFacade(PeaqevFacadeBase):
         try:
             start = self._peaqevhub.threshold.start
             current = self.exact_threshold
-            return current < (start)
+            return current < start
         except Exception as e:
             _LOGGER.exception(f"Error on below_start_threshold {e}")
             return False

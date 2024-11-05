@@ -48,12 +48,8 @@ class AverageSensor(SensorBase, RestoreEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        attr_dict = {}
-
-        attr_dict["max"] = float(self._max)
-        attr_dict["min"] = float(self._min)
-        attr_dict["median"] = float(self._median)
-        attr_dict["values"] = list(self._all_values)
+        attr_dict = {"max":    float(self._max), "min": float(self._min), "median": float(self._median),
+                     "values": list(self._all_values)}
 
         return attr_dict
 

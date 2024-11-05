@@ -37,12 +37,9 @@ class TrendSensor(SensorBase, RestoreEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        attr_dict = {}
-        attr_dict["samples"] = self._samples
-        attr_dict["oldest_sample"] = self._oldest_sample
-        attr_dict["newest_sample"] = self._newest_sample
-        attr_dict["samples_raw"] = self._samples_raw
-        attr_dict["latest_restart"] = self._latest_restart
+        attr_dict = {"samples":        self._samples, "oldest_sample": self._oldest_sample,
+                     "newest_sample":  self._newest_sample, "samples_raw": self._samples_raw,
+                     "latest_restart": self._latest_restart}
         for k, v in self._extra_attributes.items():
             attr_dict[k] = v[0](v[1])
         return attr_dict

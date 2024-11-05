@@ -65,24 +65,6 @@ class HouseHeaterHelpers:
             )
             return Demand.ErrorDemand
 
-    def _keep_compressor_running(self, offsetdata: CalculatedOffsetModel, force_update: bool) -> bool:
-        """in certain conditions, up the offset to keep the compressor running for energy savings"""
-        dm_zero_prediction = self._hvac.hub.sensors.dm_trend.predicted_time_at_value(0)
-        now = datetime.now()
-        if dm_zero_prediction is not None:
-            if all([
-                self._hvac.hvac_mode is HvacMode.Heat,
-                self._hvac.compressor_frequency > 0,
-                self._hvac.hub.sensors.average_temp_outdoors.value < 0,
-                dm_zero_prediction < now + timedelta(hours=1)
-            ]):
-                offsetdata.current_offset += 1
-                force_update = True
-                self.aux_offset_adjustments[OffsetAdjustments.KeepCompressorRunning] = 1
-        else:
-            self.aux_offset_adjustments[OffsetAdjustments.KeepCompressorRunning] = 0
-        return force_update
-
     def temporarily_lower_offset(self, offsetdata: CalculatedOffsetModel) -> bool:
         if self._wait_timer_breach.is_timeout():
             if any([self._lower_offset_threshold_breach(), self._lower_offset_addon()]):

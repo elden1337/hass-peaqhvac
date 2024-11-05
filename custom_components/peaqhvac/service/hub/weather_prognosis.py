@@ -49,6 +49,7 @@ class WeatherPrognosis:
         if ret != self._weather_export_model:
             self.observer.broadcast(ObserverTypes.PrognosisChanged)
             self._weather_export_model = ret
+            _LOGGER.debug("Weather-prognosis updated", ret)
 
     async def update_weather_prognosis(self):
         try:
@@ -93,18 +94,15 @@ class WeatherPrognosis:
         corrected_temp_delta = 0
         now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
 
-        valid_progs = [
-            p for idx, p in enumerate(self.prognosis_list) if p.DT >= now
-        ]
+        valid_progs = [p for idx, p in enumerate(self.prognosis_list) if p.DT >= now]
         if len(valid_progs) == 0:
             return ret
         for p in valid_progs:
             c = p.DT - now
             if c.seconds == 0:
-                corrected_temp_delta = round(
-                    self._current_temperature - p.Temperature, 2
-                )
+                corrected_temp_delta = round(self._current_temperature - p.Temperature, 2)
                 continue
+
             temp = self._get_temp(p, corrected_temp_delta, c)
             hourdiff = int(c.seconds / 3600)
             hour_prognosis = PrognosisExportModel(
@@ -115,12 +113,14 @@ class WeatherPrognosis:
                 TimeDelta=hourdiff,
                 _base_temp = self._current_temperature
             )
+            #_LOGGER.debug(f"Hour prognosis: {hour_prognosis.prognosis_temp}, {hour_prognosis.corrected_temp}, {hour_prognosis.DT}, {hour_prognosis.TimeDelta}")
             ret.append(hour_prognosis)
 
         self._hvac_prognosis_list = ret
         return ret
 
-    def _get_temp(self, p, corrected_temp_delta, c):
+    @staticmethod
+    def _get_temp(p, corrected_temp_delta, c):
         if 3600 <= c.seconds <= 14400:
             decay_factor = 1 / (c.seconds / 3600)
             corr = corrected_temp_delta * decay_factor
@@ -129,6 +129,7 @@ class WeatherPrognosis:
         return p.Temperature
 
     def _get_weatherprognosis_hourly_adjustment(self, hour, offset) -> int:
+        _LOGGER.debug(f"Getting weatherprognosis adjustment for hour {hour} with offset {offset}")
         try:
             now = datetime.now().replace(hour=hour, minute=0, second=0, microsecond=0)
             proghour = now
@@ -142,31 +143,37 @@ class WeatherPrognosis:
                 adjustment_divisor = 2.5 if _next_prognosis.windchill_temp > -2 else 2
                 adj = (int(round((_next_prognosis.delta_temp_from_now / adjustment_divisor) * divisor, 0)) * -1)
                 ret = offset + adj
+            else:
+                _LOGGER.debug(f"Could not find next prognosis for hour {hour}")
             return ret
         except Exception as e:
             _LOGGER.error(f"Could not get weatherprognosis adjustment: {e}")
             return offset
 
     def _set_prognosis(self, import_list: list):
-        ret = []
-        for i in import_list:
-            ret.append(
-                WeatherObject(
-                    _DTstr=i["datetime"],
-                    WeatherCondition=i["condition"],
-                    Temperature=i["temperature"],
-                    Wind_Speed=i["wind_speed"],
-                    Wind_Bearing=i["wind_bearing"],
-                    Precipitation_Probability=i["precipitation_probability"],
-                    Precipitation=i["precipitation"],
+        try:
+            ret = []
+            for i in import_list:
+                ret.append(
+                    WeatherObject(
+                        _DTstr=i["datetime"],
+                        WeatherCondition=i["condition"],
+                        Temperature=i["temperature"],
+                        Wind_Speed=i["wind_speed"],
+                        Wind_Bearing=i["wind_bearing"],
+                        Precipitation_Probability=i["precipitation_probability"],
+                        Precipitation=i["precipitation"],
+                    )
                 )
-            )
-        if ret != self.prognosis_list:
-            self.prognosis_list = ret
-            self.observer.broadcast(ObserverTypes.PrognosisChanged)
+            if ret != self.prognosis_list:
+                self.prognosis_list = ret
+                self.observer.broadcast(ObserverTypes.PrognosisChanged)
+        except Exception as e:
+            _LOGGER.error(f"Could not finalize _set_prognosis: {e}")
 
+    @staticmethod
     def _correct_temperature_for_windchill(
-        self, temp: float, windspeed: float
+            temp: float, windspeed: float
     ) -> float:
         windspeed_corrected = windspeed
         ret = 13.12
