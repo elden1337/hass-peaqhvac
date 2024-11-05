@@ -73,6 +73,8 @@ class HubSensors:
         return _indoors - _set_temp
 
     def get_tempdiff_in_out(self) -> float:
-        _indoors = getattr(self.average_temp_indoors, "value", 0)
+        _indoors = min([getattr(self.average_temp_indoors, "median",0), 
+        getattr(self.average_temp_indoors, "value", 0)
+        ])
         _outdoors = getattr(self.average_temp_outdoors, "value", 0)
         return _indoors - _outdoors
