@@ -12,6 +12,7 @@ from custom_components.peaqhvac.service.hvac.house_heater.temperature_helper imp
 from custom_components.peaqhvac.service.hvac.interfaces.iheater import IHeater
 from custom_components.peaqhvac.service.hvac.offset.offset_utils import adjust_to_threshold
 from custom_components.peaqhvac.service.models.enums.demand import Demand
+from peaqevcore.common.models.observer_types import ObserverTypes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class HouseHeaterCoordinator(IHeater):
     def __init__(self, hvac, hub, observer):
         self._lock = asyncio.Lock()
         self._current_adjusted_offset: int = 0
+        self._calculated_offsetdata: CalculatedOffsetModel = CalculatedOffsetModel(0,0,0)
         self._helpers = HouseHeaterHelpers(hvac=hvac) #todo: can probably be a module instead
         super().__init__(hub=hub, observer=observer, implementation=HOUSE_HEATER_NAME)
 
@@ -55,6 +57,7 @@ class HouseHeaterCoordinator(IHeater):
         self.current_adjusted_offset = OFFSET_MIN_VALUE
 
     async def async_adjusted_offset(self, current_offset: int) -> Tuple[int, bool]:
+        """Calculates the adjusted offset taking temp diffs etc into account."""
         async with self._lock:
             outdoor_temp = self.hub.sensors.average_temp_outdoors.value
             temp_diff = self.hub.sensors.get_tempdiff()
@@ -106,9 +109,14 @@ class HouseHeaterCoordinator(IHeater):
             adjusted_temp=self.hub.sensors.set_temp_indoors.adjusted_temp
         )
 
-        return CalculatedOffsetModel(current_offset=current_offset,
+        ret = CalculatedOffsetModel(current_offset=current_offset,
                                      current_tempdiff=tempdiff,
                                      current_temp_trend_offset=temptrend)
+        if ret != self._calculated_offsetdata:
+            self._calculated_offsetdata = ret
+            _LOGGER.debug("Calculated offsetdata updated, so pushing update operation.")
+            await self.observer.async_broadcast(ObserverTypes.UpdateOperation, None)
+        return ret
 
     async def async_update_operation(self):
         pass

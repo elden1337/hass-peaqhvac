@@ -1,5 +1,6 @@
 from typing import Tuple
 from dataclasses import dataclass, field
+from datetime import datetime
 
 @dataclass
 class OffsetsExportModel:
@@ -15,6 +16,12 @@ class OffsetsExportModel:
     @raw_offsets.setter
     def raw_offsets(self, val:dict) -> None:
         self._raw_offsets = self._offset_dict_to_list(val)
+
+    @property
+    def current_raw_offset(self) -> int:
+        if len(self._raw_offsets) == 0:
+            return 0
+        return self._raw_offsets[datetime.now().hour]
 
     @property
     def current_offset(self) -> list:

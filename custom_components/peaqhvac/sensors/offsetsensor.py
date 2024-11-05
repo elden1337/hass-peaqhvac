@@ -36,15 +36,16 @@ class OffsetSensor(SensorBase):
 
         offsetsmodel: OffsetsExportModel = await self._hub.async_offset_export_model()
         data: CalculatedOffsetModel = await self._hub.hvac.house_heater.async_calculated_offsetdata(
-            self._hub.hvac.model.current_offset
+            offsetsmodel.current_raw_offset
         )
-        self._state = self._hub.hvac.house_heater.current_adjusted_offset
+        #self._state = self._hub.hvac.house_heater.current_adjusted_offset
+        self._state = self._hub.hvac.model.current_offset
         self._offsets = offsetsmodel.current_offset
         self._offsets_tomorrow = offsetsmodel.current_offset_tomorrow
         self._raw_offsets = offsetsmodel.raw_offsets
         self._peaks_today, self._peaks_tomorrow = offsetsmodel.peaks
 
-        self._current_offset = self._hub.offset.current_offset
+        self._current_offset = data.current_offset
         self._tempdiff_offset = data.current_tempdiff
         self._temptrend_offset = data.current_temp_trend_offset
         self._aux_dict = self._hub.hvac.house_heater.aux_offset_adjustments
