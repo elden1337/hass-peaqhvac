@@ -14,11 +14,13 @@ _LOGGER = logging.getLogger(__name__)
 UPDATE_INTERVAL = 60
 class IHeater(ABC):
 
-    def __init__(self, hub, observer, implementation: str):
+    def __init__(self, hub, observer, options, sensors, implementation: str):
         self._demand: Demand = Demand.NoDemand
         self.hub = hub
         self.observer = observer
         self.implementation = implementation
+        self._options = options
+        self._sensors = sensors
         self._control_module: HubMember = HubMember(data_type=bool, initval=False)
         self._latest_update = WaitTimer(timeout=UPDATE_INTERVAL)
 

@@ -27,16 +27,16 @@ class HubSensors:
         self, hub, options: ConfigModel, hass, peaqev_discovered: bool = False
     ):
         self.peaqhvac_enabled = HubMember(
-            initval=options.misc_options.enabled_on_boot, data_type=bool
+            initval=options.misc.enabled_on_boot, data_type=bool
         )
         self.hvac_tolerance = options.hvac_tolerance
         self.average_temp_indoors = Average(
-            entities=options.indoor_tempsensors,
+            entities=options.indoor_temp,
             observer_message="ObserverTypes.TemperatureIndoorsChanged",
             hub=hub
         )
         self.average_temp_outdoors = Average(
-            entities=options.outdoor_tempsensors,
+            entities=options.outdoor_temp,
             observer_message=ObserverTypes.TemperatureOutdoorsChanged,
             hub=hub,
         )

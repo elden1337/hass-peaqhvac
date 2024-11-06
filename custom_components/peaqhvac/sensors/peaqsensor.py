@@ -42,7 +42,7 @@ class PeaqSensor(SensorBase, RestoreEntity):
             self._state = self._hub.hvac.house_heater.demand.value
         elif self._sensorname == WATERDEMAND:
             self._state = self._hub.hvac.water_heater.demand.value
-            self._current_water_temperature = self._hub.hvac.hvac_watertemp
+            self._current_water_temperature = await self._hub.hvac.async_hvac_watertemp()
             self._heat_water = self._hub.hvac.water_heater.model.water_boost.value
             self._water_is_heating = self._hub.hvac.water_heater.water_heating
 

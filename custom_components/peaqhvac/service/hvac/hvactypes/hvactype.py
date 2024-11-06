@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Tuple
 from homeassistant.helpers.event import async_track_time_interval
 from peaqevcore.common.models.observer_types import ObserverTypes
 
+from custom_components.peaqhvac.service.hvac.hvactypes.const import HVACMODE_LOOKUP, ADDON_VALUE_CONVERSION
 from custom_components.peaqhvac.service.observer.iobserver_coordinator import IObserver
 
 if TYPE_CHECKING:
@@ -28,26 +29,7 @@ from custom_components.peaqhvac.service.models.ihvac_model import IHvacModel
 _LOGGER = logging.getLogger(__name__)
 
 
-UPDATE_INTERVALS = {
-    HvacOperations.Offset:    300,
-    HvacOperations.VentBoost: 1800,
-}
-
-ADDON_VALUE_CONVERSION = {
-            "Alarm":   False,
-            "Blocked": False,
-            "Off":     False,
-            "Active":  True,
-        }
-
-HVACMODE_LOOKUP = {
-            "Off":       HvacMode.Idle,
-            "Hot water": HvacMode.Water,
-            "Heating":   HvacMode.Heat,
-        }
-
-
-class IHvac:
+class HvacType:
     _force_update: bool = False
     update_list: dict[HvacOperations, any] = {}
     periodic_update_timers: dict = {
@@ -60,20 +42,30 @@ class IHvac:
         self.hub = hub
         self.observer = observer
         self._hass = hass
-        self.house_heater = HouseHeaterCoordinator(hvac=self, hub=hub, observer=observer)
-        self.water_heater = WaterHeater(hub=hub, observer=observer)
-        self.house_ventilation = HouseVentilation(hvac=self, observer=observer)
+        self.house_heater = HouseHeaterCoordinator(hvac=self, hub=hub, observer=observer, options=hub.options, sensors=hub.sensors)
+        self.water_heater = WaterHeater(hub=hub, observer=observer, options=hub.options, sensors=hub.sensors)
+        self.house_ventilation = HouseVentilation(hvac=self, observer=observer, options=hub.options, sensors=hub.sensors)
 
         self.observer.add(ObserverTypes.OffsetRecalculation, self.async_update_offset)
         self.observer.add("ObserverTypes.TemperatureIndoorsChanged", self.async_receive_temperature_change)
         async_track_time_interval(self._hass, self.async_receive_temperature_change, timedelta(seconds=60))
 
-    async def async_receive_temperature_change(self, *args):
-        await self.async_update_offset()
-
     @property
     @abstractmethod
     def delta_return_temp(self):
+        pass
+
+    @property
+    @abstractmethod
+    def fan_speed(self) -> float:
+        pass
+
+    @abstractmethod
+    def get_sensor(self, sensor: SensorType = None):
+        pass
+
+    @abstractmethod
+    def _set_servicecall_params(self, operation, _value):
         pass
 
     @property
@@ -118,21 +110,6 @@ class IHvac:
         return HvacMode.Unknown
 
     @property
-    @abstractmethod
-    def fan_speed(self) -> float:
-        pass
-
-    @abstractmethod
-    def get_sensor(self, sensor: SensorType = None):
-        pass
-
-    @abstractmethod
-    def set_operation_call_parameters(
-            self, operation: HvacOperations, _value: any
-    ) -> Tuple[str, dict, str]:
-        pass
-
-    @property
     def hvac_offset(self) -> int:
         return self.get_value(SensorType.Offset, int)
 
@@ -159,10 +136,20 @@ class IHvac:
     def hvac_compressor_start(self) -> int:
         return self.get_value(SensorType.DMCompressorStart, int)
 
-    @property
-    def hvac_watertemp(self) -> float:
+    async def async_receive_temperature_change(self, *args):
+        await self.async_update_offset()
+
+    def set_operation_call_parameters(
+            self, operation: HvacOperations, _value: any
+    ) -> Tuple[str, dict, str]:
+        call_operation = self._transform_servicecall_value(_value, operation)
+        service_domain = self._service_domain_per_operation(operation)
+        params = self._set_servicecall_params(operation, _value)
+        return call_operation, params, service_domain
+
+    async def async_hvac_watertemp(self) -> float:
         val = self.get_value(SensorType.WaterTemp, float)
-        self.water_heater.current_temperature = val
+        await self.water_heater.async_set_current_temperature(val)
         return val
 
     async def async_update_hvac(self) -> None:
@@ -199,14 +186,6 @@ class IHvac:
         finally:
             return ret
 
-    @staticmethod
-    def _get_sensors_for_callback(types: dict) -> list:
-        ret = []
-        for t in types:
-            item = types[t]
-            ret.append(item.split("|")[0])
-        return ret
-
     def get_value(self, sensor: SensorType, return_type):
         _sensor = self.get_sensor(sensor)
         ret = self._handle_sensor(_sensor)
@@ -233,5 +212,30 @@ class IHvac:
                 _LOGGER.exception(e)
                 return None
         return state.state
+
+    @staticmethod
+    def _get_sensors_for_callback(types: dict) -> list:
+        ret = []
+        for t in types:
+            item = types[t]
+            ret.append(item.split("|")[0])
+        return ret
+
+    @staticmethod
+    def _service_domain_per_operation(operation: HvacOperations) -> str:
+        match operation:
+            case HvacOperations.Offset:
+                return "number"
+            case HvacOperations.VentBoost | HvacOperations.WaterBoost:
+                return "switch"
+        raise ValueError(f"Operation {operation} not supported")
+
+    @staticmethod
+    def _transform_servicecall_value(value: any, operation: HvacOperations) -> any:
+        match operation:
+            case HvacOperations.Offset:
+                return "set_value"
+            case HvacOperations.VentBoost | HvacOperations.WaterBoost:
+                return "turn_on" if value == 1 else "turn_off"
 
 

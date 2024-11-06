@@ -47,7 +47,7 @@ class WeatherPrognosis:
                 _LOGGER.warning(f"Could not get hvac-prognosis: {e}")
                 ret = []
         if ret != self._weather_export_model:
-            self.observer.broadcast(ObserverTypes.PrognosisChanged)
+            await self.observer.async_broadcast(ObserverTypes.PrognosisChanged)
             self._weather_export_model = ret
             _LOGGER.debug("Weather-prognosis updated", ret)
 
@@ -67,7 +67,7 @@ class WeatherPrognosis:
             try:
                 ret_attr = ret.get(self.entity, {}).get("forecast", [])
                 if len(ret_attr):
-                    self._set_prognosis(ret_attr)
+                    await self.async_set_prognosis(ret_attr)
                 else:
                     _LOGGER.error(
                         f"Wether prognosis cannot be updated :({len(ret_attr)})"
@@ -150,7 +150,7 @@ class WeatherPrognosis:
             _LOGGER.error(f"Could not get weatherprognosis adjustment: {e}")
             return offset
 
-    def _set_prognosis(self, import_list: list):
+    async def async_set_prognosis(self, import_list: list):
         try:
             ret = []
             for i in import_list:
@@ -167,7 +167,7 @@ class WeatherPrognosis:
                 )
             if ret != self.prognosis_list:
                 self.prognosis_list = ret
-                self.observer.broadcast(ObserverTypes.PrognosisChanged)
+                await self.observer.async_broadcast(ObserverTypes.PrognosisChanged)
         except Exception as e:
             _LOGGER.error(f"Could not finalize _set_prognosis: {e}")
 

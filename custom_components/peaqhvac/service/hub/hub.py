@@ -61,8 +61,8 @@ class Hub:
 
     async def async_setup_trackers(self):
         self.trackerentities.append(self.spotprice.entity)
-        self.trackerentities.extend(self.options.indoor_tempsensors)
-        self.trackerentities.extend(self.options.outdoor_tempsensors)
+        self.trackerentities.extend(self.options.indoor_temp)
+        self.trackerentities.extend(self.options.outdoor_temp)
         await self.states.async_initialize_values()
         async_track_state_change_event(
             self.state_machine, self.trackerentities, self._async_on_change

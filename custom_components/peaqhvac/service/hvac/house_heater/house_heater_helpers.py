@@ -72,7 +72,7 @@ class HouseHeaterHelpers:
             else:
                 net_adjustment = 0
         elif self._hvac.hub.sensors.peaqev_installed:
-            if (self._hvac.hvac_dm <= self._hvac.hub.options.heating_options.low_degree_minutes
+            if (self._hvac.hvac_dm <= self._hvac.hub.options.heating.low_dm
                     and self._hvac.hub.sensors.average_temp_outdoors.value > -10):
                 net_adjustment = -1
             else:

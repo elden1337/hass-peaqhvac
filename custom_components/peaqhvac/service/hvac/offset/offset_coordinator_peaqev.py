@@ -17,7 +17,7 @@ class OffsetCoordinatorPeaqEv(OffsetCoordinator):
         super().__init__(hub, observer, hours_type)
         self._prices = None
         self._prices_tomorrow = None
-        self._update_prices([hub.sensors.peaqev_facade.hours.prices, hub.sensors.peaqev_facade.hours.prices_tomorrow])
+        self.async_update_prices([hub.sensors.peaqev_facade.hours.prices, hub.sensors.peaqev_facade.hours.prices_tomorrow])
         hub.sensors.peaqev_facade.peaqev_observer.add(ObserverTypes.PricesChanged, self.async_update_prices_blank)
         hub.sensors.peaqev_facade.peaqev_observer.add(ObserverTypes.SpotpriceInitialized, self.async_update_prices_blank)
 
@@ -36,17 +36,14 @@ class OffsetCoordinatorPeaqEv(OffsetCoordinator):
         except:
             return 0
 
-    async def async_update_prices(self, prices) -> None:
-        self._update_prices(prices)
-
     async def async_update_prices_blank(self) -> None:
-        self._update_prices([self._hub.sensors.peaqev_facade.hours.prices, self._hub.sensors.peaqev_facade.hours.prices_tomorrow])
+        await self.async_update_prices([self._hub.sensors.peaqev_facade.hours.prices, self._hub.sensors.peaqev_facade.hours.prices_tomorrow])
 
-    def _update_prices(self, prices) -> None:
+    async def async_update_prices(self, prices) -> None:
         _LOGGER.debug("Updating prices")
         if self._prices != prices[0]:
             self._prices = prices[0]
         if self._prices_tomorrow != prices[1]:
             self._prices_tomorrow = prices[1]
-        self._set_offset()
-        self._update_model()
+        await self.async_set_offset()
+        await self.async_update_model()

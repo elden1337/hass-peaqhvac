@@ -1,19 +1,15 @@
 import logging
-from typing import Tuple
 
-from custom_components.peaqhvac.service.hvac.interfaces.ihvac import IHvac
-from custom_components.peaqhvac.service.models.enums.hvacmode import HvacMode
-from custom_components.peaqhvac.service.models.enums.hvacoperations import \
-    HvacOperations
-from custom_components.peaqhvac.service.models.enums.sensortypes import \
-    SensorType
+from custom_components.peaqhvac.service.hvac.hvactypes.hvactype import HvacType
+from custom_components.peaqhvac.service.models.enums.hvacoperations import HvacOperations
+from custom_components.peaqhvac.service.models.enums.sensortypes import SensorType
 
 _LOGGER = logging.getLogger(__name__)
 
 NIBE_MAX_THRESHOLD = 10
 NIBE_MIN_THRESHOLD = -10
 
-class Nibe(IHvac):
+class Nibe(HvacType):
     domain = "Nibe"
     water_heater_entity = None
 
@@ -40,7 +36,7 @@ class Nibe(IHvac):
             SensorType.VentilationBoost: f"switch.{self.hub.options.systemid}_increased_ventilation",
         }
         return (
-            types[sensor]
+            types.get(sensor, None)
             if sensor is not None
             else self._get_sensors_for_callback(types)
         )
@@ -51,7 +47,8 @@ class Nibe(IHvac):
             speed = self.get_sensor(SensorType.FanSpeed)
             return float(self._handle_sensor(speed))
         except Exception as e:
-            _LOGGER.exception(e)
+            if "unavailable" not in str(e):
+                _LOGGER.exception(e)
             return 0
 
     @property
@@ -64,34 +61,11 @@ class Nibe(IHvac):
             _LOGGER.debug(f"Unable to calculate delta return: {e}")
             return 0
 
-    @staticmethod
-    def _service_domain_per_operation(operation: HvacOperations) -> str:
-        match operation:
-            case HvacOperations.Offset:
-                return "number"
-            case HvacOperations.VentBoost | HvacOperations.WaterBoost:
-                return "switch"
-        raise ValueError(f"Operation {operation} not supported")
-
-    @staticmethod
-    def _transform_servicecall_value(value: any, operation: HvacOperations) -> any:
-        match operation:
-            case HvacOperations.Offset:
-                return "set_value"
-            case HvacOperations.VentBoost | HvacOperations.WaterBoost:
-                return "turn_on" if value == 1 else "turn_off"
-
     def _set_servicecall_params(self, operation, _value):
         ret = {"entity_id": self._servicecall_types()[operation]}
         if operation is HvacOperations.Offset:
             ret["value"] = self._cap_nibe_offset_value(_value)
         return ret
-
-    def set_operation_call_parameters(self, operation: HvacOperations, _value: any) -> Tuple[str, dict, str]:
-        call_operation = self._transform_servicecall_value(_value, operation)
-        service_domain = self._service_domain_per_operation(operation)
-        params = self._set_servicecall_params(operation, _value)
-        return call_operation, params, service_domain
 
     @staticmethod
     def _cap_nibe_offset_value(val: int) -> int:

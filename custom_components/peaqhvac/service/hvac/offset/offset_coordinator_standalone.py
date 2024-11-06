@@ -35,5 +35,5 @@ class OffsetCoordinatorStandAlone(OffsetCoordinator):
     async def async_update_prices(self, prices) -> None:
         await self.hours.async_update_prices(prices[0], prices[1])
         _LOGGER.debug(f"Updated prices to {self.hours.prices, self.hours.prices_tomorrow}")
-        self._set_offset()
-        self._update_model()
+        await self.async_set_offset()
+        await self.async_update_model()

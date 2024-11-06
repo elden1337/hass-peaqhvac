@@ -22,15 +22,15 @@ class HeatingOptions:
     outdoor_temp_stop_heating: int = 999
     non_hours_water_boost: list[int] = field(default_factory=lambda: [])
     demand_hours_water_boost: list[int] = field(default_factory=lambda: [])
-    low_degree_minutes: int = -9999
+    low_dm: int = -9999
     very_cold_temp: int = -999
 
 
 class ConfigModel:
-    misc_options: MiscOptions = MiscOptions()
-    heating_options: HeatingOptions = HeatingOptions()
-    indoor_tempsensors: List = field(default_factory=lambda: [])
-    outdoor_tempsensors: List = field(default_factory=lambda: [])
+    misc: MiscOptions = MiscOptions()
+    heating: HeatingOptions = HeatingOptions()
+    indoor_temp: List = field(default_factory=lambda: [])
+    outdoor_temp: List = field(default_factory=lambda: [])
     hvacbrand: HvacBrand = field(init=False)
     systemid: str = field(init=False)
     weather_entity: str|None = None

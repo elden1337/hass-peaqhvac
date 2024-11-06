@@ -34,9 +34,9 @@ class StateChanges:
                                                                       t=time.time())
 
     async def async_update_sensor(self, entity, value):
-        if entity in self._hub.options.indoor_tempsensors:
+        if entity in self._hub.options.indoor_temp:
             await self._update_indoor_sensor(entity, value)
-        elif entity in self._hub.options.outdoor_tempsensors:
+        elif entity in self._hub.options.outdoor_temp:
             await self._update_outdoor_sensor(entity, value)
 
         await self._hass.async_add_executor_job(self._hub.prognosis.get_hvac_prognosis,
