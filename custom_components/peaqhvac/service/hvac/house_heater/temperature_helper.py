@@ -5,14 +5,18 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-def get_tempdiff_inverted(current_offset: int, temp_diff: float, determine_tolerance: callable) -> int:
+def get_tempdiff_inverted(current_offset: int, temp_diff: float, min_temp_diff: float, determine_tolerance: callable) -> int:
     diff = temp_diff + 0.00001
-    if abs(diff) < 0.2:
+    min_diff_influence = min_temp_diff * 0.5
+    combined_diff = diff + min_diff_influence
+
+    if abs(combined_diff) < 0.2:
         return 0
-    """get the inverted tolerance in this case"""
-    _tolerance = determine_tolerance(diff * -1, current_offset)
-    ret = floor(abs(diff) / _tolerance) * -1
-    if diff > 0:
+
+    _tolerance = determine_tolerance(combined_diff * -1, current_offset)
+    ret = floor(abs(combined_diff) / _tolerance) * -1
+
+    if combined_diff > 0:
         return ret
     return ret * -1
 

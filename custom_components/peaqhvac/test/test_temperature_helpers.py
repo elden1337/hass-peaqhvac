@@ -14,27 +14,35 @@ def _current_tolerances(determinator: bool, current_offset: int, adjust_toleranc
     return tolerances[0] if (determinator > 0 or determinator is True) else tolerances[1]
 
 
+def test_tempdiff_one_room_cold():
+    tempdiff = 0.5
+    ret1 = get_tempdiff_inverted(0, tempdiff, 0, _current_tolerances)
+    assert ret1 == -1
+    ret2 = get_tempdiff_inverted(0, tempdiff, -1.5, _current_tolerances)
+    assert ret2 == 1
+
+
 def test_tempdiff_cold():
     tempdiff = -0.5
-    ret1 = get_tempdiff_inverted(0, tempdiff, _current_tolerances)
+    ret1 = get_tempdiff_inverted(0, tempdiff,0, _current_tolerances)
     assert ret1 == 2
-    ret2 = get_tempdiff_inverted(-1, tempdiff, _current_tolerances)
+    ret2 = get_tempdiff_inverted(-1, tempdiff, 0,_current_tolerances)
     assert ret2 == 2
-    ret3 = get_tempdiff_inverted(-2, tempdiff, _current_tolerances)
+    ret3 = get_tempdiff_inverted(-2, tempdiff, 0,_current_tolerances)
     assert ret3 == 2
-    ret4 = get_tempdiff_inverted(-3, tempdiff, _current_tolerances)
+    ret4 = get_tempdiff_inverted(-3, tempdiff, 0,_current_tolerances)
     assert ret4 == 2
 
 
 def test_tempdiff_hot():
     tempdiff = 0.5
-    ret1 = get_tempdiff_inverted(0, tempdiff, _current_tolerances)
+    ret1 = get_tempdiff_inverted(0, tempdiff,0, _current_tolerances)
     assert ret1 == -1
-    ret2 = get_tempdiff_inverted(-1, tempdiff, _current_tolerances)
+    ret2 = get_tempdiff_inverted(-1, tempdiff, 0,_current_tolerances)
     assert ret2 == -1
-    ret3 = get_tempdiff_inverted(-2, tempdiff, _current_tolerances)
+    ret3 = get_tempdiff_inverted(-2, tempdiff,0, _current_tolerances)
     assert ret3 == -1
-    ret4 = get_tempdiff_inverted(-3, tempdiff, _current_tolerances)
+    ret4 = get_tempdiff_inverted(-3, tempdiff,0, _current_tolerances)
     assert ret4 == -1
 
 

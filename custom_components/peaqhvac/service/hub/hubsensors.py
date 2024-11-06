@@ -66,15 +66,25 @@ class HubSensors:
         return self.set_temp_indoors.min_tolerance, self.set_temp_indoors.max_tolerance
 
     def get_tempdiff(self) -> float:
-        _indoors = getattr(self.average_temp_indoors, "value", 0)
+        _indoors = self._get_indoors()
         _set_temp = getattr(self.set_temp_indoors, "adjusted_temp", 0)
         if _indoors == 0 and _set_temp != 0:
             return 0
         return _indoors - _set_temp
 
     def get_tempdiff_in_out(self) -> float:
-        _indoors = min([getattr(self.average_temp_indoors, "median",0), 
-        getattr(self.average_temp_indoors, "value", 0)
-        ])
+        _indoors = self._get_indoors()
         _outdoors = getattr(self.average_temp_outdoors, "value", 0)
         return _indoors - _outdoors
+
+    def _get_indoors(self) -> float:
+        return min(
+            [
+                getattr(self.average_temp_indoors, "median", 0),
+                getattr(self.average_temp_indoors, "value", 0)
+            ]
+        )
+
+    def get_min_indoors_diff(self):
+        min_temp = getattr(self.average_temp_indoors, "min", getattr(self.average_temp_indoors, "value", 0))
+        return getattr(self.set_temp_indoors, "adjusted_temp", 0) - min_temp
