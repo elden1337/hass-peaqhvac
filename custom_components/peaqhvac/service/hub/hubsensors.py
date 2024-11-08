@@ -87,4 +87,4 @@ class HubSensors:
 
     def get_min_indoors_diff(self):
         min_temp = getattr(self.average_temp_indoors, "min", getattr(self.average_temp_indoors, "value", 0))
-        return getattr(self.set_temp_indoors, "adjusted_temp", 0) - min_temp
+        return (getattr(self.set_temp_indoors, "adjusted_temp", 0) - min_temp) * -1
