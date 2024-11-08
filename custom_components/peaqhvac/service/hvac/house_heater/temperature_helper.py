@@ -7,7 +7,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def get_tempdiff_inverted(current_offset: int, temp_diff: float, min_temp_diff: float, determine_tolerance: callable) -> int:
     diff = temp_diff + 0.00001
-    min_diff_influence = min_temp_diff * 0.5
+    min_diff_influence = min_temp_diff * 0.5 if min_temp_diff < 0 else 0
     combined_diff = diff + min_diff_influence
 
     if abs(combined_diff) < 0.2:
