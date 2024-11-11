@@ -158,7 +158,7 @@ class HvacType:
         await self.house_ventilation.async_check_vent_boost()
 
     async def async_update_offset(self, raw_offset:int|None = None) -> bool:
-        if raw_offset:
+        if raw_offset is not None:
             if int(raw_offset) != self.model.raw_offset:
                 self.model.raw_offset = int(raw_offset)
         ret = False
