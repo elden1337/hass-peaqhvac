@@ -4,21 +4,23 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-
 def get_tempdiff_inverted(current_offset: int, temp_diff: float, min_temp_diff: float, determine_tolerance: callable) -> int:
-    diff = temp_diff + 0.00001
-    min_diff_influence = min_temp_diff * 0.5 if min_temp_diff < 0 else 0
-    combined_diff = diff + min_diff_influence
+    
+    def calc_int(diff: float) -> int:
+        diff += 0.00001
+        if abs(diff) < 0.2:
+            return 0
+        _tolerance = determine_tolerance(diff * -1, current_offset)
+        return floor(abs(diff) / _tolerance) * (-1 if diff > 0 else 1)
 
-    if abs(combined_diff) < 0.2:
+    ret = calc_int(temp_diff)
+    min_ret = calc_int(min_temp_diff * 0.5 if min_temp_diff < 0 else 0)
+    combined_ret = ret + min_ret
+
+    if abs(combined_ret) < 0.2:
         return 0
 
-    _tolerance = determine_tolerance(combined_diff * -1, current_offset)
-    ret = floor(abs(combined_diff) / _tolerance) * -1
-
-    if combined_diff > 0:
-        return ret
-    return ret * -1
+    return combined_ret
 
 
 def get_temp_trend_offset(do_calc: bool, temp_diff_offset: float, predicted_temp: float, adjusted_temp: float) -> float:
