@@ -14,7 +14,7 @@ def get_tempdiff_inverted(current_offset: int, temp_diff: float, min_temp_diff: 
         return floor(abs(diff) / _tolerance) * (-1 if diff > 0 else 1)
 
     ret = calc_int(temp_diff)
-    min_ret = calc_int(min_temp_diff * 0.5 if min_temp_diff < 0 else 0)
+    min_ret = calc_int(min_temp_diff * 0.4 if min_temp_diff < 0 else 0)
     combined_ret = ret + min_ret
 
     if abs(combined_ret) < 0.2:
