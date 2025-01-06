@@ -56,7 +56,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self) -> None:
         """Initialize options flow."""
         self._conf_app_id: str | None = None
-        self.options = dict(config_entry.options)
+        options = self.config_entry.options
 
     async def _get_existing_param(self, parameter: str, default_val: any):
         if parameter in self.config_entry.options.keys():
