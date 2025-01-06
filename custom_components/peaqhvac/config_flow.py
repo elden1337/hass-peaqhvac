@@ -24,8 +24,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
-        return OptionsFlowHandler(config_entry)
+    def async_get_options_flow(
+        config_entry: ConfigEntry,
+    ) -> OptionsFlowHandler:
+        """Create the options flow."""
+        return OptionsFlowHandler()
 
     async def async_step_user(self, user_input=None):
         """Invoked when a user initiates a flow via the user interface."""
@@ -50,11 +53,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-class OptionsFlowHandler(config_entries.OptionsFlow):
-    def __init__(self, config_entry):
+class OptionsFlowHandler(OptionsFlow):
+    """Options flow handler."""
+    def __init__(self) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
-        self.options = dict(config_entry.options)
+        self._conf_app_id: str | None = None
+        self.config_entry.options = dict(config_entry.options)
 
     async def _get_existing_param(self, parameter: str, default_val: any):
         if parameter in self.config_entry.options.keys():
