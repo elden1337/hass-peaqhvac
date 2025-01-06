@@ -24,7 +24,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry)
+    def async_get_options_flow(config_entry):
         """Create the options flow."""
         return OptionsFlowHandler()
 
@@ -51,7 +51,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
 
-class OptionsFlowHandler(OptionsFlow):
+class OptionsFlowHandler(config_entries.OptionsFlow):
     """Options flow handler."""
     def __init__(self) -> None:
         """Initialize options flow."""
