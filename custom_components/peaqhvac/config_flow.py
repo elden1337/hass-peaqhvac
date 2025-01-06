@@ -14,7 +14,6 @@ from .const import DOMAIN  # pylint:disable=unused-import
 
 _LOGGER = logging.getLogger(__name__)
 
-
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
@@ -49,7 +48,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="optional", data_schema=OPTIONAL_SCHEMA, errors=errors, last_step=True
         )
-
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Options flow handler."""
