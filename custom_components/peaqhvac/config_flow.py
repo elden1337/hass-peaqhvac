@@ -14,7 +14,6 @@ from .const import DOMAIN  # pylint:disable=unused-import
 
 _LOGGER = logging.getLogger(__name__)
 
-
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
@@ -25,7 +24,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return OptionsFlowHandler(config_entry)
+        """Create the options flow."""
+        return OptionsFlowHandler()
 
     async def async_step_user(self, user_input=None):
         """Invoked when a user initiates a flow via the user interface."""
@@ -49,12 +49,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="optional", data_schema=OPTIONAL_SCHEMA, errors=errors, last_step=True
         )
 
-
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    def __init__(self, config_entry):
+    """Options flow handler."""
+    def __init__(self) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
-        self.options = dict(config_entry.options)
+        self._conf_app_id: str | None = None
+        options = self.config_entry.options
 
     async def _get_existing_param(self, parameter: str, default_val: any):
         if parameter in self.config_entry.options.keys():
