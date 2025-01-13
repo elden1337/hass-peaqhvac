@@ -81,12 +81,13 @@ _There are a few options when configuring PeaqHvac:_
 
 | Name | Description                                                                                                                                           |
 |------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Hvac systemid` | The provided system-id from your vendor. For Nibe F-series this is often a five digit number.                                                         |
+| `Hvac systemid` | The provided system-id from your vendor. For Nibe F-series this is often a five digit number. If new myUplink integration is already being used, it's the string before the sensors. E.g.  sensors.f123_ab456_room_temperature_bt50 --> f123_ab456                                                       |
 | `Temp sensors indoors` | Your indoor temp sensor(s). Added as `sensor.`my_sensor. Comma-separated if many.                                                                     |
 | `Temp sensors outdoors` | Your outdoor temp sensor(s). Added as `sensor.`my_sensor. Comma-separated if many.                                                                    |
 | `Stop heating temp` | The outside temp where you never want Peaqhvac to start heating                                                                                       |
 | `Very cold temp` | A very cold outside temp in your area, where Peaqhvac should start acting differently to save energy. _Not recommended to put value below -10C here._ |
 | `Nonhours waterboost` | A selectable list of hours where you never wish to have a water-boost conducted _(not operational)_                                                   |
+| `weather entity` | the actual weather entity being used for the forecasting |
 | `Low DM-value` | A number somewhere in between your Compressor-start and Electric addon start. Lower than this and Peaqhvac will take extra steps to conserve energy   |
 
 
