@@ -81,7 +81,7 @@ _There are a few options when configuring PeaqHvac:_
 
 | Name | Description                                                                                                                                           |
 |------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Hvac systemid` | The provided system-id from your vendor. For Nibe F-series this is often a five digit number. If new myUplink integration is already being used, it's the string before the sensors. E.g.  sensors.f123_ab456_room_temperature_bt50 --> f123_ab456                                                       |
+| `Hvac systemid` | The provided system-id from your vendor. For Nibe F-series this is often a five digit number. If new myUplink integration is already being used, it's the string before the sensors. E.g.  `sensors`.`f123_ab456_room_temperature_bt50` --> f123_ab456                                                       |
 | `Temp sensors indoors` | Your indoor temp sensor(s). Added as `sensor.`my_sensor. Comma-separated if many.                                                                     |
 | `Temp sensors outdoors` | Your outdoor temp sensor(s). Added as `sensor.`my_sensor. Comma-separated if many.                                                                    |
 | `Stop heating temp` | The outside temp where you never want Peaqhvac to start heating                                                                                       |
