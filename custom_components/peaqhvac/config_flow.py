@@ -6,7 +6,7 @@ from typing import Any, Optional
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import callback
+from homeassistant.core_config import callback
 
 from custom_components.peaqhvac.configflow.config_flow_schemas import USER_SCHEMA, OPTIONAL_SCHEMA
 from custom_components.peaqhvac.configflow.config_flow_validation import ConfigFlowValidation
@@ -25,7 +25,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         """Create the options flow."""
-        return OptionsFlowHandler()
+        return OptionsFlowHandler(config_entry)
 
     async def async_step_user(self, user_input=None):
         """Invoked when a user initiates a flow via the user interface."""
@@ -51,15 +51,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Options flow handler."""
-    def __init__(self) -> None:
+    def __init__(self, config_entry) -> None:
         """Initialize options flow."""
-        self._conf_app_id: str | None = None
-        options = self.config_entry.options
+        self.config_entry = config_entry
+        self.options = dict(config_entry.options)
 
-    async def _get_existing_param(self, parameter: str, default_val: any):
-        if parameter in self.config_entry.options.keys():
+    def _get_existing_param(self, parameter: str, default_val: any):
+        """Get existing parameter from config entry options or data."""
+        if parameter in self.config_entry.options:
             return self.config_entry.options.get(parameter)
-        if parameter in self.config_entry.data.keys():
+        if parameter in self.config_entry.data:
             return self.config_entry.data.get(parameter)
         return default_val
 
@@ -69,14 +70,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.options.update(user_input)
             return self.async_create_entry(title="", data=self.options)
 
-        _indoortemps = await self._get_existing_param("indoor_tempsensors", "")
-        _outdoortemps = await self._get_existing_param("outdoor_tempsensors", "")
-        _stopheatingtemp = await self._get_existing_param("outdoor_temp_stop_heating", 15)
-        _nonhours_waterboost = await self._get_existing_param("non_hours_water_boost", [])
-        _demandhours_waterboost = await self._get_existing_param("demand_hours_water_boost", [])
-        _lowdm = await self._get_existing_param("low_degree_minutes", "-600")
-        _verycoldtemp = await self._get_existing_param("very_cold_temp", "-12")
-        _weather_entity = await self._get_existing_param("weather_entity", None)
+        _indoortemps = self._get_existing_param("indoor_tempsensors", "")
+        _outdoortemps = self._get_existing_param("outdoor_tempsensors", "")
+        _stopheatingtemp = self._get_existing_param("outdoor_temp_stop_heating", 15)
+        _nonhours_waterboost = self._get_existing_param("non_hours_water_boost", [])
+        _demandhours_waterboost = self._get_existing_param("demand_hours_water_boost", [])
+        _lowdm = self._get_existing_param("low_degree_minutes", "-600")
+        _verycoldtemp = self._get_existing_param("very_cold_temp", "-12")
+        _weather_entity = self._get_existing_param("weather_entity", None)
 
         return self.async_show_form(
             step_id="init",
