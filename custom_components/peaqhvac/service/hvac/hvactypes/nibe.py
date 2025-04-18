@@ -56,7 +56,16 @@ class Nibe(HvacType):
         try:
             temp = self.get_sensor(SensorType.HvacTemp)
             returntemp = self.get_sensor(SensorType.HotWaterReturn)
-            return round(float(self._handle_sensor(temp)) - float(self._handle_sensor(returntemp)),2,)
+            
+            # Handle None values
+            temp_value = self._handle_sensor(temp)
+            returntemp_value = self._handle_sensor(returntemp)
+            
+            # Check for None values
+            if temp_value is None or returntemp_value is None:
+                return 0
+            
+            return round(float(temp_value) - float(returntemp_value), 2)
         except Exception as e:
             _LOGGER.debug(f"Unable to calculate delta return: {e}")
             return 0
@@ -70,7 +79,7 @@ class Nibe(HvacType):
     @staticmethod
     def _cap_nibe_offset_value(val: int) -> int:
         """Nibe only supports offsets between -10 and 10"""
-        _LOGGER.debug("Capping nibe offset value", val)
+        _LOGGER.debug("Capping nibe offset value: %s", val)
         if abs(val) <= NIBE_MAX_THRESHOLD:
             return val
         return NIBE_MAX_THRESHOLD if val > NIBE_MAX_THRESHOLD else NIBE_MIN_THRESHOLD
