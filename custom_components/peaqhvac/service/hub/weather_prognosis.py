@@ -49,7 +49,8 @@ class WeatherPrognosis:
         if ret != self._weather_export_model:
             await self.observer.async_broadcast(ObserverTypes.PrognosisChanged)
             self._weather_export_model = ret
-            _LOGGER.debug("Weather-prognosis updated", ret)
+            # Fix the logging message to use proper formatting
+            _LOGGER.debug("Weather-prognosis updated: %s", ret)
 
     async def update_weather_prognosis(self):
         try:

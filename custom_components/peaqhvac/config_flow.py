@@ -54,7 +54,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self) -> None:
         """Initialize options flow."""
         self._conf_app_id: str | None = None
-        options = self.config_entry.options
+        # Do not access self.config_entry here
 
     async def _get_existing_param(self, parameter: str, default_val: any):
         if parameter in self.config_entry.options.keys():
@@ -66,8 +66,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Priceaware"""
         if user_input is not None:
-            self.options.update(user_input)
-            return self.async_create_entry(title="", data=self.options)
+            return self.async_create_entry(title="", data=user_input)
 
         _indoortemps = await self._get_existing_param("indoor_tempsensors", "")
         _outdoortemps = await self._get_existing_param("outdoor_tempsensors", "")
