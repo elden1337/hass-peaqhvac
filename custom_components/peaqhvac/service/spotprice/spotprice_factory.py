@@ -3,7 +3,7 @@ import logging
 from typing import Optional
 
 from peaqevcore.common.models.peaq_system import PeaqSystem
-from peaqevcore.common.spotprice.spotprice_base import SpotPriceBase
+from peaqevcore.common.spotprice.spotpricebase import SpotPriceBase
 from peaqevcore.common.spotprice.spotprice_factory import SpotPriceFactory as CoreSpotPriceFactory
 
 from custom_components.peaqhvac.const import PLATFORM_GESPOT
