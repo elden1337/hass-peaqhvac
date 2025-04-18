@@ -15,7 +15,7 @@ class StateChanges:
     def __init__(self, hub, hass):
         self._hub: Hub = hub
         self._hass = hass
-        self.latest_nordpool_update = WaitTimer(timeout=300)
+        self.latest_price_update = WaitTimer(timeout=300)
 
     async def async_initialize_values(self):
         for t in self._hub.trackerentities:
@@ -42,9 +42,9 @@ class StateChanges:
         await self._hass.async_add_executor_job(self._hub.prognosis.get_hvac_prognosis,
                                                 self._hub.sensors.average_temp_outdoors.value)
 
-        if entity == self._hub.spotprice.entity or self.latest_nordpool_update.is_timeout():
+        if entity == self._hub.spotprice.entity or self.latest_price_update.is_timeout():
             await self._hub.spotprice.async_update_spotprice()
             #await self._hass.async_add_executor_job(self._hub.prognosis.update_weather_prognosis) #todo: add back when weather prognosis is fixed
-            self.latest_nordpool_update.update()
+            self.latest_price_update.update()
 
         await self._hub.hvac.async_update_hvac()

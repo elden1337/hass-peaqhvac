@@ -3,6 +3,9 @@ PLATFORMS = ["sensor", "binary_sensor", "switch", "climate", "number"]
 DOMAIN_DATA = f"{DOMAIN}_data"
 LISTENER_FN_CLOSE = "update_listener_close_fn"
 
+# Platform constants
+PLATFORM_GESPOT = "ge_spot"
+
 PEAQENABLED = "enabled"
 TRENDSENSOR_INDOORS = "Temperature trend indoors"
 TRENDSENSOR_OUTDOORS = "Temperature trend outdoors"

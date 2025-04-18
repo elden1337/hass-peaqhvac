@@ -20,8 +20,9 @@ from custom_components.peaqhvac.service.observer.observer_coordinator import Obs
 from custom_components.peaqhvac.extensionmethods import async_iscoroutine
 import sys
 if 'pytest' not in sys.modules:
-    from peaqevcore.common.spotprice.spotprice_factory import SpotPriceFactory
     from peaqevcore.common.models.peaq_system import PeaqSystem
+    # Import our custom SpotPriceFactory with GE-Spot support
+    from custom_components.peaqhvac.service.spotprice import SpotPriceFactory
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -138,4 +139,3 @@ class Hub:
         ret.current_offset_tomorrow = self.offset.model.current_offset_dict_tomorrow
 
         return ret
-
