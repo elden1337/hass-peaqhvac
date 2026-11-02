@@ -64,7 +64,7 @@ class PeaqSimpleMoneySensor(SensorEntity):
         return {
             "identifiers": {(DOMAIN, self.hub.hub_id, MONEYCONTROLS)},
             "name": f"{DOMAIN} {MONEYCONTROLS}",
-            "sw_version": 1,
+            "sw_version": "1",
             "manufacturer": "Peaq systems",
         }
 
